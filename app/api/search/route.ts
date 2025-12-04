@@ -48,6 +48,38 @@ interface SiteConfig {
 }
 
 // ============================================================================
+// UTILITAIRES POUR CONSTRUCTION D'URLS
+// ============================================================================
+
+/**
+ * Construit l'URL AutoScout24 en supprimant les numéros de génération du modèle.
+ * Exemples:
+ * - "clio 4" → "clio"
+ * - "golf 7" → "golf"
+ * - "a3 8v" → "a3"
+ * 
+ * Note: Le modèle complet reste disponible pour l'IA qui fera le tri dans le HTML.
+ */
+function buildAutoScout24Url(brand: string, model: string, maxPrice: number): string {
+  // 1) Normaliser le model en supprimant la génération à la fin
+  const baseModel = model
+    .toLowerCase()
+    .replace(/\s+/g, ' ')       // nettoyer les espaces multiples
+    .replace(/\s+\d+[a-zA-Z]*$/, '')  // supprimer un numéro + éventuelles lettres à la fin
+    .trim()
+
+  const brandSlug = brand.toLowerCase().replace(/\s+/g, '-')
+  const modelSlug = baseModel.replace(/\s+/g, '-')
+
+  const url = `https://www.autoscout24.fr/lst/${brandSlug}/${modelSlug}?price=${maxPrice}`
+  
+  console.log(`[AutoScout24] Modèle original: "${model}" → Modèle pour URL: "${baseModel}"`)
+  console.log(`[AutoScout24] URL générée: ${url}`)
+  
+  return url
+}
+
+// ============================================================================
 // CONFIGURATION DES SITES
 // ============================================================================
 
@@ -86,15 +118,10 @@ const SITE_CONFIGS: SiteConfig[] = [
   {
     name: 'AutoScout24',
     getUrl: (brand, model, maxPrice) => {
-      // AutoScout24 : format de recherche avec paramètres de requête
-      // Les modèles avec chiffres (ex: "clio 4") ne fonctionnent pas dans le chemin URL
-      // Utiliser le format de recherche avec make et model en paramètres
-      const brandSlug = brand.toLowerCase().trim()
-      const modelSlug = model.toLowerCase().trim()
-      // Format alternatif : recherche par paramètres si le chemin ne fonctionne pas
-      // Note: AutoScout24 peut nécessiter un format différent selon le modèle
-      // Pour l'instant, on essaie le format standard mais on accepte que certains modèles échouent
-      return `https://www.autoscout24.fr/lst/${brandSlug}/${modelSlug.replace(/\s+/g, '-')}?price=${maxPrice}`
+      // AutoScout24 ne gère pas bien les numéros de génération dans le path
+      // Ex: "clio 4" → URL doit être "clio" (sans le "4")
+      // Le modèle complet reste disponible pour l'IA qui fera le tri dans le HTML
+      return buildAutoScout24Url(brand, model, maxPrice)
     },
     active: true,
   },
