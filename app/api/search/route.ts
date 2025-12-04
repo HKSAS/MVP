@@ -76,26 +76,32 @@ const SITE_CONFIGS: SiteConfig[] = [
     name: 'ParuVendu',
     getUrl: (brand, model) => {
       // Format correct: /a/voiture-occasion/[marque]/[modele]/
-      const brandSlug = brand.toLowerCase().replace(/\s+/g, '-')
-      const modelSlug = model.toLowerCase().replace(/\s+/g, '-')
-      return `https://www.paruvendu.fr/a/voiture-occasion/${brandSlug}/${modelSlug}/`
+      // ParuVendu accepte les modèles avec chiffres comme "clio-4"
+      const brandSlug = brand.toLowerCase().trim().replace(/\s+/g, '-')
+      const modelSlug = model.toLowerCase().trim().replace(/\s+/g, '-')
+      return `https://www.paruvendu.fr/a/voiture-occasion/${encodeURIComponent(brandSlug)}/${encodeURIComponent(modelSlug)}/`
     },
     active: true,
   },
   {
     name: 'AutoScout24',
     getUrl: (brand, model, maxPrice) => {
-      const brandSlug = brand.toLowerCase().replace(/\s+/g, '-')
-      const modelSlug = model.toLowerCase().replace(/\s+/g, '-')
-      return `https://www.autoscout24.fr/lst/${brandSlug}/${modelSlug}?price=${maxPrice}`
+      // AutoScout24 utilise un format de recherche différent
+      // Format: /lst/[brand]/[model] mais les modèles avec chiffres/espaces peuvent poser problème
+      const brandSlug = brand.toLowerCase().trim()
+      const modelSlug = model.toLowerCase().trim().replace(/\s+/g, ' ')
+      // Utiliser les paramètres de recherche plutôt que le chemin
+      return `https://www.autoscout24.fr/lst/${encodeURIComponent(brandSlug)}/${encodeURIComponent(modelSlug)}?price=${maxPrice}`
     },
     active: true,
   },
   {
     name: 'LeParking',
     getUrl: (brand, model, maxPrice) => {
-      const searchTerm = `${brand}-${model}`.toLowerCase().replace(/\s+/g, '-')
-      return `https://www.leparking.fr/voiture/${searchTerm}/prix-max-${maxPrice}`
+      // LeParking peut avoir des problèmes avec certains formats
+      // Simplifier le format de recherche
+      const searchTerm = `${brand} ${model}`.toLowerCase().trim().replace(/\s+/g, '-')
+      return `https://www.leparking.fr/voiture/${encodeURIComponent(searchTerm)}/prix-max-${maxPrice}`
     },
     active: true,
   },
