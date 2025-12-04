@@ -1,7 +1,7 @@
 -- ============================================================================
--- MIGRATION COMPLÈTE (VERSION SANS DROP) : Créer toutes les tables
+-- MIGRATION SIMPLE : Créer toutes les tables et politiques
 -- ============================================================================
--- Version sans DROP POLICY pour éviter l'avertissement Supabase
+-- Version simplifiée qui ignore les erreurs "already exists"
 -- À exécuter dans l'éditeur SQL de Supabase
 
 -- ============================================================================
@@ -17,14 +17,12 @@ CREATE TABLE IF NOT EXISTS searches (
   total_results INTEGER DEFAULT 0
 );
 
--- Index pour searches
 CREATE INDEX IF NOT EXISTS idx_searches_user_id ON searches(user_id);
 CREATE INDEX IF NOT EXISTS idx_searches_created_at ON searches(created_at DESC);
 
 -- ============================================================================
 -- ÉTAPE 2 : Créer/modifier la table listings
 -- ============================================================================
--- Créer la table si elle n'existe pas
 CREATE TABLE IF NOT EXISTS listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   external_id TEXT UNIQUE NOT NULL,
@@ -38,10 +36,9 @@ CREATE TABLE IF NOT EXISTS listings (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ajouter les colonnes manquantes si elles n'existent pas
+-- Ajouter les colonnes manquantes
 DO $$ 
 BEGIN
-  -- mileage_km
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'listings' AND column_name = 'mileage_km'
@@ -49,7 +46,6 @@ BEGIN
     ALTER TABLE listings ADD COLUMN mileage_km NUMERIC;
   END IF;
 
-  -- score_final
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'listings' AND column_name = 'score_final'
@@ -57,7 +53,6 @@ BEGIN
     ALTER TABLE listings ADD COLUMN score_final NUMERIC DEFAULT 0;
   END IF;
 
-  -- search_id (après création de searches)
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'listings' AND column_name = 'search_id'
@@ -65,7 +60,6 @@ BEGIN
     ALTER TABLE listings ADD COLUMN search_id UUID REFERENCES searches(id) ON DELETE SET NULL;
   END IF;
 
-  -- user_id
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'listings' AND column_name = 'user_id'
@@ -74,7 +68,6 @@ BEGIN
   END IF;
 END $$;
 
--- Index pour listings
 CREATE INDEX IF NOT EXISTS idx_listings_external_id ON listings(external_id);
 CREATE INDEX IF NOT EXISTS idx_listings_search_id ON listings(search_id);
 CREATE INDEX IF NOT EXISTS idx_listings_user_id ON listings(user_id);
@@ -83,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_created_at ON listings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_listings_score_final ON listings(score_final DESC);
 
 -- ============================================================================
--- ÉTAPE 3 : Créer la table analyzed_listings
+-- ÉTAPE 3 : Créer les autres tables
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS analyzed_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,14 +94,10 @@ CREATE TABLE IF NOT EXISTS analyzed_listings (
   warnings JSONB DEFAULT '[]'::jsonb
 );
 
--- Index pour analyzed_listings
 CREATE INDEX IF NOT EXISTS idx_analyzed_listings_user_id ON analyzed_listings(user_id);
 CREATE INDEX IF NOT EXISTS idx_analyzed_listings_created_at ON analyzed_listings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analyzed_listings_risk_level ON analyzed_listings(risk_level);
 
--- ============================================================================
--- ÉTAPE 4 : Créer la table contact_messages
--- ============================================================================
 CREATE TABLE IF NOT EXISTS contact_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -118,13 +107,9 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'read', 'replied'))
 );
 
--- Index pour contact_messages
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON contact_messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status);
 
--- ============================================================================
--- ÉTAPE 5 : Créer la table favorites (après listings)
--- ============================================================================
 CREATE TABLE IF NOT EXISTS favorites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -133,14 +118,10 @@ CREATE TABLE IF NOT EXISTS favorites (
   UNIQUE(user_id, listing_id)
 );
 
--- Index pour favorites
 CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_favorites_listing_id ON favorites(listing_id);
 CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at DESC);
 
--- ============================================================================
--- ÉTAPE 6 : Créer la table profiles
--- ============================================================================
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
@@ -149,12 +130,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index pour profiles
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 -- ============================================================================
--- ÉTAPE 7 : Activer Row Level Security (RLS)
+-- ÉTAPE 4 : Activer RLS
 -- ============================================================================
 ALTER TABLE searches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
@@ -164,173 +144,130 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- ÉTAPE 8 : Créer les politiques RLS
+-- ÉTAPE 5 : Créer les politiques RLS (avec gestion d'erreur)
 -- ============================================================================
--- Note: Si une politique existe déjà, vous pouvez ignorer l'erreur "already exists"
--- ou supprimer manuellement les politiques existantes dans l'interface Supabase
+-- Note: Les erreurs "already exists" seront ignorées
 
 -- Policies pour searches
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'searches' AND policyname = 'Users can view their own searches'
-  ) THEN
-    CREATE POLICY "Users can view their own searches"
-      ON searches FOR SELECT
-      USING (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can view their own searches"
+    ON searches FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'searches' AND policyname = 'Users can create their own searches'
-  ) THEN
-    CREATE POLICY "Users can create their own searches"
-      ON searches FOR INSERT
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can create their own searches"
+    ON searches FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Policies pour listings
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Users can view their own listings'
-  ) THEN
-    CREATE POLICY "Users can view their own listings"
-      ON listings FOR SELECT
-      USING (auth.uid() = user_id OR user_id IS NULL);
-  END IF;
+  CREATE POLICY "Users can view their own listings"
+    ON listings FOR SELECT
+    USING (auth.uid() = user_id OR user_id IS NULL);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Service can insert listings'
-  ) THEN
-    CREATE POLICY "Service can insert listings"
-      ON listings FOR INSERT
-      WITH CHECK (true);
-  END IF;
+  CREATE POLICY "Service can insert listings"
+    ON listings FOR INSERT
+    WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Service can update listings'
-  ) THEN
-    CREATE POLICY "Service can update listings"
-      ON listings FOR UPDATE
-      USING (true);
-  END IF;
+  CREATE POLICY "Service can update listings"
+    ON listings FOR UPDATE
+    USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Policies pour analyzed_listings
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'analyzed_listings' AND policyname = 'Users can view their own analyzed listings'
-  ) THEN
-    CREATE POLICY "Users can view their own analyzed listings"
-      ON analyzed_listings FOR SELECT
-      USING (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can view their own analyzed listings"
+    ON analyzed_listings FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'analyzed_listings' AND policyname = 'Users can create their own analyzed listings'
-  ) THEN
-    CREATE POLICY "Users can create their own analyzed listings"
-      ON analyzed_listings FOR INSERT
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can create their own analyzed listings"
+    ON analyzed_listings FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Policies pour contact_messages
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'contact_messages' AND policyname = 'Anyone can create contact messages'
-  ) THEN
-    CREATE POLICY "Anyone can create contact messages"
-      ON contact_messages FOR INSERT
-      WITH CHECK (true);
-  END IF;
+  CREATE POLICY "Anyone can create contact messages"
+    ON contact_messages FOR INSERT
+    WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Policies pour favorites
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can view their own favorites'
-  ) THEN
-    CREATE POLICY "Users can view their own favorites"
-      ON favorites FOR SELECT
-      USING (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can view their own favorites"
+    ON favorites FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can create their own favorites'
-  ) THEN
-    CREATE POLICY "Users can create their own favorites"
-      ON favorites FOR INSERT
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can create their own favorites"
+    ON favorites FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can delete their own favorites'
-  ) THEN
-    CREATE POLICY "Users can delete their own favorites"
-      ON favorites FOR DELETE
-      USING (auth.uid() = user_id);
-  END IF;
+  CREATE POLICY "Users can delete their own favorites"
+    ON favorites FOR DELETE
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Policies pour profiles
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can view their own profile'
-  ) THEN
-    CREATE POLICY "Users can view their own profile"
-      ON profiles FOR SELECT
-      USING (auth.uid() = id);
-  END IF;
+  CREATE POLICY "Users can view their own profile"
+    ON profiles FOR SELECT
+    USING (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can update their own profile'
-  ) THEN
-    CREATE POLICY "Users can update their own profile"
-      ON profiles FOR UPDATE
-      USING (auth.uid() = id);
-  END IF;
+  CREATE POLICY "Users can update their own profile"
+    ON profiles FOR UPDATE
+    USING (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can insert their own profile'
-  ) THEN
-    CREATE POLICY "Users can insert their own profile"
-      ON profiles FOR INSERT
-      WITH CHECK (auth.uid() = id);
-  END IF;
+  CREATE POLICY "Users can insert their own profile"
+    ON profiles FOR INSERT
+    WITH CHECK (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ============================================================================
--- VÉRIFICATION : Afficher la structure des tables créées
+-- VÉRIFICATION
 -- ============================================================================
 SELECT 
   'searches' as table_name,
@@ -368,12 +305,11 @@ SELECT
 FROM information_schema.columns
 WHERE table_name = 'profiles';
 
--- Afficher les colonnes de listings pour vérification
+-- Afficher les colonnes de listings
 SELECT 
   column_name, 
   data_type, 
-  is_nullable,
-  column_default
+  is_nullable
 FROM information_schema.columns
 WHERE table_name = 'listings'
 ORDER BY ordinal_position;
