@@ -164,72 +164,172 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- ÉTAPE 8 : Créer les politiques RLS (sans DROP, création uniquement)
+-- ÉTAPE 8 : Créer les politiques RLS
 -- ============================================================================
--- Note: Si une politique existe déjà, vous aurez une erreur mais ce n'est pas grave
--- Vous pouvez ignorer les erreurs "already exists" et continuer
+-- Note: Si une politique existe déjà, vous pouvez ignorer l'erreur "already exists"
+-- ou supprimer manuellement les politiques existantes dans l'interface Supabase
 
 -- Policies pour searches
-CREATE POLICY IF NOT EXISTS "Users can view their own searches"
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'searches' AND policyname = 'Users can view their own searches'
+  ) THEN
+    CREATE POLICY "Users can view their own searches"
+      ON searches FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
   ON searches FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can create their own searches"
-  ON searches FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'searches' AND policyname = 'Users can create their own searches'
+  ) THEN
+    CREATE POLICY "Users can create their own searches"
+      ON searches FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Policies pour listings
-CREATE POLICY IF NOT EXISTS "Users can view their own listings"
-  ON listings FOR SELECT
-  USING (auth.uid() = user_id OR user_id IS NULL);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Users can view their own listings'
+  ) THEN
+    CREATE POLICY "Users can view their own listings"
+      ON listings FOR SELECT
+      USING (auth.uid() = user_id OR user_id IS NULL);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Service can insert listings"
-  ON listings FOR INSERT
-  WITH CHECK (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Service can insert listings'
+  ) THEN
+    CREATE POLICY "Service can insert listings"
+      ON listings FOR INSERT
+      WITH CHECK (true);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Service can update listings"
-  ON listings FOR UPDATE
-  USING (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'listings' AND policyname = 'Service can update listings'
+  ) THEN
+    CREATE POLICY "Service can update listings"
+      ON listings FOR UPDATE
+      USING (true);
+  END IF;
+END $$;
 
 -- Policies pour analyzed_listings
-CREATE POLICY IF NOT EXISTS "Users can view their own analyzed listings"
-  ON analyzed_listings FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'analyzed_listings' AND policyname = 'Users can view their own analyzed listings'
+  ) THEN
+    CREATE POLICY "Users can view their own analyzed listings"
+      ON analyzed_listings FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can create their own analyzed listings"
-  ON analyzed_listings FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'analyzed_listings' AND policyname = 'Users can create their own analyzed listings'
+  ) THEN
+    CREATE POLICY "Users can create their own analyzed listings"
+      ON analyzed_listings FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Policies pour contact_messages
-CREATE POLICY IF NOT EXISTS "Anyone can create contact messages"
-  ON contact_messages FOR INSERT
-  WITH CHECK (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'contact_messages' AND policyname = 'Anyone can create contact messages'
+  ) THEN
+    CREATE POLICY "Anyone can create contact messages"
+      ON contact_messages FOR INSERT
+      WITH CHECK (true);
+  END IF;
+END $$;
 
 -- Policies pour favorites
-CREATE POLICY IF NOT EXISTS "Users can view their own favorites"
-  ON favorites FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can view their own favorites'
+  ) THEN
+    CREATE POLICY "Users can view their own favorites"
+      ON favorites FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can create their own favorites"
-  ON favorites FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can create their own favorites'
+  ) THEN
+    CREATE POLICY "Users can create their own favorites"
+      ON favorites FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can delete their own favorites"
-  ON favorites FOR DELETE
-  USING (auth.uid() = user_id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'favorites' AND policyname = 'Users can delete their own favorites'
+  ) THEN
+    CREATE POLICY "Users can delete their own favorites"
+      ON favorites FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Policies pour profiles
-CREATE POLICY IF NOT EXISTS "Users can view their own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can view their own profile'
+  ) THEN
+    CREATE POLICY "Users can view their own profile"
+      ON profiles FOR SELECT
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can update their own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can update their own profile'
+  ) THEN
+    CREATE POLICY "Users can update their own profile"
+      ON profiles FOR UPDATE
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own profile"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'Users can insert their own profile'
+  ) THEN
+    CREATE POLICY "Users can insert their own profile"
+      ON profiles FOR INSERT
+      WITH CHECK (auth.uid() = id);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- VÉRIFICATION : Afficher la structure des tables créées
