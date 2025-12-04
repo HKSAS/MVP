@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, Loader2, Car } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js'
+import type { ListingResponse } from '@/lib/types'
 
 // 1. Définition stricte des types
 interface Listing {
@@ -27,7 +28,8 @@ export default function Home() {
   const [model, setModel] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [loading, setLoading] = useState(false)
-  const [listings, setListings] = useState<Listing[]>([])
+  const [listings, setListings] = useState<Listing[]>([]) // Historique Supabase (Flux Live)
+  const [searchResults, setSearchResults] = useState<ListingResponse[]>([]) // Résultats de la recherche actuelle
   
   // Utiliser une ref pour stocker le channel et éviter les problèmes de cleanup
   const channelRef = useRef<any>(null)
@@ -145,8 +147,16 @@ export default function Home() {
         throw new Error(errorMsg)
       }
 
-      console.log('✅ Recherche lancée avec succès:', data)
-      // Pas besoin de mettre à jour 'listings' ici, le Realtime s'en chargera
+      // Afficher directement les résultats de la recherche
+      if (data.success && data.listings && Array.isArray(data.listings)) {
+        setSearchResults(data.listings)
+        console.log(`✅ ${data.listings.length} résultat(s) de recherche affiché(s)`)
+      } else {
+        setSearchResults([])
+        console.warn('⚠️ Aucun résultat dans la réponse API')
+      }
+      
+      // Le Realtime mettra à jour 'listings' (historique) en arrière-plan
 
     } catch (error: any) {
       console.error('Erreur recherche:', error)
@@ -252,88 +262,156 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Header Résultats */}
-        <div className="mb-6 flex items-center justify-between px-1">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
-            </span>
-            Flux Live
-            <span className="ml-2 rounded-full bg-gray-800 px-2.5 py-0.5 text-xs text-gray-400">
-              {listings.length}
-            </span>
-          </h2>
-        </div>
-
-        {/* Grille */}
-        {listings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-gray-950/50 py-20 text-center">
-            <div className="rounded-full bg-gray-900 p-4">
-              <Car className="h-10 w-10 text-gray-700" />
+        {/* Section 1: Résultats de la recherche actuelle */}
+        {searchResults.length > 0 && (
+          <div className="mb-12">
+            <div className="mb-6 flex items-center justify-between px-1">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+                <Search className="h-5 w-5 text-blue-500" />
+                Résultats de la recherche
+                <span className="ml-2 rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs text-blue-400">
+                  {searchResults.length}
+                </span>
+              </h2>
             </div>
-            <p className="mt-4 font-medium text-gray-300">En attente de résultats</p>
-            <p className="text-sm text-gray-500">Les voitures apparaîtront ici en temps réel</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {listings.map((listing) => (
-              <a
-                key={listing.external_id}
-                href={listing.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-950 transition-all hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10"
-              >
-                {/* Image Container */}
-                <div className="relative aspect-video w-full overflow-hidden bg-gray-900">
-                  <img
-                    src={listing.image_url || FALLBACK_IMAGE}
-                    alt={listing.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE }}
-                  />
-                  
-                  {/* Badge Score */}
-                  <div className="absolute right-3 top-3 z-10">
-                    <div className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm ${getScoreColor(listing.score_ia)}`}>
-                      <span>IA</span>
-                      <span>{listing.score_ia}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="mb-3 line-clamp-2 text-lg font-bold text-white transition-colors group-hover:text-blue-400">
-                    {listing.title}
-                  </h3>
-                  
-                  <div className="mt-auto space-y-3">
-                    <div className="flex items-baseline justify-between border-b border-gray-800 pb-3">
-                      <span className="text-2xl font-bold text-blue-400">
-                        {formatPrice(listing.price)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-400">
-                      <div className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-gray-600"></span>
-                        {listing.year > 0 ? listing.year : 'N/A'}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-gray-600"></span>
-                        {listing.mileage > 0 ? formatMileage(listing.mileage) : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </a>
-            ))}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {searchResults.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  formatPrice={formatPrice}
+                  formatMileage={formatMileage}
+                  getScoreColor={getScoreColor}
+                />
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Section 2: Flux Live (Historique Supabase) */}
+        <div>
+          <div className="mb-6 flex items-center justify-between px-1">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
+              </span>
+              Flux Live
+              <span className="ml-2 rounded-full bg-gray-800 px-2.5 py-0.5 text-xs text-gray-400">
+                {listings.length}
+              </span>
+            </h2>
+          </div>
+
+          {listings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-gray-950/50 py-20 text-center">
+              <div className="rounded-full bg-gray-900 p-4">
+                <Car className="h-10 w-10 text-gray-700" />
+              </div>
+              <p className="mt-4 font-medium text-gray-300">En attente de résultats</p>
+              <p className="text-sm text-gray-500">Les voitures apparaîtront ici en temps réel</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {listings.map((listing) => (
+                <ListingCard
+                  key={listing.external_id}
+                  listing={{
+                    id: listing.external_id,
+                    title: listing.title,
+                    price_eur: listing.price,
+                    mileage_km: listing.mileage,
+                    year: listing.year,
+                    source: 'unknown',
+                    url: listing.url,
+                    imageUrl: listing.image_url,
+                    score_ia: listing.score_ia,
+                    score_final: listing.score_ia, // Fallback si score_final n'existe pas
+                  }}
+                  formatPrice={formatPrice}
+                  formatMileage={formatMileage}
+                  getScoreColor={getScoreColor}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </div>
+  )
+}
+
+// Composant réutilisable pour afficher une carte d'annonce
+interface ListingCardProps {
+  listing: ListingResponse
+  formatPrice: (price: number) => string
+  formatMileage: (mileage: number) => string
+  getScoreColor: (score: number) => string
+}
+
+function ListingCard({ listing, formatPrice, formatMileage, getScoreColor }: ListingCardProps) {
+  const score = listing.score_final ?? listing.score_ia ?? 0
+  const price = listing.price_eur ?? 0
+  const mileage = listing.mileage_km ?? 0
+  const year = listing.year ?? 0
+
+  return (
+    <a
+      href={listing.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-950 transition-all hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10"
+    >
+      {/* Image Container */}
+      <div className="relative aspect-video w-full overflow-hidden bg-gray-900">
+        <img
+          src={listing.imageUrl || FALLBACK_IMAGE}
+          alt={listing.title}
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE }}
+        />
+        
+        {/* Badge Score */}
+        <div className="absolute right-3 top-3 z-10">
+          <div className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm ${getScoreColor(score)}`}>
+            <span>Score</span>
+            <span>{Math.round(score)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="mb-3 line-clamp-2 text-lg font-bold text-white transition-colors group-hover:text-blue-400">
+          {listing.title}
+        </h3>
+        
+        <div className="mt-auto space-y-3">
+          <div className="flex items-baseline justify-between border-b border-gray-800 pb-3">
+            <span className="text-2xl font-bold text-blue-400">
+              {price > 0 ? formatPrice(price) : 'Prix non disponible'}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between text-sm text-gray-400">
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-gray-600"></span>
+              {year > 0 ? year : 'N/A'}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-gray-600"></span>
+              {mileage > 0 ? formatMileage(mileage) : 'N/A'}
+            </div>
+          </div>
+          
+          {listing.source && (
+            <div className="text-xs text-gray-500">
+              Source: {listing.source}
+            </div>
+          )}
+        </div>
+      </div>
+    </a>
   )
 }
