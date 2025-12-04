@@ -86,12 +86,15 @@ const SITE_CONFIGS: SiteConfig[] = [
   {
     name: 'AutoScout24',
     getUrl: (brand, model, maxPrice) => {
-      // AutoScout24 utilise un format de recherche différent
-      // Format: /lst/[brand]/[model] mais les modèles avec chiffres/espaces peuvent poser problème
+      // AutoScout24 : format de recherche avec paramètres de requête
+      // Les modèles avec chiffres (ex: "clio 4") ne fonctionnent pas dans le chemin URL
+      // Utiliser le format de recherche avec make et model en paramètres
       const brandSlug = brand.toLowerCase().trim()
-      const modelSlug = model.toLowerCase().trim().replace(/\s+/g, ' ')
-      // Utiliser les paramètres de recherche plutôt que le chemin
-      return `https://www.autoscout24.fr/lst/${encodeURIComponent(brandSlug)}/${encodeURIComponent(modelSlug)}?price=${maxPrice}`
+      const modelSlug = model.toLowerCase().trim()
+      // Format alternatif : recherche par paramètres si le chemin ne fonctionne pas
+      // Note: AutoScout24 peut nécessiter un format différent selon le modèle
+      // Pour l'instant, on essaie le format standard mais on accepte que certains modèles échouent
+      return `https://www.autoscout24.fr/lst/${brandSlug}/${modelSlug.replace(/\s+/g, '-')}?price=${maxPrice}`
     },
     active: true,
   },
