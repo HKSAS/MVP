@@ -77,12 +77,42 @@ export async function GET(
       resultsCount: searchQuery.results_count,
     })
 
-    // Récupérer les résultats de la recherche
-    const { data: searchResults, error: resultsError } = await supabase
-      .from('search_results')
-      .select('*')
-      .eq('search_id', searchId)
-      .order('score', { ascending: false })
+    // Récupérer TOUS les résultats de la recherche (pas de limite)
+    // Utiliser range() pour récupérer tous les résultats par lots si nécessaire
+    let allResults: any[] = []
+    let offset = 0
+    const limit = 1000 // Récupérer par lots de 1000
+    let hasMore = true
+
+    while (hasMore) {
+      const { data: searchResults, error: resultsError } = await supabase
+        .from('search_results')
+        .select('*')
+        .eq('search_id', searchId)
+        .order('score', { ascending: false })
+        .range(offset, offset + limit - 1)
+
+      if (resultsError) {
+        log.error('Erreur récupération résultats', {
+          searchId,
+          offset,
+          error: resultsError.message,
+          errorCode: resultsError.code,
+        })
+        hasMore = false
+        break
+      }
+
+      if (searchResults && searchResults.length > 0) {
+        allResults = [...allResults, ...searchResults]
+        offset += limit
+        hasMore = searchResults.length === limit // S'il y a exactement limit résultats, il pourrait y en avoir plus
+      } else {
+        hasMore = false
+      }
+    }
+
+    const searchResults = allResults
 
     if (resultsError) {
       log.error('Erreur récupération résultats', {
