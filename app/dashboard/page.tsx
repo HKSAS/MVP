@@ -284,8 +284,41 @@ export default function DashboardPage() {
     }
   };
 
-  const handleReviewResults = (search: UserSearch) => {
-    router.push(`/dashboard/recherches/${search.id}`);
+  const handleReviewResults = async (search: UserSearch) => {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Session expirée. Veuillez vous reconnecter.');
+        router.push('/login');
+        return;
+      }
+
+      // Vérifier que la recherche existe avant de rediriger
+      const response = await fetch(`/api/search/${search.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast.error('Cette recherche n\'existe plus');
+          // Recharger les recherches pour mettre à jour la liste
+          loadRecentSearches();
+        } else {
+          toast.error('Erreur lors du chargement de la recherche');
+        }
+        return;
+      }
+
+      // Rediriger vers la page de détails de la recherche
+      router.push(`/dashboard/recherches/${search.id}`);
+    } catch (error) {
+      console.error('Erreur lors de la redirection:', error);
+      toast.error('Erreur lors de l\'accès aux résultats');
+    }
   };
 
   const handleViewReport = async (ad: AnalyzedAd) => {
@@ -306,7 +339,13 @@ export default function DashboardPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la récupération de l\'analyse');
+        if (response.status === 404) {
+          toast.error('Cette analyse n\'existe plus');
+          loadAnalyzedAds(); // Recharger la liste
+        } else {
+          toast.error('Erreur lors de la récupération de l\'analyse');
+        }
+        return;
       }
 
       const data = await response.json();
@@ -326,10 +365,15 @@ export default function DashboardPage() {
         }
       }
 
-      // Fallback : rediriger vers la page d'analyses
-      router.push('/dashboard/analyses');
+      // Si pas de résultats complets, rediriger vers la page d'analyses
+      if (ad.url) {
+        window.open(ad.url, '_blank', 'noopener,noreferrer');
+      } else {
+        router.push('/dashboard/analyses');
+      }
     } catch (error) {
       console.error('Erreur lors du chargement du rapport:', error);
+      toast.error('Erreur lors du chargement du rapport');
       // Fallback : rediriger vers la page d'analyses
       router.push('/dashboard/analyses');
     }
