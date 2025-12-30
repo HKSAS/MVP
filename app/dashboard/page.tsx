@@ -624,13 +624,13 @@ export default function DashboardPage() {
 
                 {/* Recent Searches */}
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                  <CardHeader className="p-4 sm:p-6">
+                  <CardHeader className="p-4 sm:p-5 pb-2">
                     <CardTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
                       <Clock className="size-4 sm:size-5 text-blue-400" />
                       Mes recherches récentes
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-2">
+                  <CardContent className="p-4 sm:p-5 pt-0">
                     <div className="space-y-2">
                       {searchesLoading ? (
                         <div className="text-center py-4 text-sm text-gray-400">Chargement...</div>
