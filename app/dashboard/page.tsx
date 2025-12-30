@@ -630,23 +630,23 @@ export default function DashboardPage() {
                       Mes recherches récentes
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-0">
-                    <div className="space-y-3 sm:space-y-4">
+                  <CardContent className="p-4 sm:p-6 pt-2">
+                    <div className="space-y-2">
                       {searchesLoading ? (
-                        <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-400">Chargement...</div>
+                        <div className="text-center py-4 text-sm text-gray-400">Chargement...</div>
                       ) : recentSearches.length === 0 ? (
-                        <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-400">Aucune recherche récente</div>
+                        <div className="text-center py-4 text-sm text-gray-400">Aucune recherche récente</div>
                       ) : (
                         recentSearches.slice(0, 3).map((search) => (
                           <div
                             key={search.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm sm:text-base text-white mb-1 truncate">
+                              <div className="text-sm sm:text-base text-white mb-0.5 truncate">
                                 {search.brand} {search.model}
                               </div>
-                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
+                              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-400">
                                 {search.max_price && (
                                   <>
                                     <span>Budget: {search.max_price.toLocaleString()} €</span>
