@@ -120,9 +120,9 @@ function calculateCompleteness(listing: ListingResponse): number {
   let score = 0
   
   if (listing.title) score += 20
-  if (listing.price_eur !== null && listing.price_eur > 0) score += 25
-  if (listing.year !== null && listing.year > 0) score += 20
-  if (listing.mileage_km !== null && listing.mileage_km > 0) score += 20
+  if (listing.price_eur !== null && listing.price_eur !== undefined && listing.price_eur > 0) score += 25
+  if (listing.year !== null && listing.year !== undefined && listing.year > 0) score += 20
+  if (listing.mileage_km !== null && listing.mileage_km !== undefined && listing.mileage_km > 0) score += 20
   if (listing.imageUrl) score += 10
   if (listing.url) score += 5
   
