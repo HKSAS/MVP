@@ -1,129 +1,220 @@
-# 🚗 MVP Conciergerie Automobile
+# 🚗 Autoval IA - Recherche Intelligente de Véhicules
 
-Plateforme de recherche et d'analyse de véhicules d'occasion avec intelligence artificielle.
+Plateforme de recherche et d'analyse de véhicules d'occasion avec intelligence artificielle. Analysez des milliers d'annonces en quelques secondes et trouvez la voiture de vos rêves.
 
-## 📋 Description
+## ✨ Fonctionnalités
 
-Application Next.js permettant de :
-- 🔍 Rechercher des véhicules sur plusieurs sites (LeBonCoin, ParuVendu, AutoScout24, etc.)
-- 🤖 Analyser les annonces avec l'IA pour détecter les arnaques
-- ⭐ Sauvegarder des favoris
-- 📊 Consulter l'historique de ses recherches et analyses
+- 🔍 **Recherche multi-sites** : Recherchez sur plusieurs sites d'annonces en simultané (LeBonCoin, AutoScout24, LaCentrale, etc.)
+- 🤖 **Analyse IA** : Analyse intelligente de chaque annonce avec scoring automatique
+- 💰 **Gestion des prix** : Suivez l'évolution des prix et recevez des alertes
+- ⭐ **Favoris** : Sauvegardez vos annonces favorites
+- 📊 **Dashboard** : Historique complet de vos recherches et analyses
+- 🔐 **Authentification sécurisée** : Système d'authentification complet avec Supabase
+- 💳 **Paiements Stripe** : Abonnements et packs ponctuels
 
-## 🛠️ Technologies
+## 🚀 Démarrage rapide
 
-- **Frontend/Backend** : Next.js 14 (App Router)
-- **Base de données** : Supabase (PostgreSQL)
-- **Authentification** : Supabase Auth
-- **Scraping** : ZenRows
-- **IA** : OpenAI (GPT-4o-mini)
-- **Validation** : Zod
-- **TypeScript** : Strict mode
+### Prérequis
 
-## 🚀 Installation
+- **Node.js** 18+ ([télécharger](https://nodejs.org/))
+- **npm** ou **yarn**
+- Compte **Supabase** ([créer un compte](https://supabase.com))
+- Clé API **OpenAI** ([obtenir une clé](https://platform.openai.com/api-keys))
+- Clé API **ZenRows** ([inscription](https://www.zenrows.com/))
+- Compte **Stripe** pour les paiements ([dashboard Stripe](https://dashboard.stripe.com))
 
-1. **Cloner le dépôt**
+### Installation
+
+1. **Cloner le repository**
+
 ```bash
 git clone https://github.com/HKSAS/MVP.git
 cd MVP
 ```
 
 2. **Installer les dépendances**
+
 ```bash
 npm install
 ```
 
 3. **Configurer les variables d'environnement**
 
-Créer un fichier `.env.local` à la racine :
+Copiez le fichier d'exemple et configurez vos variables :
+
+```bash
+cp env.example .env.local
+```
+
+Éditez `.env.local` avec vos valeurs réelles :
 
 ```env
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-clé-anon
+SUPABASE_SERVICE_ROLE_KEY=votre-clé-service
 
 # OpenAI
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=sk-proj-votre-clé
 OPENAI_MODEL=gpt-4o-mini
 
+# Stripe
+STRIPE_SECRET_KEY=sk_test_votre-clé
+STRIPE_PRICE_ID_AUTOIA_ANALYSE=price_xxx
+# ... autres produits Stripe
+
 # ZenRows
-ZENROWS_API_KEY=your_zenrows_api_key
+ZENROWS_API_KEY=votre-clé-zenrows
+
+# Cron
+CRON_SECRET=votre-secret-securise
 ```
 
-4. **Initialiser la base de données**
+4. **Configurer Supabase**
 
-Exécuter le script SQL dans Supabase :
-```bash
-# Copier le contenu de supabase-schema.sql dans l'éditeur SQL de Supabase
-```
+Exécutez les migrations SQL dans l'ordre suivant :
 
-5. **Lancer le serveur de développement**
+1. `supabase-schema.sql` - Schéma de base
+2. `supabase-quota-system.sql` - Système de quotas
+3. `add-profile-columns.sql` - Colonnes de profil
+
+Vous pouvez les exécuter depuis l'éditeur SQL de Supabase : https://app.supabase.com/project/[votre-projet]/sql
+
+5. **Lancer en développement**
+
 ```bash
 npm run dev
 ```
 
-L'application sera accessible sur [http://localhost:3000](http://localhost:3000)
+Le site sera accessible sur [http://localhost:3000](http://localhost:3000)
 
-## 📚 Documentation API
+## 📦 Scripts disponibles
 
-Voir [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) pour la documentation complète des endpoints.
+```bash
+# Développement
+npm run dev          # Lance le serveur de développement
 
-## 🏗️ Architecture
+# Build
+npm run build        # Compile le projet pour la production
+npm run start        # Lance le serveur de production (après build)
 
-```
-/app/api/          # Routes API Next.js
-  ├── search/      # Recherche multi-sites avec scoring
-  ├── analyze-listing/  # Analyse anti-arnaque IA
-  ├── me/          # Endpoints utilisateur (searches, listings, favorites)
-  ├── favorites/   # Gestion des favoris
-  └── contact/     # Formulaire de contact
-
-/lib/              # Utilitaires partagés
-  ├── auth.ts      # Authentification Supabase
-  ├── openai.ts    # Client OpenAI
-  ├── zenrows.ts   # Client ZenRows
-  ├── scoring.ts   # Système de scoring des annonces
-  ├── types.ts     # Types TypeScript partagés
-  └── validation.ts # Schémas Zod
+# Qualité de code
+npm run lint         # Vérifie le code avec ESLint
 ```
 
-## 🎯 Fonctionnalités principales
+## 🛠️ Technologies utilisées
 
-### Recherche intelligente
-- Scraping parallèle sur plusieurs sites
-- Scoring automatique des annonces (0-100)
-- Tri par pertinence
-- Déduplication automatique
+- **Framework** : [Next.js 14](https://nextjs.org/) avec App Router
+- **Base de données** : [Supabase](https://supabase.com) (PostgreSQL)
+- **Authentification** : Supabase Auth
+- **IA** : [OpenAI GPT-4](https://openai.com/)
+- **Paiements** : [Stripe](https://stripe.com/)
+- **Scraping** : [ZenRows](https://www.zenrows.com/)
+- **UI** : [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/)
+- **Animations** : [Framer Motion](https://www.framer.com/motion/)
+- **Langage** : TypeScript
 
-### Analyse anti-arnaque
-- Détection de risques (low/medium/high)
-- Estimation du prix du marché
-- Points positifs et alertes
-- Recommandations personnalisées
+## 📁 Structure du projet
 
-### Dashboard utilisateur
-- Historique des recherches
-- Liste des annonces analysées
-- Gestion des favoris
+```
+MVP/
+├── app/                    # Pages Next.js (App Router)
+│   ├── api/               # API Routes
+│   ├── dashboard/         # Pages du dashboard
+│   └── ...
+├── components/            # Composants React réutilisables
+│   ├── ui/               # Composants UI (shadcn/ui)
+│   └── ...
+├── lib/                   # Bibliothèques et utilitaires
+│   ├── supabase/         # Configuration Supabase
+│   ├── scraping/         # Modules de scraping
+│   └── ...
+├── hooks/                 # Hooks React personnalisés
+├── public/                # Assets statiques
+└── scripts/               # Scripts utilitaires
+```
+
+## 🌐 Déploiement sur Vercel
+
+### Étape 1 : Préparer le projet
+
+Assurez-vous que votre code est sur GitHub et que le build fonctionne :
+
+```bash
+npm run build
+```
+
+### Étape 2 : Connecter à Vercel
+
+1. Allez sur [vercel.com](https://vercel.com)
+2. Connectez-vous avec votre compte GitHub
+3. Cliquez sur **"New Project"**
+4. Importez votre repository : `HKSAS/MVP`
+
+### Étape 3 : Configurer les variables d'environnement
+
+Dans les paramètres du projet Vercel, ajoutez toutes les variables depuis `.env.local` :
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (optionnel)
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID_*` (tous les IDs de produits)
+- `ZENROWS_API_KEY`
+- `CRON_SECRET`
+
+### Étape 4 : Déployer
+
+Cliquez sur **"Deploy"** et attendez 2-5 minutes.
+
+Votre site sera disponible sur `https://[nom-projet].vercel.app`
+
+### 🔄 Déploiements automatiques
+
+Chaque push sur la branche `main` déclenchera automatiquement un nouveau déploiement !
 
 ## 🔒 Sécurité
 
-- Authentification via Supabase Auth
-- Row Level Security (RLS) activé
-- Validation des inputs avec Zod
-- Filtrage par `user_id` sur toutes les routes protégées
-- Protection contre les secrets dans Git
+- ✅ Les clés API ne sont jamais exposées côté client
+- ✅ Authentification sécurisée avec Supabase Auth
+- ✅ Row Level Security (RLS) activé sur toutes les tables
+- ✅ Validation des données avec Zod
+- ✅ Protection CSRF intégrée
+- ✅ Variables d'environnement sécurisées
 
-## 📝 License
+## 📝 Migration SQL
 
-Ce projet est privé.
+Pour initialiser la base de données, exécutez ces fichiers SQL dans l'ordre :
 
-## 👤 Auteur
+1. `supabase-schema.sql` - Structure de base
+2. `supabase-quota-system.sql` - Système de quotas et abonnements
+3. `add-profile-columns.sql` - Colonnes utilisateur (nom, téléphone, adresse)
 
-HKSAS
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+
+## 📄 License
+
+ISC
+
+## 🆘 Support
+
+Pour toute question ou problème :
+- Ouvrez une [issue GitHub](https://github.com/HKSAS/MVP/issues)
+- Consultez la [documentation Supabase](https://supabase.com/docs)
+
+## 🎯 Roadmap
+
+- [ ] Support de plus de sites d'annonces
+- [ ] Notifications par email
+- [ ] Application mobile
+- [ ] API publique
+- [ ] Intégration avec d'autres services de paiement
 
 ---
 
-**Note** : Ce projet est en cours de développement. Le frontend est en cours de design sur Figma.
+**Fait avec ❤️ par l'équipe Autoval IA**
 

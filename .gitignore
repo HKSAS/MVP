@@ -46,6 +46,38 @@ next-env.d.ts
 debug_*.html
 debug_page.html
 
+# SQL migrations (keep only supabase-schema.sql)
+migration-*.sql
+fix-*.sql
+add-*.sql
+check-*.sql
+verify-*.sql
+align-*.sql
+
 # Supabase
 .supabase/
+
+# Backups
+backup-*/
+*-backup/
+*.bak
+
+# Cache et temp
+.cache/
+.temp/
+.tmp/
+
+# Logs additionnels
+logs/
+*.log
+
+# Fichiers système additionnels
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# Ancien projet Figma (déjà intégré)
+project (2)/
 

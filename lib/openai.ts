@@ -1,16 +1,26 @@
 /**
  * Client OpenAI réutilisable avec fonctions utilitaires
+ * 
+ * ⚠️ Ce fichier est déprécié. Utilisez directement OpenAI avec getOpenAIApiKey() depuis lib/env.ts
+ * Gardé pour compatibilité avec le code existant
  */
 
 import OpenAI from 'openai'
+import { getOpenAIApiKey } from './env'
+import { logger } from './logger'
 
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('⚠️ OPENAI_API_KEY n\'est pas configurée')
+let openaiInstance: OpenAI | null = null
+
+try {
+  const apiKey = getOpenAIApiKey()
+  openaiInstance = new OpenAI({
+    apiKey,
+  })
+} catch (error) {
+  logger.warn('⚠️ OPENAI_API_KEY n\'est pas configurée', {
+    error: error instanceof Error ? error.message : String(error),
+  })
 }
 
-export const openai = process.env.OPENAI_API_KEY 
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null
+export const openai = openaiInstance
 

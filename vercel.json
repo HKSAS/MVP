@@ -1,0 +1,13 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/reset-quotas",
+      "schedule": "0 0 1 * *"
+    }
+  ]
+}
+

@@ -1,55 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import type { UserSearch } from '@/lib/types'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { createRouteLogger } from '@/lib/logger'
+import { createErrorResponse, AuthenticationError, InternalServerError } from '@/lib/errors'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/me/searches
  * Retourne les dernières recherches de l'utilisateur authentifié
  */
 export async function GET(request: NextRequest) {
-  const routePrefix = '[API /api/me/searches]'
+  const log = createRouteLogger('/api/me/searches')
   
   try {
     // Vérification de l'authentification
     const user = await requireAuth(request)
-    console.log(`${routePrefix} 👤 Utilisateur: ${user.id}`)
+    log.info(`Récupération des recherches pour user ${user.id}`)
 
     // Récupération des paramètres de pagination
     const { searchParams } = new URL(request.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Récupération des recherches
-    const { data: searches, error } = await supabase
-      .from('searches')
-      .select('id, brand, model, max_price, total_results, created_at')
+    // Créer le client Supabase avec le token de l'utilisateur pour RLS
+    const supabase = await getSupabaseServerClient(request)
+    
+    // Récupération des recherches depuis search_queries
+    const { data: searchQueries, error, count } = await supabase
+      .from('search_queries')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
     if (error) {
-      console.error(`${routePrefix} ❌ Erreur Supabase:`, error)
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la récupération des recherches' },
-        { status: 500 }
-      )
+      log.error(`Erreur Supabase: ${error.message} (user: ${user.id})`)
+      throw new InternalServerError('Erreur lors de la récupération des recherches', {
+        dbError: error.message,
+      })
     }
 
-    const formattedSearches: UserSearch[] = (searches || []).map((search) => ({
-      id: search.id,
-      brand: search.brand,
-      model: search.model,
-      max_price: Number(search.max_price),
-      total_results: search.total_results || 0,
-      created_at: search.created_at,
-    }))
+    // Formater les résultats depuis search_queries (compatible avec UserSearch)
+    const formattedSearches: UserSearch[] = (searchQueries || []).map((query: any) => {
+      const criteria = query.criteria_json || {}
+      return {
+        id: query.id,
+        brand: criteria.brand || '',
+        model: criteria.model || '',
+        max_price: criteria.max_price ? Number(criteria.max_price) : 0,
+        total_results: query.results_count || 0,
+        created_at: query.created_at,
+      }
+    })
+    
+    // Log détaillé pour debug
+    log.info(`Recherches formatées: ${formattedSearches.length} trouvées (total en base: ${count || 0})`)
+    if (formattedSearches.length > 0) {
+      log.info(`Première recherche: ${formattedSearches[0].brand} ${formattedSearches[0].model}`)
+    }
 
-    console.log(`${routePrefix} ✅ ${formattedSearches.length} recherche(s) retournée(s)`)
+    log.info(`Recherches retournées: ${formattedSearches.length} pour user ${user.id}`)
+
+    const totalPages = count ? Math.ceil(count / limit) : 1
 
     return NextResponse.json({
       success: true,
@@ -57,27 +69,188 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        total: formattedSearches.length,
+        total: count || 0,
+        totalPages,
+        page: Math.floor(offset / limit) + 1,
       },
     })
-  } catch (error: any) {
-    if (error.message === 'Unauthorized: Authentication required') {
-      console.error(`${routePrefix} ❌ Non authentifié`)
-      return NextResponse.json(
-        { success: false, error: 'Authentification requise' },
-        { status: 401 }
-      )
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      log.warn('Non authentifié')
+      return createErrorResponse(error)
     }
 
-    console.error(`${routePrefix} ❌ Erreur serveur:`, error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erreur serveur',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      },
-      { status: 500 }
-    )
+    log.error(`Erreur serveur: ${error instanceof Error ? error.message : String(error)}`)
+    return createErrorResponse(error)
   }
 }
 
+/**
+ * POST /api/me/searches
+ * Sauvegarde une nouvelle recherche dans l'historique
+ */
+export async function POST(request: NextRequest) {
+  const log = createRouteLogger('/api/me/searches POST')
+  
+  try {
+    // Vérification de l'authentification
+    const user = await requireAuth(request)
+    log.info(`Sauvegarde recherche pour user ${user.id}`)
+
+    const body = await request.json()
+    const { query, brand, model, max_price, location, filters, resultsCount } = body
+
+    if (!query && !brand && !model) {
+      return NextResponse.json({
+        success: false,
+        error: 'Query, brand ou model requis'
+      }, { status: 400 })
+    }
+
+    // Formater les critères pour search_queries
+    const criteria = {
+      brand: brand || '',
+      model: model || '',
+      max_price: max_price || null,
+      location: location || null,
+      ...(filters || {})
+    }
+
+    // Construire la query string si nécessaire
+    const queryString = query || `${brand || ''} ${model || ''}`.trim()
+
+    // Créer le client Supabase avec le token de l'utilisateur pour RLS
+    const supabase = await getSupabaseServerClient(request)
+
+    // Insérer dans search_queries
+    // Stocker tout dans criteria_json (la table n'a peut-être pas query_text)
+    const insertData = {
+      user_id: user.id,
+      criteria_json: {
+        ...criteria,
+        query: queryString // Inclure la query dans criteria_json
+      },
+      results_count: resultsCount || 0,
+      created_at: new Date().toISOString()
+    }
+    
+    log.info(`Insertion recherche: ${queryString} (user: ${user.id}, results: ${resultsCount || 0})`)
+    
+    const { data: newSearch, error: insertError } = await supabase
+      .from('search_queries')
+      .insert(insertData)
+      .select()
+      .single()
+
+    if (insertError) {
+      log.error(`Erreur insertion recherche: ${insertError.message} (user: ${user.id})`)
+      throw new InternalServerError('Erreur lors de la sauvegarde de la recherche', {
+        dbError: insertError.message,
+      })
+    }
+
+    log.info(`Recherche sauvegardée: ${queryString} (id: ${newSearch.id}, user: ${user.id})`)
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: newSearch.id,
+        brand: criteria.brand,
+        model: criteria.model,
+        max_price: criteria.max_price || 0,
+        total_results: newSearch.results_count || 0,
+        created_at: newSearch.created_at,
+      }
+    })
+
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      log.warn('Non authentifié')
+      return createErrorResponse(error)
+    }
+
+    log.error(`Erreur serveur POST: ${error instanceof Error ? error.message : String(error)}`)
+    return createErrorResponse(error)
+  }
+}
+
+/**
+ * DELETE /api/me/searches
+ * Supprime l'historique de recherche de l'utilisateur
+ * Optionnel : supprimer une recherche spécifique avec ?id=xxx
+ */
+export async function DELETE(request: NextRequest) {
+  const log = createRouteLogger('/api/me/searches DELETE')
+  
+  try {
+    // Vérification de l'authentification
+    const user = await requireAuth(request)
+    log.info(`Suppression historique pour user ${user.id}`)
+
+    const { searchParams } = new URL(request.url)
+    const searchId = searchParams.get('id')
+
+    // Créer le client Supabase avec le token de l'utilisateur pour RLS
+    const supabase = await getSupabaseServerClient(request)
+
+    if (searchId) {
+      // Supprimer une recherche spécifique
+      const { error: deleteError } = await supabase
+        .from('search_queries')
+        .delete()
+        .eq('id', searchId)
+        .eq('user_id', user.id) // Sécurité : s'assurer que c'est bien l'utilisateur
+
+      if (deleteError) {
+        log.error(`Erreur suppression recherche: ${deleteError.message} (user: ${user.id})`)
+        throw new InternalServerError('Erreur lors de la suppression de la recherche', {
+          dbError: deleteError.message,
+        })
+      }
+
+      log.info(`Recherche supprimée: ${searchId} (user: ${user.id})`)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Recherche supprimée'
+      })
+    } else {
+      // Supprimer tout l'historique
+      // D'abord compter les recherches à supprimer
+      const { count } = await supabase
+        .from('search_queries')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      
+      // Puis supprimer
+      const { error: deleteError } = await supabase
+        .from('search_queries')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (deleteError) {
+        log.error(`Erreur suppression historique: ${deleteError.message} (user: ${user.id})`)
+        throw new InternalServerError('Erreur lors de la suppression de l\'historique', {
+          dbError: deleteError.message,
+        })
+      }
+
+      log.info(`Historique supprimé: ${count || 0} recherches (user: ${user.id})`)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Historique supprimé',
+        deletedCount: count || 0
+      })
+    }
+
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      log.warn('Non authentifié')
+      return createErrorResponse(error)
+    }
+
+    log.error(`Erreur serveur DELETE: ${error instanceof Error ? error.message : String(error)}`)
+    return createErrorResponse(error)
+  }
+}

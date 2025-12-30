@@ -4,9 +4,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
+import { AuthenticationError } from './errors'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Client avec service role key pour les opérations serveur
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -18,31 +21,58 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 /**
  * Récupère l'utilisateur authentifié depuis la requête
+ * Essaie d'abord les headers, puis les cookies Supabase
  * @param request - La requête Next.js
  * @returns L'utilisateur ou null si non authentifié
  */
 export async function getAuthenticatedUser(request: NextRequest): Promise<{ id: string; email: string } | null> {
   try {
-    // Récupérer le token depuis les headers
+    // Méthode 1 : Récupérer le token depuis les headers
     const authHeader = request.headers.get('authorization')
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '')
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+
+      if (!error && user) {
+        return {
+          id: user.id,
+          email: user.email || '',
+        }
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '')
+    // Méthode 2 : Récupérer depuis les cookies Supabase
+    const cookieStore = await cookies()
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      // @ts-ignore - cookies option exists but not in types
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set() {
+          // Ne pas modifier les cookies côté serveur
+        },
+        remove() {
+          // Ne pas modifier les cookies côté serveur
+        },
+      },
+    })
 
-    // Vérifier le token avec Supabase
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-    if (error || !user) {
-      return null
+    if (!sessionError && session?.user) {
+      return {
+        id: session.user.id,
+        email: session.user.email || '',
+      }
     }
 
-    return {
-      id: user.id,
-      email: user.email || '',
-    }
+    return null
   } catch (error) {
     console.error('Erreur authentification:', error)
     return null
@@ -68,7 +98,7 @@ export async function requireAuth(request: NextRequest): Promise<{ id: string; e
   const user = await getAuthenticatedUser(request)
 
   if (!user) {
-    throw new Error('Unauthorized: Authentication required')
+    throw new AuthenticationError('Authentication required')
   }
 
   return user
@@ -79,9 +109,48 @@ export async function requireAuth(request: NextRequest): Promise<{ id: string; e
  * Récupère l'utilisateur authentifié ou lance une erreur 401
  * @param request - La requête Next.js
  * @returns L'utilisateur authentifié
- * @throws Error avec message 'Unauthorized: Authentication required' si non authentifié
+ * @throws Error avec message &apos;Unauthorized: Authentication required&apos; si non authentifié
  */
 export async function getCurrentUserOrThrow(request: NextRequest): Promise<{ id: string; email: string }> {
   return requireAuth(request)
 }
 
+/**
+ * Vérifie si l'utilisateur a le rôle admin
+ * @param userId - L'ID de l'utilisateur
+ * @returns true si admin, false sinon
+ */
+export async function isAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (error || !data) {
+      return false
+    }
+
+    return data.role === 'admin'
+  } catch (error) {
+    console.error('Erreur vérification admin:', error)
+    return false
+  }
+}
+
+/**
+ * Vérifie si l'utilisateur authentifié est admin
+ * @param request - La requête Next.js
+ * @returns true si admin, false sinon
+ */
+export async function requireAdmin(request: NextRequest): Promise<{ id: string; email: string }> {
+  const user = await requireAuth(request)
+  
+  const admin = await isAdmin(user.id)
+  if (!admin) {
+    throw new AuthenticationError('Admin access required')
+  }
+  
+  return user
+}
