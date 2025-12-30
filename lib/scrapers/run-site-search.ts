@@ -232,32 +232,30 @@ async function scrapeOtherSite(
         const html = await scrapeWithZenRows(searchUrl, zenrowsParams, abortSignal, retryConfig)
     const htmlMs = Date.now() - startTime
     
-    // Logs debug pour extraction
-    if (siteName !== 'LeBonCoin') {
-      // Compter les cards/annonces potentielles
-      const cardMatches = html.match(/class=["'][^"']*(?:card|item|listing|ad|vehicule|annonce)[^"']*["']/gi)
-      const linkMatches = html.match(/href=["']([^"']*(?:\/ad\/|\/detail\/|\/voiture\/|\/a\/voiture|\/lst\/)[^"']*)["']/gi)
-      
-      // Extraire un snippet autour d'une card (300 chars)
-      let snippet = ''
-      if (cardMatches && cardMatches.length > 0) {
-        const cardIndex = html.indexOf(cardMatches[0])
-        if (cardIndex !== -1) {
-          snippet = html.substring(
-            Math.max(0, cardIndex - 150),
-            Math.min(html.length, cardIndex + 150)
-          )
-        }
+    // Logs debug pour extraction (cette fonction est uniquement pour les sites non-LeBonCoin)
+    // Compter les cards/annonces potentielles
+    const cardMatches = html.match(/class=["'][^"']*(?:card|item|listing|ad|vehicule|annonce)[^"']*["']/gi)
+    const linkMatches = html.match(/href=["']([^"']*(?:\/ad\/|\/detail\/|\/voiture\/|\/a\/voiture|\/lst\/)[^"']*)["']/gi)
+    
+    // Extraire un snippet autour d'une card (300 chars)
+    let snippet = ''
+    if (cardMatches && cardMatches.length > 0) {
+      const cardIndex = html.indexOf(cardMatches[0])
+      if (cardIndex !== -1) {
+        snippet = html.substring(
+          Math.max(0, cardIndex - 150),
+          Math.min(html.length, cardIndex + 150)
+        )
       }
-      
-      log.info(`[${siteName}][PARSER_DEBUG] Extraction debug`, {
-        pass,
-        cardsFound: cardMatches?.length || 0,
-        linksFound: linkMatches?.length || 0,
-        htmlLength: html.length,
-        snippet: snippet.substring(0, 300),
-      })
     }
+    
+    log.info(`[${siteName}][PARSER_DEBUG] Extraction debug`, {
+      pass,
+      cardsFound: cardMatches?.length || 0,
+      linksFound: linkMatches?.length || 0,
+      htmlLength: html.length,
+      snippet: snippet.substring(0, 300),
+    })
     
     // Appeler les parsers selon le site
     let parsedListings: ListingResponse[] = []
