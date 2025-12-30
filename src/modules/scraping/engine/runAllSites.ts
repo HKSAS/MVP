@@ -22,7 +22,7 @@ export interface RunAllSitesOptions {
   concurrency?: number // Nombre max de sites en parallèle
   onSiteComplete?: (
     site: string,
-    result: SiteResult,
+    result: SiteRunResult,
     durationMs: number
   ) => Promise<void>
 }

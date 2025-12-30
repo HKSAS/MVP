@@ -42,9 +42,27 @@ export async function runSiteSearch(
   
   const result = await oldRunSiteSearch(siteName, query, [])
   
-  // Mapper les listings depuis le format ancien vers ListingNormalized
-  // TODO: Améliorer le mapping une fois la migration complète
-  const listings: ListingNormalized[] = []
+  // Récupérer les listings depuis le résultat (propriété supplémentaire)
+  const resultWithListings = result as typeof result & { listings?: ListingNormalized[] }
+  const rawListings = resultWithListings.listings || []
+  
+  // Mapper les listings depuis ListingResponse vers ListingNormalized
+  const listings: ListingNormalized[] = rawListings.map((listing: any) => ({
+    id: listing.id || listing.external_id || '',
+    external_id: listing.external_id || listing.id || '',
+    title: listing.title || '',
+    price: listing.price_eur ?? listing.price ?? null,
+    year: listing.year ?? null,
+    mileage: listing.mileage_km ?? listing.mileage ?? null,
+    fuel: listing.fuelType || listing.fuel || null,
+    gearbox: listing.gearbox || null,
+    city: listing.city || null,
+    url: listing.url || '',
+    image_url: listing.imageUrl || listing.image_url || null,
+    source: listing.source || listing.sourceSite || siteName,
+    score_ia: listing.score_ia ?? null,
+    score_final: listing.score_final ?? listing.score_ia ?? null,
+  }))
   
   // Adapter le résultat
   return {
