@@ -67,13 +67,13 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] text-white min-h-screen pt-20">
+    <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
+      <section className="relative pt-16 sm:pt-24 md:pt-32 pb-12 sm:pb-16 md:pb-20 px-4 sm:px-6">
         {/* Gradient Background Effects */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-0 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+          <div className="absolute top-20 left-1/3 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-0 right-1/3 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
         </div>
         
         <div className="max-w-4xl mx-auto text-center relative z-10">
@@ -81,20 +81,20 @@ export default function ContactPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
-            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-4 py-1">
-              <MessageCircle className="size-4 mr-2 inline" />
+            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm">
+              <MessageCircle className="size-3 sm:size-4 mr-2 inline" />
               Contactez-nous
             </Badge>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-white">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-medium text-white px-2">
               Nous sommes là
               <br />
               <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
                 pour vous aider
               </span>
             </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
               Une question sur votre projet automobile ? Notre équipe vous répond rapidement.
             </p>
           </motion.div>
@@ -102,9 +102,9 @@ export default function ContactPage() {
       </section>
 
       {/* Contact Content */}
-      <section className="py-12 px-4 relative">
+      <section className="py-8 sm:py-12 px-4 sm:px-6 relative">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
             {/* Contact Info */}
             <motion.div 
               className="space-y-6"
@@ -169,31 +169,31 @@ export default function ContactPage() {
 
               {/* Calendly Card */}
               <Card className="bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-xl border-green-500/30 hover:bg-green-600/20 transition-all">
-                <CardContent className="p-6">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/20">
-                        <Calendar className="size-6 text-white" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/20">
+                        <Calendar className="size-5 sm:size-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-white font-medium mb-1">Réserver un rendez-vous</h3>
-                        <p className="text-gray-400 text-sm">
+                        <h3 className="text-sm sm:text-base text-white font-medium mb-1">Réserver un rendez-vous</h3>
+                        <p className="text-xs sm:text-sm text-gray-400">
                           Planifiez un appel de 30 minutes pour discuter de votre projet
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         onClick={openCalendlyPopup}
-                        className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
+                        className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white text-xs sm:text-sm h-9 sm:h-10"
                       >
-                        <Calendar className="size-4 mr-2" />
+                        <Calendar className="size-3 sm:size-4 mr-2" />
                         Réserver maintenant
                       </Button>
                       <Button
                         variant="outline"
                         onClick={openCalendlyInNewTab}
-                        className="border-white/20 text-white hover:bg-white/10"
+                        className="border-white/20 text-white hover:bg-white/10 text-xs sm:text-sm h-9 sm:h-10"
                         title="Ouvrir Calendly dans un nouvel onglet"
                       >
                         ↗
@@ -212,15 +212,15 @@ export default function ContactPage() {
               transition={{ duration: 0.6, delay: 0.4 }}
             >
               <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white text-2xl">
-                    <Send className="size-6 text-blue-400" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-white text-xl sm:text-2xl">
+                    <Send className="size-5 sm:size-6 text-blue-400" />
                     Envoyez-nous un message
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
+                <CardContent className="p-4 sm:p-6">
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="name" className="text-white">Nom complet *</Label>
                         <Input
@@ -246,33 +246,33 @@ export default function ContactPage() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-white">Téléphone</Label>
+                        <Label htmlFor="phone" className="text-sm sm:text-base text-white">Téléphone</Label>
                         <Input
                           id="phone"
                           type="tel"
                           placeholder="06 12 34 56 78"
                           value={formData.phone}
                           onChange={handleChange}
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500 text-sm sm:text-base h-10 sm:h-11"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="subject" className="text-white">Sujet *</Label>
+                        <Label htmlFor="subject" className="text-sm sm:text-base text-white">Sujet *</Label>
                         <Input
                           id="subject"
                           placeholder="Objet de votre message"
                           value={formData.subject}
                           onChange={handleChange}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500 text-sm sm:text-base h-10 sm:h-11"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="message" className="text-white">Expliquez votre projet auto *</Label>
+                      <Label htmlFor="message" className="text-sm sm:text-base text-white">Expliquez votre projet auto *</Label>
                       <Textarea
                         id="message"
                         placeholder="Décrivez-nous votre projet, vos besoins, vos questions..."
@@ -280,30 +280,30 @@ export default function ContactPage() {
                         value={formData.message}
                         onChange={handleChange}
                         required
-                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500 resize-none"
+                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500 resize-none text-sm sm:text-base"
                       />
                     </div>
 
                     <Button
                       type="submit"
                       size="lg"
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-full"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-full h-11 sm:h-12 text-sm sm:text-base"
                       disabled={sending}
                     >
                       {sending ? (
                         <>
-                          <Send className="size-5 mr-2 animate-pulse" />
-                          Envoi en cours...
+                          <Send className="size-4 sm:size-5 mr-2 animate-pulse" />
+                          <span>Envoi en cours...</span>
                         </>
                       ) : (
                         <>
-                          <Send className="size-5 mr-2" />
-                          Envoyer le message
+                          <Send className="size-4 sm:size-5 mr-2" />
+                          <span>Envoyer le message</span>
                         </>
                       )}
                     </Button>
 
-                    <p className="text-sm text-gray-500 text-center">
+                    <p className="text-xs sm:text-sm text-gray-500 text-center">
                       * Champs obligatoires. Nous nous engageons à répondre sous 24h ouvrées.
                     </p>
                   </form>
@@ -315,7 +315,7 @@ export default function ContactPage() {
       </section>
 
       {/* Calendly Section */}
-      <section className="py-12 px-4 relative">
+      <section className="py-8 sm:py-12 px-4 sm:px-6 relative">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -324,42 +324,43 @@ export default function ContactPage() {
             transition={{ duration: 0.6 }}
           >
             <Card className="bg-gradient-to-br from-green-600/10 via-blue-600/10 to-purple-600/10 backdrop-blur-xl border-green-500/30 shadow-2xl">
-              <CardContent className="p-8 md:p-12">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="flex-1 text-center md:text-left">
-                    <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2 mb-4">
-                      <Calendar className="size-5 text-green-400" />
-                      <span className="text-green-400 text-sm font-medium">Rendez-vous en ligne</span>
+              <CardContent className="p-6 sm:p-8 md:p-12">
+                <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+                  <div className="flex-1 text-center md:text-left w-full">
+                    <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 mb-4">
+                      <Calendar className="size-4 sm:size-5 text-green-400" />
+                      <span className="text-green-400 text-xs sm:text-sm font-medium">Rendez-vous en ligne</span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-medium text-white mb-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-3 sm:mb-4">
                       Préférez un appel ?
                     </h2>
-                    <p className="text-lg text-gray-400 mb-6 max-w-2xl">
+                    <p className="text-sm sm:text-base md:text-lg text-gray-400 mb-4 sm:mb-6 max-w-2xl mx-auto md:mx-0">
                       Réservez un créneau de 30 minutes pour discuter de votre projet automobile. Nous répondrons à toutes vos questions et vous guiderons dans votre recherche.
                     </p>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                       <Button
                         onClick={() => setShowCalendly(true)}
                         size="lg"
-                        className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg shadow-green-500/25"
+                        className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg shadow-green-500/25 w-full sm:w-auto text-sm sm:text-base h-10 sm:h-11"
                       >
-                        <Calendar className="size-5 mr-2" />
-                        Réserver un appel gratuit
+                        <Calendar className="size-4 sm:size-5 mr-2" />
+                        <span>Réserver un appel gratuit</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="lg"
                         onClick={openCalendlyInNewTab}
-                        className="border-white/20 text-white hover:bg-white/10"
+                        className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto text-xs sm:text-sm h-10 sm:h-11"
                         title="Ouvrir Calendly dans un nouvel onglet"
                       >
-                        ↗ Ouvrir dans un nouvel onglet
+                        <span className="hidden sm:inline">↗ Ouvrir dans un nouvel onglet</span>
+                        <span className="sm:hidden">↗ Nouvel onglet</span>
                       </Button>
                     </div>
                   </div>
-                  <div className="flex-shrink-0">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center shadow-2xl shadow-green-500/30">
-                      <Calendar className="size-16 text-white" />
+                  <div className="flex-shrink-0 hidden md:flex">
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center shadow-2xl shadow-green-500/30">
+                      <Calendar className="size-12 md:size-16 text-white" />
                     </div>
                   </div>
                 </div>
@@ -371,15 +372,15 @@ export default function ContactPage() {
 
       {/* Dialog Calendly Inline */}
       <Dialog open={showCalendly} onOpenChange={setShowCalendly}>
-        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-5xl max-h-[90vh] p-0 overflow-hidden">
-          <DialogHeader className="p-6 border-b border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl font-medium text-white flex items-center gap-2">
-                  <Calendar className="size-6 text-green-400" />
-                  Réserver un rendez-vous
+        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-5xl max-h-[95vh] sm:max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
+          <DialogHeader className="p-4 sm:p-6 border-b border-white/10">
+            <div className="flex items-start sm:items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg sm:text-xl md:text-2xl font-medium text-white flex items-center gap-2">
+                  <Calendar className="size-5 sm:size-6 text-green-400 flex-shrink-0" />
+                  <span>Réserver un rendez-vous</span>
                 </DialogTitle>
-                <DialogDescription className="text-gray-400 mt-2">
+                <DialogDescription className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
                   Sélectionnez un créneau de 30 minutes pour discuter de votre projet automobile
                 </DialogDescription>
               </div>
@@ -387,13 +388,13 @@ export default function ContactPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowCalendly(false)}
-                className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+                className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
               >
-                <X className="size-5" />
+                <X className="size-4 sm:size-5" />
               </Button>
             </div>
           </DialogHeader>
-          <div className="overflow-hidden" style={{ height: 'calc(90vh - 120px)' }}>
+          <div className="overflow-hidden" style={{ height: 'calc(95vh - 100px)', minHeight: '400px' }}>
             {/* Widget Calendly en iframe direct */}
             {showCalendly && (
               <iframe
