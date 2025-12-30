@@ -353,47 +353,49 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="space-y-6 sm:space-y-8"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white px-4">
-              Prêt à commencer ?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Rejoignez des milliers d&apos;utilisateurs qui ont déjà trouvé leur voiture idéale grâce à notre IA.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4">
-              <Button 
-                size="lg" 
-                asChild
-                className="bg-white text-black hover:bg-gray-200 px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full transition-all w-full sm:w-auto"
-              >
-                <Link href="/recherche" className="flex items-center justify-center gap-2">
-                  Commencer ma recherche
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                asChild
-                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full backdrop-blur-sm transition-all w-full sm:w-auto"
-              >
-                <Link href="/inscription" className="flex items-center justify-center">
-                  Créer un compte
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* CTA Section - Masquée si l'utilisateur est connecté */}
+      {!isAuthenticated && (
+        <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="space-y-6 sm:space-y-8"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white px-4">
+                Prêt à commencer ?
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
+                Rejoignez des milliers d&apos;utilisateurs qui ont déjà trouvé leur voiture idéale grâce à notre IA.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4">
+                <Button 
+                  size="lg" 
+                  asChild
+                  className="bg-white text-black hover:bg-gray-200 px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full transition-all w-full sm:w-auto"
+                >
+                  <Link href="/recherche" className="flex items-center justify-center gap-2">
+                    Commencer ma recherche
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  asChild
+                  className="border border-white/20 bg-white/5 hover:bg-white/10 text-white px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full backdrop-blur-sm transition-all w-full sm:w-auto"
+                >
+                  <Link href="/signup" className="flex items-center justify-center">
+                    Créer un compte
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
