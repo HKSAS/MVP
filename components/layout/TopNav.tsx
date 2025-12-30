@@ -83,14 +83,14 @@ export default function TopNav() {
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
             <motion.div
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
-              className="relative h-20 w-20 md:h-24 md:w-24"
+              className="relative h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20"
             >
               <Image
                 src="/logo.png"
@@ -104,7 +104,7 @@ export default function TopNav() {
                 }}
               />
             </motion.div>
-            <span className="text-xl md:text-2xl font-light text-white group-hover:text-blue-400 transition-colors tracking-wide">Autoval IA</span>
+            <span className="text-lg sm:text-xl md:text-2xl font-light text-white group-hover:text-blue-400 transition-colors tracking-wide hidden sm:inline">Autoval IA</span>
           </Link>
 
           {/* Desktop Navigation */}

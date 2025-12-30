@@ -540,37 +540,37 @@ export default function SearchResultsPage() {
         <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
       </div>
       
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
         {/* En-tête de page */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
+            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs sm:text-sm">
               {searchCriteria.resultsCount} annonces
             </Badge>
-            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30 text-xs sm:text-sm">
               {searchCriteria.platformsCount} plateformes
             </Badge>
-            <Badge variant="outline" className="bg-white/10 text-white border-white/20">
+            <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs sm:text-sm">
               {searchCriteria.brand} {searchCriteria.model}
             </Badge>
           </div>
 
-          <h1 className="text-white mb-2">Résultats de la recherche IA</h1>
-          <p className="text-gray-400 max-w-2xl">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl text-white mb-2">Résultats de la recherche IA</h1>
+          <p className="text-sm sm:text-base text-gray-400 max-w-2xl">
             L'IA a analysé les annonces et calculé un score de fiabilité pour chaque véhicule.
           </p>
         </div>
 
         {/* Barre d'actions */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-4 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center flex-1 w-full sm:w-auto">
               <div className="flex items-center gap-2">
-                <Filter className="size-4 text-gray-400" />
-                <span className="text-sm text-white">Trier par :</span>
+                <Filter className="size-3 sm:size-4 text-gray-400" />
+                <span className="text-xs sm:text-sm text-white">Trier par :</span>
               </div>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -583,10 +583,11 @@ export default function SearchResultsPage() {
               </Select>
             </div>
 
-            <Button variant="outline" asChild>
-              <Link href="/recherche">
-                <Search className="size-4 mr-2" />
-                Nouvelle recherche
+            <Button variant="outline" asChild className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
+              <Link href="/recherche" className="flex items-center justify-center">
+                <Search className="size-3 sm:size-4 mr-2" />
+                <span className="hidden sm:inline">Nouvelle recherche</span>
+                <span className="sm:hidden">Rechercher</span>
               </Link>
             </Button>
           </div>
@@ -594,9 +595,9 @@ export default function SearchResultsPage() {
 
         {/* Section "Par site" */}
         {siteResults.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-white mb-4">Détail par site</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Détail par site</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {siteResults.map((siteResult) => (
                 <Card key={siteResult.site} className="bg-white/5 backdrop-blur-xl border-white/10">
                   <CardContent className="p-4">

@@ -255,22 +255,22 @@ export default function CheckoutPage() {
           transition={{ duration: 0.6 }}
         >
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-            <Link href="/tarif" className="hover:text-blue-400 transition-colors">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 overflow-x-auto">
+            <Link href="/tarif" className="hover:text-blue-400 transition-colors whitespace-nowrap">
               Tarifs
             </Link>
-            <ChevronRight className="size-4" />
-            <span className="text-white">Paiement</span>
+            <ChevronRight className="size-3 sm:size-4 flex-shrink-0" />
+            <span className="text-white whitespace-nowrap">Paiement</span>
           </div>
 
           {/* Titre */}
           <div className="text-center max-w-2xl mx-auto">
-            <h1 className="text-white mb-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white mb-2 px-2">
               {packInfo.isSubscription
                 ? "Finaliser mon abonnement"
                 : "Finaliser ma commande"}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-sm sm:text-base text-gray-400 px-4">
               {packInfo.isSubscription
                 ? "Accès immédiat à l'analyse d'annonces par IA. Sans engagement."
                 : "Accompagnement complet pour votre achat automobile. Prestation unique."}
@@ -303,37 +303,37 @@ export default function CheckoutPage() {
       )}
 
       {/* Layout 2 colonnes */}
-      <section className="relative py-12">
+      <section className="relative py-6 sm:py-8 md:py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="grid lg:grid-cols-2 gap-8"
+            className="grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             {/* COLONNE GAUCHE — Récapitulatif simplifié */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-              <CardContent className="p-8">
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 mb-6">
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10 order-2 lg:order-1">
+              <CardContent className="p-4 sm:p-6 md:p-8">
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 mb-4 sm:mb-6 text-xs sm:text-sm">
                   {packInfo.name}
                 </Badge>
 
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-white">{packInfo.price}€</span>
-                    <span className="text-gray-400">
+                    <span className="text-2xl sm:text-3xl md:text-4xl text-white font-medium">{packInfo.price}€</span>
+                    <span className="text-sm sm:text-base text-gray-400">
                       {packInfo.isSubscription ? " / mois" : " / prestation"}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-400">
                     {packInfo.isSubscription
                       ? "Sans engagement • Résiliation en 1 clic"
                       : "Prestation unique • Accompagnement complet"}
                   </p>
                 </div>
 
-                <div className="border-t border-white/10 pt-6 space-y-3">
-                  <p className="text-white mb-4">
+                <div className="border-t border-white/10 pt-4 sm:pt-6 space-y-2 sm:space-y-3">
+                  <p className="text-sm sm:text-base text-white mb-3 sm:mb-4">
                     {packInfo.isSubscription
                       ? "Inclus dans l'abonnement :"
                       : "Inclus dans le pack :"}
@@ -346,9 +346,9 @@ export default function CheckoutPage() {
                         "Estimation du prix marché",
                         "Utilisation illimitée",
                       ].map((feature) => (
-                        <div key={feature} className="flex items-start gap-3">
-                          <Check className="size-5 text-green-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-300">{feature}</span>
+                        <div key={feature} className="flex items-start gap-2 sm:gap-3">
+                          <Check className="size-4 sm:size-5 text-green-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-xs sm:text-sm text-gray-300">{feature}</span>
                         </div>
                       ))
                     : [
@@ -358,32 +358,32 @@ export default function CheckoutPage() {
                         "Vérification prix marché",
                         "Accompagnement complet par nos experts",
                       ].map((feature) => (
-                        <div key={feature} className="flex items-start gap-3">
-                          <Check className="size-5 text-green-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-300">{feature}</span>
+                        <div key={feature} className="flex items-start gap-2 sm:gap-3">
+                          <Check className="size-4 sm:size-5 text-green-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-xs sm:text-sm text-gray-300">{feature}</span>
                         </div>
                       ))}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-white/10 flex items-center gap-2 text-sm text-gray-400">
-                  <Shield className="size-4 text-blue-400" />
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                  <Shield className="size-3 sm:size-4 text-blue-400 flex-shrink-0" />
                   <span>Paiement 100% sécurisé via Stripe</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* COLONNE DROITE — Paiement */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-              <CardContent className="p-8">
-                <h2 className="text-white mb-2">Paiement sécurisé</h2>
-                <p className="text-sm text-gray-400 mb-6">
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10 order-1 lg:order-2">
+              <CardContent className="p-4 sm:p-6 md:p-8">
+                <h2 className="text-lg sm:text-xl md:text-2xl text-white mb-2">Paiement sécurisé</h2>
+                <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6">
                   Vous serez redirigé vers Stripe pour finaliser le paiement
                 </p>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                   {/* Email */}
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white">Email de facturation</Label>
+                    <Label htmlFor="email" className="text-sm sm:text-base text-white">Email de facturation</Label>
                     <Input
                       id="email"
                       type="email"
@@ -392,21 +392,22 @@ export default function CheckoutPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={state === "loading"}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-sm sm:text-base h-10 sm:h-11"
                     />
                   </div>
 
                   {/* CGV */}
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <Checkbox
                       id="terms"
                       checked={acceptTerms}
                       onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                       disabled={state === "loading"}
+                      className="mt-0.5"
                     />
                     <Label
                       htmlFor="terms"
-                      className="text-sm text-gray-300 cursor-pointer leading-relaxed"
+                      className="text-xs sm:text-sm text-gray-300 cursor-pointer leading-relaxed"
                     >
                       J&apos;accepte les{" "}
                       <Link href="/cgv" className="text-blue-400 hover:text-blue-300 hover:underline">
@@ -423,7 +424,7 @@ export default function CheckoutPage() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white text-sm sm:text-base h-11 sm:h-12"
                     disabled={!acceptTerms || !email || !email.trim() || state === "loading"}
                   >
                     {state === "loading" ? (

@@ -185,26 +185,26 @@ ${contactForm.message || ''}`,
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 px-4">
+      <section className="relative pt-16 sm:pt-20 md:pt-24 pb-12 sm:pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-10 md:mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-4 py-2 mb-6">
-              <Sparkles className="size-4 mr-2 inline" />
+            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 mb-4 sm:mb-6 text-xs sm:text-sm">
+              <Sparkles className="size-3 sm:size-4 mr-2 inline" />
               Recherche propulsée par l&apos;IA
             </Badge>
-            <h1 className="text-5xl md:text-6xl font-medium text-white mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white mb-3 sm:mb-4 px-2">
               Rechercher une voiture
               <br />
               <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
                 avec l&apos;IA
               </span>
             </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
               Notre IA analyse des milliers d&apos;annonces pour vous proposer les meilleures offres
             </p>
           </motion.div>
@@ -216,55 +216,55 @@ ${contactForm.message || ''}`,
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Card className="max-w-5xl mx-auto bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 md:p-8">
                 {error && (
-                  <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
+                  <div className="mb-3 sm:mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-2 sm:p-3 text-xs sm:text-sm text-red-400">
                     {error}
                   </div>
                 )}
-                <form onSubmit={handleSearch} className="space-y-6">
+                <form onSubmit={handleSearch} className="space-y-4 sm:space-y-6">
                   {/* Main Search Fields */}
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="brand" className="text-white">Marque</Label>
+                      <Label htmlFor="brand" className="text-sm sm:text-base text-white">Marque</Label>
                       <Input
                         id="brand"
                         placeholder="Ex: Audi, Renault..."
                         value={brand}
                         onChange={(e) => setBrand(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
                         disabled={searching}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="model" className="text-white">Modèle</Label>
+                      <Label htmlFor="model" className="text-sm sm:text-base text-white">Modèle</Label>
                       <Input
                         id="model"
                         placeholder="Ex: A3, Clio..."
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
                         disabled={searching}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="budget" className="text-white">Budget maximum (€)</Label>
+                      <Label htmlFor="budget" className="text-sm sm:text-base text-white">Budget maximum (€)</Label>
                       <Input
                         id="budget"
                         type="number"
                         placeholder="Ex: 25000"
                         value={budget}
                         onChange={(e) => setBudget(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
                         disabled={searching}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="fuel" className="text-white">Type de carburant</Label>
+                      <Label htmlFor="fuel" className="text-sm sm:text-base text-white">Type de carburant</Label>
                       <Select value={fuel} onValueChange={setFuel} disabled={searching}>
                         <SelectTrigger 
                           id="fuel"
-                          className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20"
+                          className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
                         >
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
@@ -284,40 +284,40 @@ ${contactForm.message || ''}`,
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 transition-all"
+                    className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 transition-all h-11 sm:h-12 text-sm sm:text-base"
                     disabled={searching}
                   >
                     {searching ? (
                       <>
-                        <Loader2 className="size-5 mr-2 animate-spin" />
-                        Analyse en cours...
+                        <Loader2 className="size-4 sm:size-5 mr-2 animate-spin" />
+                        <span>Analyse en cours...</span>
                       </>
                     ) : (
                       <>
-                        <Search className="size-5 mr-2" />
-                        Lancer la recherche IA
+                        <Search className="size-4 sm:size-5 mr-2" />
+                        <span>Lancer la recherche IA</span>
                       </>
                     )}
                   </Button>
                 </form>
 
                 {/* Quick Stats */}
-                <div className="mt-6 pt-6 border-t border-white/10">
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                     <div>
-                      <div className="text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         50K+
                       </div>
                       <div className="text-xs text-gray-400 mt-1">Annonces analysées</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         98%
                       </div>
                       <div className="text-xs text-gray-400 mt-1">Précision IA</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         24/7
                       </div>
                       <div className="text-xs text-gray-400 mt-1">Mise à jour</div>
@@ -329,7 +329,7 @@ ${contactForm.message || ''}`,
           </motion.div>
 
           {/* Bouton Contact */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 sm:mt-8 text-center px-4">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -337,12 +337,13 @@ ${contactForm.message || ''}`,
             >
               <Button
                 variant="ghost"
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white text-sm sm:text-base"
                 onClick={() => router.push('/contact')}
                 size="lg"
               >
-                <HelpCircle className="size-4 mr-2" />
-                Pas sûr du modèle idéal ? Contactez-nous
+                <HelpCircle className="size-3 sm:size-4 mr-2" />
+                <span className="hidden sm:inline">Pas sûr du modèle idéal ? Contactez-nous</span>
+                <span className="sm:hidden">Besoin d&apos;aide ?</span>
               </Button>
             </motion.div>
           </div>
