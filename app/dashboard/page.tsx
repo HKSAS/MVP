@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { RecommendationsList } from "@/components/favorites/RecommendationsList";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -285,6 +286,53 @@ export default function DashboardPage() {
 
   const handleReviewResults = (search: UserSearch) => {
     router.push(`/dashboard/recherches/${search.id}`);
+  };
+
+  const handleViewReport = async (ad: AnalyzedAd) => {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        router.push('/dashboard/analyses');
+        return;
+      }
+
+      // Récupérer les résultats complets de l'analyse depuis l'API avec l'ID spécifique
+      const response = await fetch(`/api/me/analyzed-listings?id=${ad.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération de l\'analyse');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // Si on a des résultats complets, les utiliser
+        if (data.data.analysis_result) {
+          localStorage.setItem('analysisResult', JSON.stringify(data.data.analysis_result));
+          localStorage.setItem('analysisId', ad.id);
+          localStorage.setItem('analysisUrl', ad.url || data.data.url || '');
+          router.push('/analyser?fromHistory=true');
+          return;
+        } else if (ad.url) {
+          // Si pas de résultats complets mais qu'on a l'URL, ouvrir l'URL
+          window.open(ad.url, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
+
+      // Fallback : rediriger vers la page d'analyses
+      router.push('/dashboard/analyses');
+    } catch (error) {
+      console.error('Erreur lors du chargement du rapport:', error);
+      // Fallback : rediriger vers la page d'analyses
+      router.push('/dashboard/analyses');
+    }
   };
 
   const handleLogout = async () => {
@@ -599,7 +647,7 @@ export default function DashboardPage() {
                                 variant="outline" 
                                 size="sm" 
                                 className="bg-white/5 border-white/20 text-white hover:bg-white/10 w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
-                                onClick={() => router.push(`/dashboard/analyses/${ad.id}`)}
+                                onClick={() => handleViewReport(ad)}
                               >
                                 <span className="hidden sm:inline">Voir le rapport</span>
                                 <span className="sm:hidden">Voir</span>
