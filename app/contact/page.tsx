@@ -314,62 +314,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Calendly Section */}
-      <section className="py-8 sm:py-12 px-4 sm:px-6 relative">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <Card className="bg-gradient-to-br from-green-600/10 via-blue-600/10 to-purple-600/10 backdrop-blur-xl border-green-500/30 shadow-2xl">
-              <CardContent className="p-6 sm:p-8 md:p-12">
-                <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
-                  <div className="flex-1 text-center md:text-left w-full">
-                    <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 mb-4">
-                      <Calendar className="size-4 sm:size-5 text-green-400" />
-                      <span className="text-green-400 text-xs sm:text-sm font-medium">Rendez-vous en ligne</span>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-3 sm:mb-4">
-                      Préférez un appel ?
-                    </h2>
-                    <p className="text-sm sm:text-base md:text-lg text-gray-400 mb-4 sm:mb-6 max-w-2xl mx-auto md:mx-0">
-                      Réservez un créneau de 30 minutes pour discuter de votre projet automobile. Nous répondrons à toutes vos questions et vous guiderons dans votre recherche.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                      <Button
-                        onClick={() => setShowCalendly(true)}
-                        size="lg"
-                        className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg shadow-green-500/25 w-full sm:w-auto text-sm sm:text-base h-10 sm:h-11"
-                      >
-                        <Calendar className="size-4 sm:size-5 mr-2" />
-                        <span>Réserver un appel gratuit</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={openCalendlyInNewTab}
-                        className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto text-xs sm:text-sm h-10 sm:h-11"
-                        title="Ouvrir Calendly dans un nouvel onglet"
-                      >
-                        <span className="hidden sm:inline">↗ Ouvrir dans un nouvel onglet</span>
-                        <span className="sm:hidden">↗ Nouvel onglet</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 hidden md:flex">
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center shadow-2xl shadow-green-500/30">
-                      <Calendar className="size-12 md:size-16 text-white" />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Dialog Calendly Inline */}
       <Dialog open={showCalendly} onOpenChange={setShowCalendly}>
         <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-5xl max-h-[95vh] sm:max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
