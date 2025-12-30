@@ -588,13 +588,15 @@ export async function runSiteSearch(
   return {
     site: siteName,
     ok,
-    items: allSiteListings,
+    items: allSiteListings.length,
     ms: totalMs,
-    strategyUsed: finalStrategy,
+    strategy: finalStrategy,
     attempts,
     // Ne pas mettre d'error si ok=true (c'est juste "0 résultats", pas une erreur)
     error: !ok ? (allSiteListings.length === 0 ? 'Aucun résultat trouvé après toutes les passes' : undefined) : undefined,
-  }
+    // Propriété supplémentaire pour retourner les listings (pas dans le type SiteResult mais utilisée dans route.ts)
+    listings: allSiteListings,
+  } as SiteResult & { listings: ListingResponse[] }
   } catch (error) {
     // Nettoyer le timeout global en cas d'erreur
     clearTimeout(globalTimeoutId)
@@ -614,8 +616,9 @@ export async function runSiteSearch(
     return {
       site: siteName,
       ok: false, // Erreur technique
-      items: [],
+      items: 0,
       ms: totalMs,
+      strategy: 'http-html',
       error: isTimeout ? `Timeout après ${globalTimeoutMs}ms` : errorMsg,
       attempts,
     }

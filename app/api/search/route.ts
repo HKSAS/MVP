@@ -1536,18 +1536,22 @@ export async function POST(request: NextRequest) {
     const results = await Promise.allSettled(tasks)
 
     // Transformer en SiteResultWithListings[] (usage interne)
-    // Note: runSiteSearch retourne items: ListingResponse[] même si le type déclaré dit number
+    // Note: runSiteSearch retourne items: number et listings: ListingResponse[] (propriété supplémentaire)
     const siteResults: SiteResultWithListings[] = results.map((result, index) => {
       if (result.status === 'fulfilled') {
-        const siteResult = result.value as any // Cast car le type déclaré est incorrect
+        const siteResult = result.value as any // Cast pour accéder à listings
+        // Utiliser listings si disponible, sinon items (pour compatibilité)
+        const listings = (siteResult.listings && Array.isArray(siteResult.listings)) 
+          ? siteResult.listings 
+          : (Array.isArray(siteResult.items) ? siteResult.items : [])
         // Distinguer "ok mais 0 résultats" vs "erreur technique"
         // ok: true si le scraping a fonctionné (même avec 0 résultats)
         // ok: false uniquement si erreur technique (timeout, exception, etc.)
         return {
           ...siteResult,
-          items: Array.isArray(siteResult.items) ? siteResult.items : [],
+          items: listings,
           // Si items.length === 0 mais pas d'erreur explicite, c'est "ok mais 0 résultats"
-          ok: siteResult.ok !== false && (Array.isArray(siteResult.items) ? siteResult.items.length === 0 : true)
+          ok: siteResult.ok !== false && listings.length === 0
             ? true 
             : siteResult.ok,
         }
