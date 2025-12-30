@@ -5,6 +5,8 @@ import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse, AuthenticationError } from '@/lib/errors'
 import type { GetFavoritesQuery, GetFavoritesResponse } from '@/lib/types/favorites'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('/api/favorites GET')
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

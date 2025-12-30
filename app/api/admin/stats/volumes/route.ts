@@ -4,6 +4,8 @@ import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse } from '@/lib/errors'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/stats/volumes
  * Retourne les statistiques de volume pour ai_searches et ai_analyses

@@ -4,6 +4,8 @@ import { createErrorResponse } from '@/lib/errors'
 import { createRouteLogger } from '@/lib/logger'
 import { AuthenticationError } from '@/lib/errors'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('api/me/listings')
 
 export async function GET(request: NextRequest) {

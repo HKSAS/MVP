@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireActiveSubscription, createUnauthorizedResponse } from '@/lib/middleware/subscription'
 import { createRouteLogger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 const logger = createRouteLogger('/api/premium/example')
 
 export async function GET(req: NextRequest) {

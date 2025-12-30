@@ -5,6 +5,8 @@ import type { Favorite, FavoriteResponse, ListingResponse } from '@/lib/types'
 import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse, AuthenticationError, InternalServerError } from '@/lib/errors'
 
+export const dynamic = 'force-dynamic'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 

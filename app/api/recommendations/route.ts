@@ -8,6 +8,8 @@ import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse, AuthenticationError } from '@/lib/errors'
 import type { GetRecommendationsResponse, Recommendation } from '@/lib/types/favorites'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('/api/recommendations')
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

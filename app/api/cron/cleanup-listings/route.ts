@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createRouteLogger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('/api/cron/cleanup-listings')
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
