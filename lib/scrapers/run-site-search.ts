@@ -190,23 +190,23 @@ async function scrapeOtherSite(
       break
     case 'ParuVendu':
       const brandSlug = query.brand.toLowerCase().trim().replace(/\s+/g, '-')
-      const modelSlug = query.model.toLowerCase().trim().replace(/\s+/g, '-')
+      const modelSlug = (query.model || '').toLowerCase().trim().replace(/\s+/g, '-')
       searchUrl = `https://www.paruvendu.fr/a/voiture-occasion/${encodeURIComponent(brandSlug)}/${encodeURIComponent(modelSlug)}/`
       break
     case 'AutoScout24':
-      const baseModel = query.model.toLowerCase().replace(/\s+/g, ' ').replace(/\s+\d+[a-zA-Z]*$/, '').trim()
+      const baseModel = (query.model || '').toLowerCase().replace(/\s+/g, ' ').replace(/\s+\d+[a-zA-Z]*$/, '').trim()
       const brandSlug2 = query.brand.toLowerCase().replace(/\s+/g, '-')
       const modelSlug2 = baseModel.replace(/\s+/g, '-')
       searchUrl = `https://www.autoscout24.fr/lst/${brandSlug2}/${modelSlug2}?price=${query.maxPrice}`
       break
     case 'LeParking':
-      const searchTerm = `${query.brand} ${query.model}`.toLowerCase().trim().replace(/\s+/g, '-')
+      const searchTerm = `${query.brand} ${query.model || ''}`.toLowerCase().trim().replace(/\s+/g, '-')
       searchUrl = `https://www.leparking.fr/voiture/${encodeURIComponent(searchTerm)}/prix-max-${query.maxPrice}`
       break
     case 'ProCarLease':
       const params = new URLSearchParams({
         marque: query.brand,
-        modele: query.model,
+        modele: query.model || '',
         prix_max: query.maxPrice.toString(),
       })
       searchUrl = `https://procarlease.com/fr/vehicules?${params.toString()}`
