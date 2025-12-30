@@ -1310,6 +1310,9 @@ export async function POST(request: NextRequest) {
   const log = createRouteLogger('/api/search')
   const searchStartTime = Date.now()
   
+  // Déclarer jobId en haut pour qu'il soit accessible dans le catch
+  let jobId: string | null = null
+  
   try {
     // Récupérer l'utilisateur (peut être null si non authentifié)
     // On utilise getAuthenticatedUser au lieu de requireAuth pour permettre les recherches anonymes
@@ -1403,7 +1406,6 @@ export async function POST(request: NextRequest) {
     const searchId = crypto.randomUUID()
     
     // Créer un job de scraping pour permettre l'annulation
-    let jobId: string | null = null
     try {
       jobId = await createScrapingJob(user?.id || null, {
         brand,
@@ -1806,14 +1808,15 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Si le job a été annulé, mettre à jour le statut et retourner une réponse appropriée
     if (error instanceof JobCancelledError) {
-      log.info('Scraping annulé par l\'utilisateur', { jobId: error.jobId })
+      const cancelledJobId = error.jobId
+      log.info('Scraping annulé par l\'utilisateur', { jobId: cancelledJobId })
       
-      if (jobId) {
+      if (cancelledJobId) {
         try {
-          await updateJobStatus(jobId, 'cancelled')
+          await updateJobStatus(cancelledJobId, 'cancelled')
         } catch (jobError) {
           log.warn('Erreur mise à jour job annulé (non-bloquant)', {
-            jobId,
+            jobId: cancelledJobId,
             error: jobError instanceof Error ? jobError.message : String(jobError),
           })
         }
@@ -1825,7 +1828,7 @@ export async function POST(request: NextRequest) {
           error: 'Recherche annulée',
           message: 'La recherche a été annulée par l\'utilisateur',
           cancelled: true,
-          jobId,
+          jobId: cancelledJobId,
         },
         { status: 200 } // 200 car c'est une action volontaire, pas une erreur
       )
