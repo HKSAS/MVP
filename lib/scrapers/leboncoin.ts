@@ -67,9 +67,23 @@ export async function scrapeLeBonCoin(
       ms: result.ms,
     })
     
+    // Normaliser la stratégie pour qu'elle corresponde au type ScrapingStrategy
+    let normalizedStrategy: ScrapingStrategy = 'http-html'
+    if (result.strategy === 'zenrows' || result.strategy === 'api-direct') {
+      normalizedStrategy = 'http-html'
+    } else if (result.strategy === 'playwright-local' || result.strategy === 'playwright-remote') {
+      normalizedStrategy = 'playwright-remote'
+    } else if (result.strategy === 'json-embedded' || result.strategy === 'xhr-json') {
+      normalizedStrategy = 'xhr-json'
+    } else if (result.strategy === 'ai-fallback') {
+      normalizedStrategy = 'ai-fallback'
+    } else if (['json', 'http-html', 'headless', 'xhr-json', 'playwright-remote', 'api-json'].includes(result.strategy as string)) {
+      normalizedStrategy = result.strategy as ScrapingStrategy
+    }
+    
     return {
       listings,
-      strategy: result.strategy === 'zenrows' ? 'http-html' : result.strategy,
+      strategy: normalizedStrategy,
       ms: result.ms,
     }
   } catch (error) {
