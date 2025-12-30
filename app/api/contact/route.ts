@@ -97,6 +97,12 @@ export async function POST(request: NextRequest) {
     let error: any
 
     // Essayer d'insérer avec tous les champs
+    console.log('[CONTACT] Tentative insertion avec données:', {
+      hasPhone: !!insertData.phone,
+      hasSubject: !!insertData.subject,
+      insertKeys: Object.keys(insertData),
+    })
+
     const insertResult = await supabase
       .from('contact_messages')
       .insert(insertData)
@@ -112,6 +118,7 @@ export async function POST(request: NextRequest) {
         error: error.message,
         code: error.code,
       })
+      console.warn('[CONTACT] Colonnes manquantes, fallback sans phone/subject:', error.message)
       
       const fallbackData = {
         name: input.name,
@@ -131,6 +138,7 @@ export async function POST(request: NextRequest) {
           error: fallbackResult.error.message,
           code: fallbackResult.error.code,
         })
+        console.error('[CONTACT] Erreur fallback:', fallbackResult.error)
         throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
           dbError: fallbackResult.error.message,
         })
@@ -138,6 +146,7 @@ export async function POST(request: NextRequest) {
       
       data = fallbackResult.data
       error = null
+      console.log('[CONTACT] Message enregistré avec succès (fallback), ID:', data?.id)
     } else if (error) {
       log.error('Erreur Supabase', { 
         error: error.message,
@@ -145,12 +154,15 @@ export async function POST(request: NextRequest) {
         details: error.details,
         hint: error.hint,
       })
+      console.error('[CONTACT] Erreur Supabase:', error)
       throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
         dbError: error.message,
       })
+    } else {
+      console.log('[CONTACT] Message enregistré avec succès, ID:', data?.id)
     }
 
-    log.info('Message enregistré', { messageId: data.id })
+    log.info('Message enregistré', { messageId: data?.id })
 
     // Envoyer un email avec Resend si configuré
     if (resend) {
