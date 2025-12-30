@@ -90,9 +90,18 @@ export default function SearchDetailPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        toast.error('Session expirée. Veuillez vous reconnecter.');
         router.push('/login');
         return;
       }
+
+      if (!searchId) {
+        toast.error('ID de recherche manquant');
+        router.push('/dashboard/recherches');
+        return;
+      }
+
+      console.log('🔍 [SEARCH DETAIL] Chargement recherche:', searchId);
 
       const response = await fetch(`/api/search/${searchId}`, {
         headers: {
@@ -100,20 +109,47 @@ export default function SearchDetailPage() {
         },
       });
 
+      const data = await response.json();
+
+      console.log('📋 [SEARCH DETAIL] Réponse API:', {
+        ok: response.ok,
+        status: response.status,
+        success: data.success,
+        hasData: !!data.data,
+        error: data.error,
+      });
+
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement de la recherche');
+        if (response.status === 401) {
+          toast.error('Session expirée. Veuillez vous reconnecter.');
+          router.push('/login');
+          return;
+        }
+        if (response.status === 404) {
+          toast.error('Cette recherche n\'existe pas ou a été supprimée');
+          // Ne pas définir searchDetails à null ici, laisser l'UI gérer
+          setSearchDetails(null);
+          return;
+        }
+        throw new Error(data.error || 'Erreur lors du chargement de la recherche');
       }
 
-      const data = await response.json();
-      
-      if (data.success) {
+      if (data.success && data.data) {
+        console.log('✅ [SEARCH DETAIL] Recherche chargée avec succès:', {
+          id: data.data.id,
+          resultsCount: data.data.results_count,
+          resultsLength: data.data.results?.length || 0,
+        });
         setSearchDetails(data.data);
       } else {
-        throw new Error(data.error || 'Erreur inconnue');
+        console.error('❌ [SEARCH DETAIL] Réponse API invalide:', data);
+        toast.error(data.error || 'Erreur lors du chargement de la recherche');
+        setSearchDetails(null);
       }
     } catch (error: any) {
-      console.error('Erreur chargement recherche:', error);
-      toast.error('Erreur lors du chargement de la recherche');
+      console.error('❌ [SEARCH DETAIL] Erreur chargement recherche:', error);
+      toast.error(error.message || 'Erreur lors du chargement de la recherche');
+      setSearchDetails(null);
     } finally {
       setLoading(false);
     }
@@ -290,104 +326,104 @@ export default function SearchDetailPage() {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
                     <Card className="bg-white/5 backdrop-blur-xl border-white/10 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all">
-                      <div className="relative">
-                        <ImageWithFallback
-                          src={result.image_url || FALLBACK_IMAGE}
-                          alt={result.title}
-                          className="w-full h-48 object-cover"
-                        />
+                    <div className="relative">
+                      <ImageWithFallback
+                        src={result.image_url || FALLBACK_IMAGE}
+                        alt={result.title}
+                        className="w-full h-48 object-cover"
+                      />
                         <div className="absolute top-3 right-3 flex gap-2 items-center">
                           <Badge className={`${getScoreBadgeColor(score)} text-white border shadow-lg backdrop-blur-sm`}>
-                            Score IA : {score}/100
-                          </Badge>
-                        </div>
+                          Score IA : {score}/100
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <CardContent className="p-6 space-y-4">
+                      {/* Titre */}
+                      <div>
+                          <h3 className="text-white mb-1">{result.title}</h3>
+                        {result.year && (
+                            <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <Calendar className="size-4" />
+                            <span>{result.year}</span>
+                          </div>
+                        )}
                       </div>
 
-                      <CardContent className="p-6 space-y-4">
-                        {/* Titre */}
-                        <div>
-                          <h3 className="text-white mb-1">{result.title}</h3>
-                          {result.year && (
-                            <div className="flex items-center gap-2 text-sm text-gray-400">
-                              <Calendar className="size-4" />
-                              <span>{result.year}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Prix */}
+                      {/* Prix */}
                         <div className="text-white text-lg font-semibold">
-                          {result.price
-                            ? new Intl.NumberFormat("fr-FR", {
-                                style: "currency",
-                                currency: "EUR",
-                                maximumFractionDigits: 0,
-                              }).format(result.price)
-                            : "Prix non disponible"}
-                        </div>
+                        {result.price
+                          ? new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                              maximumFractionDigits: 0,
+                            }).format(result.price)
+                          : "Prix non disponible"}
+                      </div>
 
-                        {/* Détails */}
-                        <div className="space-y-2 text-sm">
-                          {result.mileage && (
+                      {/* Détails */}
+                      <div className="space-y-2 text-sm">
+                        {result.mileage && (
                             <div className="flex items-center gap-2 text-gray-400">
-                              <Gauge className="size-4" />
-                              <span>
-                                {new Intl.NumberFormat("fr-FR").format(result.mileage)} km
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                            <Gauge className="size-4" />
+                            <span>
+                              {new Intl.NumberFormat("fr-FR").format(result.mileage)} km
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Source */}
+                      {/* Source */}
                         <div className="pt-2 border-t border-white/10">
                           <span className="text-xs text-gray-400">Source : {result.source}</span>
-                        </div>
+                      </div>
 
-                        {/* Boutons */}
-                        <div className="flex gap-2 pt-2">
-                          <Button
+                      {/* Boutons */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
                             className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                            size="sm"
-                            onClick={() => {
-                              // Tracking du clic sortant
-                              if (typeof window !== 'undefined' && (window as any).gtag) {
+                          size="sm"
+                          onClick={() => {
+                            // Tracking du clic sortant
+                            if (typeof window !== 'undefined' && (window as any).gtag) {
                                 (window as any).gtag('event', 'click_outbound', {
-                                  event_category: 'listing',
-                                  event_label: result.source,
-                                  value: result.price || 0,
-                                });
-                              }
-                              // Ouvrir directement le site marchand
-                              window.open(result.url, '_blank', 'noopener,noreferrer');
-                            }}
-                          >
-                            <Eye className="size-4 mr-2" />
-                            Voir les détails
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-white/20 text-white hover:bg-white/10"
-                            onClick={() => {
-                              navigator.clipboard.writeText(result.url).then(() => {
-                                toast.success('Lien copié dans le presse-papier');
-                              }).catch(() => {
-                                const textArea = document.createElement('textarea');
-                                textArea.value = result.url;
-                                document.body.appendChild(textArea);
-                                textArea.select();
-                                document.execCommand('copy');
-                                document.body.removeChild(textArea);
-                                toast.success('Lien copié');
+                                event_category: 'listing',
+                                event_label: result.source,
+                                value: result.price || 0,
                               });
-                            }}
-                            title="Copier le lien"
-                          >
-                            <ExternalLink className="size-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                            }
+                            // Ouvrir directement le site marchand
+                              window.open(result.url, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <Eye className="size-4 mr-2" />
+                          Voir les détails
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                            className="border-white/20 text-white hover:bg-white/10"
+                          onClick={() => {
+                            navigator.clipboard.writeText(result.url).then(() => {
+                              toast.success('Lien copié dans le presse-papier');
+                            }).catch(() => {
+                              const textArea = document.createElement('textarea');
+                              textArea.value = result.url;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand('copy');
+                              document.body.removeChild(textArea);
+                              toast.success('Lien copié');
+                            });
+                          }}
+                          title="Copier le lien"
+                        >
+                          <ExternalLink className="size-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                   </motion.div>
                 );
               })}
