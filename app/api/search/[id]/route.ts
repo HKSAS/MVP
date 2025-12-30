@@ -114,15 +114,6 @@ export async function GET(
 
     const searchResults = allResults
 
-    if (resultsError) {
-      log.error('Erreur récupération résultats', {
-        searchId,
-        error: resultsError.message,
-        errorCode: resultsError.code,
-      })
-      // Ne pas retourner d'erreur, on continue avec un tableau vide
-    }
-
     log.info('Résultats récupérés', {
       searchId,
       resultsCount: searchResults?.length || 0,
