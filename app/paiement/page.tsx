@@ -239,7 +239,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="bg-[#0a0a0a] text-white min-h-screen pt-20">
+    <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
