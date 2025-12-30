@@ -173,7 +173,7 @@ async function test3_LeBonCoinWithJS() {
     }
     
     // Chercher JSON
-    const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)
+    const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
     if (jsonMatch) {
       try {
         const jsonData = JSON.parse(jsonMatch[1])
