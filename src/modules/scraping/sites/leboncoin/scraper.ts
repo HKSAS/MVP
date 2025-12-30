@@ -235,7 +235,7 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
   const listings: ListingResponse[] = []
   
   // Chercher tous les containers d'annonces avec data-qa-id
-  const containerRegex = /<a[^>]*data-qa-id="aditem_container"[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gs
+  const containerRegex = /<a[^>]*data-qa-id="aditem_container"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g
   
   let match
   while ((match = containerRegex.exec(html)) !== null && listings.length < 100) {
