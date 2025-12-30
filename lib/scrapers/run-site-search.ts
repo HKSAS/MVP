@@ -186,7 +186,7 @@ async function scrapeOtherSite(
   let searchUrl = ''
   switch (siteName) {
     case 'LaCentrale':
-      searchUrl = `https://www.lacentrale.fr/listing?makesModels=${encodeURIComponent(query.brand)}-${encodeURIComponent(query.model)}&priceMax=${query.maxPrice}`
+      searchUrl = `https://www.lacentrale.fr/listing?makesModels=${encodeURIComponent(query.brand)}-${encodeURIComponent(query.model || '')}&priceMax=${query.maxPrice}`
       break
     case 'ParuVendu':
       const brandSlug = query.brand.toLowerCase().trim().replace(/\s+/g, '-')
