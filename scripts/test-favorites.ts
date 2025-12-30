@@ -49,9 +49,16 @@ async function testFavorites() {
   // 2. Vérifier la structure de la table
   console.log('\n2️⃣ Vérification de la structure...')
   try {
-    const { data: columns, error } = await supabase
-      .rpc('get_table_columns', { table_name: 'favorites' })
-      .catch(() => ({ data: null, error: { message: 'Fonction RPC non disponible' } }))
+    let columns: any = null
+    let error: any = null
+    try {
+      const result = await supabase
+        .rpc('get_table_columns', { table_name: 'favorites' })
+      columns = result.data
+      error = result.error
+    } catch (rpcError) {
+      error = { message: 'Fonction RPC non disponible' }
+    }
     
     // Alternative: essayer une requête SELECT pour voir les colonnes
     const { data: sample, error: sampleError } = await supabase
