@@ -1,4 +1,4 @@
-import type { ListingResponse, ScrapeQuery } from '@/src/core/types'
+import type { ListingResponse, ListingNormalized, ScrapeQuery } from '@/src/core/types'
 
 export interface ScoreBreakdown {
   score: number
@@ -151,7 +151,7 @@ export function scoreListing(
 }
 
 /**
- * Calcule les scores pour toutes les annonces
+ * Calcule les scores pour toutes les annonces (ListingResponse)
  */
 export function scoreAllListings(
   listings: ListingResponse[],
@@ -166,5 +166,38 @@ export function scoreAllListings(
       score_ia: listing.score_ia ?? breakdown.score,
     }
   })
+}
+
+/**
+ * Calcule les scores pour toutes les annonces normalisées (ListingNormalized)
+ */
+export function scoreAllListingsNormalized(
+  listings: ListingNormalized[],
+  criteria: ScrapeQuery
+): ListingNormalized[] {
+  // Convertir temporairement en ListingResponse pour le scoring
+  const asListingResponse: ListingResponse[] = listings.map(l => ({
+    id: l.id,
+    title: l.title,
+    price_eur: l.price,
+    year: l.year,
+    mileage_km: l.mileage,
+    url: l.url,
+    imageUrl: l.image_url,
+    source: l.source,
+    score_ia: l.score_ia,
+    score_final: l.score_final,
+    city: l.city,
+  }))
+  
+  // Calculer les scores
+  const scored = scoreAllListings(asListingResponse, criteria)
+  
+  // Reconvertir en ListingNormalized
+  return scored.map((listing, index) => ({
+    ...listings[index],
+    score_final: listing.score_final,
+    score_ia: listing.score_ia ?? listings[index].score_ia,
+  }))
 }
 

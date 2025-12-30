@@ -7,7 +7,7 @@ import { createSiteRun } from '../repo/site_runs'
 import { createListingRaw, createListingsBatch } from '../repo/listings'
 import { runAllSites } from '@/src/modules/scraping/engine/runAllSites'
 import { deduplicateListingsNormalized } from '../domain/dedup'
-import { scoreAllListings } from '../domain/scoring'
+import { scoreAllListingsNormalized } from '../domain/scoring'
 import type { SearchParams, ListingNormalized } from '@/src/core/types'
 import { createRouteLogger } from '@/src/core/logger'
 import type { SearchRecord } from '../repo/searches'
@@ -129,7 +129,7 @@ export async function executeSearch(searchId: string): Promise<SearchResult> {
     })
 
     // Scoring
-    const scoredListings = scoreAllListings(uniqueListings, searchParams)
+    const scoredListings = scoreAllListingsNormalized(uniqueListings, searchParams)
     log.info('Scoring terminé', {
       total: scoredListings.length,
       top3: scoredListings.slice(0, 3).map((l) => ({
