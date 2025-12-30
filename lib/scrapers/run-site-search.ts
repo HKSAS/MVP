@@ -217,11 +217,11 @@ async function scrapeOtherSite(
   
       try {
         // Paramètres ZenRows spécifiques selon le site
-        let zenrowsParams = SCRAPING_CONFIG.zenrows.default
+        let zenrowsParams: Record<string, any> = SCRAPING_CONFIG.zenrows.default
         let retryConfig: { maxAttempts: number; retryableStatuses: number[]; backoffMs: number } | undefined
         
         if (siteName === 'LaCentrale') {
-          zenrowsParams = SCRAPING_CONFIG.zenrows.lacentrale
+          zenrowsParams = { ...SCRAPING_CONFIG.zenrows.lacentrale } as Record<string, any>
           retryConfig = {
             maxAttempts: 2,
             retryableStatuses: [422, 403, 429],
