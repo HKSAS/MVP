@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 
 export default function ContactPage() {
   // URL Calendly
-  const calendlyUrl = "https://calendly.com/kamelhadri94/30min";
+  const calendlyUrl = "https://calendly.com/autoval/30min";
   const [showCalendly, setShowCalendly] = useState(false);
 
   // Pas besoin de charger le script Calendly, on utilise un iframe direct
