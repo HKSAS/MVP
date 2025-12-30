@@ -196,8 +196,8 @@ export function scoreAllListingsNormalized(
   // Reconvertir en ListingNormalized
   return scored.map((listing, index) => ({
     ...listings[index],
-    score_final: listing.score_final,
-    score_ia: listing.score_ia ?? listings[index].score_ia,
+    score_final: listing.score_final ?? undefined,
+    score_ia: listing.score_ia ?? listings[index].score_ia ?? undefined,
   }))
 }
 
