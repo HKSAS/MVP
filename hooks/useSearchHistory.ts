@@ -16,6 +16,7 @@ export function useSaveSearch() {
     location?: string
     filters?: any
     resultsCount?: number
+    results?: any[]
   }) => {
     try {
       // Récupérer le token de session
@@ -42,7 +43,8 @@ export function useSaveSearch() {
         max_price: params.max_price || params.budget,
         location: params.location,
         filters: params.filters || {},
-        resultsCount: params.resultsCount || 0
+        resultsCount: params.resultsCount || 0,
+        results: params.results || []
       }
       
       console.log('[SaveSearch] 📤 Envoi requête POST /api/me/searches', requestBody)

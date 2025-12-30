@@ -347,6 +347,7 @@ export default function SearchResultsPage() {
         
         if (totalResults > 0) {
           try {
+            // Sauvegarder la recherche avec tous les résultats
             const searchId = await saveSearch({
               brand,
               model,
@@ -354,6 +355,7 @@ export default function SearchResultsPage() {
               budget: maxPrice ? Number(maxPrice) : undefined,
               location: 'France',
               resultsCount: data.stats?.totalItems || totalResults,
+              results: data.listings || [], // Sauvegarder tous les résultats
               filters: {
                 fuelType: fuelType && fuelType !== "all" ? fuelType : undefined,
               }

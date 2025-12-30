@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     log.info(`Sauvegarde recherche pour user ${user.id}`)
 
     const body = await request.json()
-    const { query, brand, model, max_price, location, filters, resultsCount } = body
+    const { query, brand, model, max_price, location, filters, resultsCount, results } = body
 
     if (!query && !brand && !model) {
       return NextResponse.json({
@@ -152,6 +152,40 @@ export async function POST(request: NextRequest) {
     }
 
     log.info(`Recherche sauvegardée: ${queryString} (id: ${newSearch.id}, user: ${user.id})`)
+
+    // Sauvegarder les résultats si fournis
+    if (results && Array.isArray(results) && results.length > 0) {
+      log.info(`Sauvegarde de ${results.length} résultats pour la recherche ${newSearch.id}`)
+      
+      const resultsToInsert = results.map((result: any) => ({
+        search_id: newSearch.id,
+        title: result.title || '',
+        price: result.price || result.price_eur || null,
+        year: result.year || null,
+        mileage: result.mileage || result.mileage_km || null,
+        source: result.source || '',
+        score: result.score || result.score_final || 0,
+        url: result.url || '',
+        image_url: result.image_url || result.imageUrl || null,
+        created_at: new Date().toISOString(),
+      }))
+
+      // Insérer les résultats par lots de 100 pour éviter les limites
+      const batchSize = 100
+      for (let i = 0; i < resultsToInsert.length; i += batchSize) {
+        const batch = resultsToInsert.slice(i, i + batchSize)
+        const { error: insertResultsError } = await supabase
+          .from('search_results')
+          .insert(batch)
+
+        if (insertResultsError) {
+          log.error(`Erreur insertion résultats (lot ${i / batchSize + 1}): ${insertResultsError.message}`)
+          // Ne pas échouer la requête complète si l'insertion des résultats échoue
+        } else {
+          log.info(`Résultats sauvegardés: ${batch.length} résultats (lot ${i / batchSize + 1})`)
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
