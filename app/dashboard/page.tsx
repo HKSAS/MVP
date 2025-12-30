@@ -309,37 +309,39 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="bg-[#0a0a0a] text-white min-h-screen pt-20">
+      <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
         {/* Hero Section */}
-        <section className="relative pt-32 pb-12 px-4">
+        <section className="relative pt-16 sm:pt-24 md:pt-32 pb-8 sm:pb-12 px-4 sm:px-6">
           {/* Gradient Background Effects */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-10 left-1/4 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
-            <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+            <div className="absolute top-10 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-0 right-1/4 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
           </div>
           
           <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
+                className="flex-1 min-w-0"
               >
-                <h1 className="text-5xl md:text-6xl font-medium text-white mb-2">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white mb-2">
                   Tableau de bord
                 </h1>
-                <p className="text-xl text-gray-400">Bienvenue, {user?.email?.split('@')[0] || 'Utilisateur'}</p>
+                <p className="text-base sm:text-lg md:text-xl text-gray-400">Bienvenue, {user?.email?.split('@')[0] || 'Utilisateur'}</p>
               </motion.div>
-              <div className="flex gap-3">
-                <Link href="/profil">
-                  <Button className="bg-white/10 border-white/20 text-white hover:bg-white/20" variant="outline">
-                    <User className="size-4 mr-2" />
-                    Mon profil
+              <div className="flex gap-2 sm:gap-3 w-full md:w-auto">
+                <Link href="/profil" className="flex-1 md:flex-none">
+                  <Button className="w-full md:w-auto bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs sm:text-sm h-9 sm:h-10" variant="outline">
+                    <User className="size-3 sm:size-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Mon profil</span>
+                    <span className="sm:hidden">Profil</span>
                   </Button>
                 </Link>
-                <Link href="/contact">
-                  <Button className="bg-white/10 border-white/20 text-white hover:bg-white/20" variant="outline">
-                    <MessageCircle className="size-4 mr-2" />
+                <Link href="/contact" className="flex-1 md:flex-none">
+                  <Button className="w-full md:w-auto bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs sm:text-sm h-9 sm:h-10" variant="outline">
+                    <MessageCircle className="size-3 sm:size-4 mr-1 sm:mr-2" />
                     Contact
                   </Button>
                 </Link>
@@ -349,62 +351,62 @@ export default function DashboardPage() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className="lg:hidden text-white hover:bg-white/10"
+                      className="lg:hidden text-white hover:bg-white/10 h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                     >
-                      <Menu className="size-6" />
+                      <Menu className="size-5 sm:size-6" />
                     </Button>
                   </SheetTrigger>
                   <SheetContent 
                     side="right" 
-                    className="w-[320px] sm:w-[380px] bg-[#1a1a1a] border-white/10 p-0 overflow-y-auto"
+                    className="w-[85vw] sm:w-[320px] bg-[#1a1a1a] border-white/10 p-0 overflow-y-auto"
                   >
-                    <SheetHeader className="p-6 border-b border-white/10 sticky top-0 bg-[#1a1a1a] backdrop-blur-sm z-10">
-                      <SheetTitle className="text-white text-xl flex items-center gap-2">
-                        <LayoutDashboard className="size-5" />
+                    <SheetHeader className="p-4 sm:p-6 border-b border-white/10 sticky top-0 bg-[#1a1a1a] backdrop-blur-sm z-10">
+                      <SheetTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
+                        <LayoutDashboard className="size-4 sm:size-5" />
                         Menu
                       </SheetTitle>
                     </SheetHeader>
-                    <nav className="p-6 space-y-2">
+                    <nav className="p-4 sm:p-6 space-y-2">
                       <button 
                         onClick={() => setSidebarOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg text-sm sm:text-base"
                       >
-                        <LayoutDashboard className="size-5" />
+                        <LayoutDashboard className="size-4 sm:size-5" />
                         <span>Dashboard</span>
                       </button>
                       <Link 
                         href="/dashboard/recherches" 
                         onClick={() => setSidebarOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm sm:text-base"
                       >
-                        <Search className="size-5" />
+                        <Search className="size-4 sm:size-5" />
                         <span>Mes recherches</span>
                       </Link>
                       <Link
                         href="/dashboard/analyses"
                         onClick={() => setSidebarOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm sm:text-base"
                       >
-                        <FileSearch className="size-5" />
+                        <FileSearch className="size-4 sm:size-5" />
                         <span>Annonces analysées</span>
                       </Link>
                       <Link 
                         href="/favoris"
                         onClick={() => setSidebarOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm sm:text-base"
                       >
-                        <Heart className="size-5" />
+                        <Heart className="size-4 sm:size-5" />
                         <span>Favoris</span>
                       </Link>
-                      <div className="pt-4 border-t border-white/10 mt-4">
+                      <div className="pt-3 sm:pt-4 border-t border-white/10 mt-3 sm:mt-4">
                         <button 
                           onClick={() => {
                             setSidebarOpen(false);
                             handleLogout();
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors text-sm sm:text-base"
                         >
-                          <LogOut className="size-5" />
+                          <LogOut className="size-4 sm:size-5" />
                           <span>Déconnexion</span>
                         </button>
                       </div>
@@ -417,34 +419,34 @@ export default function DashboardPage() {
         </section>
 
         {/* Main Content */}
-        <section className="py-12 px-4 relative">
+        <section className="py-6 sm:py-8 md:py-12 px-4 sm:px-6 relative">
           <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-4 gap-6">
-              {/* Sidebar */}
-              <div className="lg:col-span-1">
+            <div className="grid lg:grid-cols-4 gap-4 sm:gap-6">
+              {/* Sidebar - Hidden on mobile, shown on desktop */}
+              <div className="hidden lg:block lg:col-span-1">
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10 sticky top-24">
                   <CardContent className="p-4">
                     <nav className="space-y-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg">
+                      <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg text-sm">
                         <LayoutDashboard className="size-5" />
                         <span>Dashboard</span>
                       </button>
-                      <Link href="/dashboard/recherches" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <Link href="/dashboard/recherches" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm">
                         <Search className="size-5" />
                         <span>Mes recherches</span>
                       </Link>
-                      <Link href="/dashboard/analyses" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <Link href="/dashboard/analyses" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm">
                         <FileSearch className="size-5" />
                         <span>Annonces analysées</span>
                       </Link>
-                      <Link href="/favoris" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <Link href="/favoris" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-colors text-sm">
                         <Heart className="size-5" />
                         <span>Favoris</span>
                       </Link>
                       <div className="pt-4 border-t border-white/10">
                         <button 
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors text-sm"
                         >
                           <LogOut className="size-5" />
                           <span>Déconnexion</span>
@@ -456,79 +458,79 @@ export default function DashboardPage() {
               </div>
 
               {/* Main Dashboard Content */}
-              <div className="lg:col-span-3 space-y-6">
+              <div className="lg:col-span-3 space-y-4 sm:space-y-6">
                 {/* Stats Cards */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all">
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-400">Recherches</span>
-                        <Search className="size-5 text-blue-400" />
+                        <span className="text-xs sm:text-sm text-gray-400">Recherches</span>
+                        <Search className="size-4 sm:size-5 text-blue-400" />
                       </div>
-                      <div className="text-4xl font-medium bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">{recentSearches.length}</div>
-                      <p className="text-sm text-gray-500 mt-1">Cette semaine</p>
+                      <div className="text-3xl sm:text-4xl font-medium bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">{recentSearches.length}</div>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Cette semaine</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all">
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-400">Analyses</span>
-                        <FileSearch className="size-5 text-purple-400" />
+                        <span className="text-xs sm:text-sm text-gray-400">Analyses</span>
+                        <FileSearch className="size-4 sm:size-5 text-purple-400" />
                       </div>
-                      <div className="text-4xl font-medium bg-gradient-to-r from-purple-400 to-purple-500 bg-clip-text text-transparent">{analysesStats.count}</div>
-                      <p className="text-sm text-gray-500 mt-1">Ce mois-ci</p>
+                      <div className="text-3xl sm:text-4xl font-medium bg-gradient-to-r from-purple-400 to-purple-500 bg-clip-text text-transparent">{analysesStats.count}</div>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Ce mois-ci</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all">
-                    <CardContent className="p-6">
+                  <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all sm:col-span-2 lg:col-span-1">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-400">Score moyen</span>
-                        <TrendingUp className="size-5 text-green-400" />
+                        <span className="text-xs sm:text-sm text-gray-400">Score moyen</span>
+                        <TrendingUp className="size-4 sm:size-5 text-green-400" />
                       </div>
-                      <div className="text-4xl font-medium text-green-400">{analysesStats.count > 0 ? analysesStats.averageScore : '-'}</div>
-                      <p className="text-sm text-gray-500 mt-1">Sur vos analyses</p>
+                      <div className="text-3xl sm:text-4xl font-medium text-green-400">{analysesStats.count > 0 ? analysesStats.averageScore : '-'}</div>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Sur vos analyses</p>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Recent Searches */}
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Clock className="size-5 text-blue-400" />
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
+                      <Clock className="size-4 sm:size-5 text-blue-400" />
                       Mes recherches récentes
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="p-4 sm:p-6 pt-0">
+                    <div className="space-y-3 sm:space-y-4">
                       {searchesLoading ? (
-                        <div className="text-center py-8 text-gray-400">Chargement...</div>
+                        <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-400">Chargement...</div>
                       ) : recentSearches.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">Aucune recherche récente</div>
+                        <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-400">Aucune recherche récente</div>
                       ) : (
                         recentSearches.slice(0, 3).map((search) => (
                           <div
                             key={search.id}
-                            className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
                           >
-                            <div className="flex-1">
-                              <div className="text-white mb-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm sm:text-base text-white mb-1 truncate">
                                 {search.brand} {search.model}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-400">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
                                 {search.max_price && (
                                   <>
                                     <span>Budget: {search.max_price.toLocaleString()} €</span>
-                                    <span>•</span>
+                                    <span className="hidden sm:inline">•</span>
                                   </>
                                 )}
                                 <span className="flex items-center gap-1">
-                                  <Calendar className="size-4" />
+                                  <Calendar className="size-3 sm:size-4" />
                                   {new Date(search.created_at).toLocaleDateString('fr-FR')}
                                 </span>
                                 {search.total_results !== undefined && (
                                   <>
-                                    <span>•</span>
+                                    <span className="hidden sm:inline">•</span>
                                     <span>{search.total_results} résultats</span>
                                   </>
                                 )}
@@ -537,10 +539,11 @@ export default function DashboardPage() {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                              className="bg-white/5 border-white/20 text-white hover:bg-white/10 w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
                               onClick={() => handleReviewResults(search)}
                             >
-                              Revoir les résultats
+                              <span className="hidden sm:inline">Revoir les résultats</span>
+                              <span className="sm:hidden">Revoir</span>
                             </Button>
                           </div>
                         ))
@@ -551,54 +554,55 @@ export default function DashboardPage() {
 
                 {/* Analyzed Ads */}
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <FileSearch className="size-5 text-purple-400" />
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
+                      <FileSearch className="size-4 sm:size-5 text-purple-400" />
                       Mes annonces analysées
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="p-4 sm:p-6 pt-0">
+                    <div className="space-y-3 sm:space-y-4">
                       {analyzedAds.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">Aucune annonce analysée</div>
+                        <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-400">Aucune annonce analysée</div>
                       ) : (
                         analyzedAds.map((ad) => (
                           <div
                             key={ad.id}
-                            className="flex gap-4 p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
+                            className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-colors"
                           >
-                            <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                               <ImageWithFallback
                                 src={ad.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400'}
                                 alt={ad.title}
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <div className="text-white mb-1">{ad.title}</div>
-                                  <div className="text-xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{ad.price.toLocaleString()} €</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm sm:text-base text-white mb-1 truncate">{ad.title}</div>
+                                  <div className="text-lg sm:text-xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{ad.price.toLocaleString()} €</div>
                                 </div>
-                                {getStatusBadge(ad.status, ad.score)}
+                                <div className="flex-shrink-0">{getStatusBadge(ad.status, ad.score)}</div>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-400">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400 mb-2 sm:mb-0">
                                 <span>Score: {ad.score}/100</span>
-                                <span>•</span>
+                                <span className="hidden sm:inline">•</span>
                                 <span className="flex items-center gap-1">
-                                  <Calendar className="size-4" />
+                                  <Calendar className="size-3 sm:size-4" />
                                   {new Date(ad.date).toLocaleDateString('fr-FR')}
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex items-center sm:items-start">
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                                className="bg-white/5 border-white/20 text-white hover:bg-white/10 w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
                                 onClick={() => router.push(`/dashboard/analyses/${ad.id}`)}
                               >
-                                Voir le rapport
+                                <span className="hidden sm:inline">Voir le rapport</span>
+                                <span className="sm:hidden">Voir</span>
                               </Button>
                             </div>
                           </div>
@@ -610,13 +614,13 @@ export default function DashboardPage() {
 
                 {/* Recommendations */}
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Star className="size-5 text-yellow-500" />
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
+                      <Star className="size-4 sm:size-5 text-yellow-500" />
                       Recommandations pour vous
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6 pt-0">
                     <RecommendationsList />
                   </CardContent>
                 </Card>
