@@ -93,51 +93,61 @@ export async function POST(request: NextRequest) {
       insertDataKeys: Object.keys(insertData),
     })
 
-    const { data, error } = await supabase
+    let data: any
+    let error: any
+
+    // Essayer d'insérer avec tous les champs
+    const insertResult = await supabase
       .from('contact_messages')
       .insert(insertData)
       .select()
       .single()
 
-    if (error) {
+    data = insertResult.data
+    error = insertResult.error
+
+    // Si erreur due à des colonnes manquantes, réessayer sans phone et subject
+    if (error && (error.message?.includes('phone') || error.message?.includes('subject') || error.code === '42703')) {
+      log.warn('Colonnes phone/subject manquantes, réessai sans ces champs', {
+        error: error.message,
+        code: error.code,
+      })
+      
+      const fallbackData = {
+        name: input.name,
+        email: input.email,
+        message: input.message,
+        status: 'pending',
+      }
+      
+      const fallbackResult = await supabase
+        .from('contact_messages')
+        .insert(fallbackData)
+        .select()
+        .single()
+      
+      if (fallbackResult.error) {
+        log.error('Erreur Supabase (fallback)', { 
+          error: fallbackResult.error.message,
+          code: fallbackResult.error.code,
+        })
+        throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
+          dbError: fallbackResult.error.message,
+        })
+      }
+      
+      data = fallbackResult.data
+      error = null
+    } else if (error) {
       log.error('Erreur Supabase', { 
         error: error.message,
         code: error.code,
         details: error.details,
         hint: error.hint,
       })
-      
-      // Si les colonnes phone ou subject n'existent pas, réessayer sans
-      if (error.message.includes('phone') || error.message.includes('subject') || error.code === '42703') {
-        log.warn('Colonnes phone/subject manquantes, réessai sans ces champs')
-        const fallbackData = {
-          name: input.name,
-          email: input.email,
-          message: input.message,
-          status: 'pending',
-        }
-        
-        const { data: fallbackResult, error: fallbackError } = await supabase
-          .from('contact_messages')
-          .insert(fallbackData)
-          .select()
-          .single()
-        
-        if (fallbackError) {
-          log.error('Erreur Supabase (fallback)', { error: fallbackError.message })
-          throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
-            dbError: fallbackError.message,
-          })
-        }
-        
-        // Utiliser le résultat du fallback
-        // @ts-ignore
-        const data = fallbackResult
-      } else {
-        throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
-          dbError: error.message,
-        })
-      }
+      throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
+        dbError: error.message,
+      })
     }
 
     log.info('Message enregistré', { messageId: data.id })
