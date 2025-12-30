@@ -19,7 +19,9 @@ export default function SignupPage() {
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -144,7 +146,9 @@ export default function SignupPage() {
       // Mais on vérifie aussi après pour être sûr
       console.log("🔵 [SIGNUP] Appel à supabase.auth.signUp", {
         email: formData.email.trim(),
-        hasName: !!formData.name.trim(),
+        hasFirstName: !!formData.firstName.trim(),
+        hasLastName: !!formData.lastName.trim(),
+        hasPhone: !!formData.phone.trim(),
       });
       
       const signUpResult = await supabase.auth.signUp({
@@ -152,7 +156,10 @@ export default function SignupPage() {
         password: formData.password,
         options: {
           data: {
-            full_name: formData.name.trim(),
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+            first_name: formData.firstName.trim(),
+            last_name: formData.lastName.trim(),
+            phone: formData.phone.trim(),
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -344,7 +351,7 @@ export default function SignupPage() {
           if (!data.user) return;
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('id, email, role')
+            .select('id, email, role, full_name, phone')
             .eq('id', data.user.id)
             .single();
           
@@ -354,12 +361,15 @@ export default function SignupPage() {
             // on peut le créer manuellement (fallback)
             if (profileError.code === 'PGRST116') {
               console.log('🔄 [SIGNUP] Création manuelle du profil (fallback)...');
+              const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
               const { error: insertError } = await supabase
                 .from('profiles')
                 .insert({
                   id: data.user.id,
                   email: data.user.email,
                   role: 'user',
+                  full_name: fullName || null,
+                  phone: formData.phone.trim() || null,
                 });
               
               if (insertError) {
@@ -370,6 +380,23 @@ export default function SignupPage() {
             }
           } else {
             console.log('✅ [SIGNUP] Profil vérifié:', profile);
+            // Mettre à jour le profil avec les informations supplémentaires si nécessaire
+            if (profile && (!profile.full_name || !profile.phone)) {
+              const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                  full_name: fullName || profile.full_name,
+                  phone: formData.phone.trim() || profile.phone,
+                })
+                .eq('id', data.user.id);
+              
+              if (updateError) {
+                console.warn('⚠️ [SIGNUP] Erreur mise à jour profil:', updateError.message);
+              } else {
+                console.log('✅ [SIGNUP] Profil mis à jour avec les informations supplémentaires');
+              }
+            }
           }
         } catch (err) {
           console.error('❌ [SIGNUP] Erreur vérification profil:', err);
@@ -467,28 +494,28 @@ export default function SignupPage() {
       </div>
 
       <div className="relative py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Benefits */}
+      <div className="max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* Left Side - Benefits */}
             <motion.div 
               className="hidden md:block"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <Link href="/" className="inline-flex items-center gap-3 mb-8">
-                <Image
-                  src="/logo.png"
-                  alt="Autoval IA Logo"
+            <Link href="/" className="inline-flex items-center gap-3 mb-8">
+              <Image
+                src="/logo.png"
+                alt="Autoval IA Logo"
                   width={80}
                   height={80}
                   className="h-20 w-20 object-contain"
-                  style={{ 
+                style={{ 
                     filter: 'brightness(2) saturate(1.5) drop-shadow(0 0 10px rgba(59, 130, 246, 0.5))'
-                  }}
-                />
+                }}
+              />
                 <span className="text-3xl font-light text-white tracking-wide">Autoval IA</span>
-              </Link>
+            </Link>
               <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-4 py-1 mb-6 inline-flex">
                 <Sparkles className="size-4 mr-2" />
                 Avantages
@@ -499,19 +526,19 @@ export default function SignupPage() {
                 <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
                   d'utilisateurs satisfaits
                 </span>
-              </h1>
+            </h1>
               <p className="text-gray-400 mb-8 text-lg">
                 Créez votre compte gratuit et accédez à toutes les fonctionnalités d\'Autoval IA pour sécuriser votre prochain achat automobile.
-              </p>
-              <div className="space-y-4">
-                {[
-                  "Recherche IA illimitée sur tous les sites",
-                  "Analyse détaillée d'annonces",
-                  "Sauvegarde de vos recherches favorites",
-                  "Alertes sur les nouvelles opportunités",
-                  "Accès aux experts automobiles",
-                  "Score de fiabilité en temps réel",
-                ].map((benefit, index) => (
+            </p>
+            <div className="space-y-4">
+              {[
+                "Recherche IA illimitée sur tous les sites",
+                "Analyse détaillée d'annonces",
+                "Sauvegarde de vos recherches favorites",
+                "Alertes sur les nouvelles opportunités",
+                "Accès aux experts automobiles",
+                "Score de fiabilité en temps réel",
+              ].map((benefit, index) => (
                   <motion.div 
                     key={index} 
                     className="flex items-center gap-3"
@@ -521,46 +548,46 @@ export default function SignupPage() {
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <CheckCircle className="size-4 text-white" />
-                    </div>
+                  </div>
                     <span className="text-gray-300">{benefit}</span>
                   </motion.div>
-                ))}
-              </div>
+              ))}
+            </div>
             </motion.div>
 
-            {/* Right Side - Sign Up Form */}
+          {/* Right Side - Sign Up Form */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <div className="md:hidden text-center mb-8">
+            <div className="md:hidden text-center mb-8">
                 <Link href="/" className="inline-flex flex-col items-center gap-4 mb-6">
-                  <Image
-                    src="/logo.png"
-                    alt="Autoval IA Logo"
+                <Image
+                  src="/logo.png"
+                  alt="Autoval IA Logo"
                     width={80}
                     height={80}
                     className="h-20 w-20 object-contain"
-                    style={{ 
+                  style={{ 
                       filter: 'brightness(2) saturate(1.5) drop-shadow(0 0 10px rgba(59, 130, 246, 0.5))'
-                    }}
-                  />
+                  }}
+                />
                   <span className="text-3xl font-light text-white tracking-wide">Autoval IA</span>
-                </Link>
+              </Link>
                 <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-4 py-1 mb-4">
                   <UserPlus className="size-4 mr-2 inline" />
                   Inscription
                 </Badge>
                 <h1 className="text-4xl font-medium text-white mb-2">Créer un compte</h1>
                 <p className="text-gray-400">
-                  Rejoignez Autoval IA en quelques secondes
-                </p>
-              </div>
+                Rejoignez Autoval IA en quelques secondes
+              </p>
+            </div>
 
               <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
-                <CardContent className="p-8">
-                  <div className="hidden md:block mb-6">
+              <CardContent className="p-8">
+                <div className="hidden md:block mb-6">
                     <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-4 py-1 mb-4">
                       <UserPlus className="size-4 mr-2 inline" />
                       Inscription
@@ -568,159 +595,188 @@ export default function SignupPage() {
                     <h2 className="text-3xl font-medium text-white mb-2">Créer un compte</h2>
                     <p className="text-gray-400">
                       C'est gratuit et sans engagement
+                  </p>
+                </div>
+
+                {error && (
+                    <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-400">
+                    <div className="font-semibold mb-1">❌ Erreur lors de la création du compte</div>
+                    <div className="whitespace-pre-line">{error}</div>
+                    {error.includes('configuration') || error.includes('Variables') ? (
+                        <div className="mt-3 text-xs text-red-300">
+                        <p className="font-semibold">Vérifications à faire :</p>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          <li>Vérifiez que le fichier .env.local existe à la racine du projet</li>
+                          <li>Vérifiez que NEXT_PUBLIC_SUPABASE_URL est défini</li>
+                          <li>Vérifiez que NEXT_PUBLIC_SUPABASE_ANON_KEY est défini</li>
+                          <li>Redémarrez le serveur après modification de .env.local</li>
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {success && (
+                    <div className="mb-4 rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">
+                    <div className="font-semibold mb-2">✅ Compte créé avec succès !</div>
+                    <div>
+                      {error === null ? (
+                        <span>Connexion en cours, redirection vers votre espace...</span>
+                      ) : (
+                        <div>
+                          <p className="mb-2">Un email de confirmation a été envoyé à <strong>{formData.email}</strong>.</p>
+                            <p className="text-xs text-green-300 mt-2">
+                            💡 Vérifiez votre boîte mail (et les spams) et cliquez sur le lien de confirmation pour activer votre compte.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-white">Prénom</Label>
+                      <Input
+                        id="firstName"
+                        placeholder="Jean"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-white">Nom</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Dupont"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-white">Téléphone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+33 6 12 34 56 78"
+                      value={formData.phone}
+                      onChange={handleChange}
+                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
+                    />
+                    <p className="text-sm text-gray-500">
+                      Optionnel
                     </p>
                   </div>
 
-                  {error && (
-                    <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-400">
-                      <div className="font-semibold mb-1">❌ Erreur lors de la création du compte</div>
-                      <div className="whitespace-pre-line">{error}</div>
-                      {error.includes('configuration') || error.includes('Variables') ? (
-                        <div className="mt-3 text-xs text-red-300">
-                          <p className="font-semibold">Vérifications à faire :</p>
-                          <ul className="list-disc list-inside mt-1 space-y-1">
-                            <li>Vérifiez que le fichier .env.local existe à la racine du projet</li>
-                            <li>Vérifiez que NEXT_PUBLIC_SUPABASE_URL est défini</li>
-                            <li>Vérifiez que NEXT_PUBLIC_SUPABASE_ANON_KEY est défini</li>
-                            <li>Redémarrez le serveur après modification de .env.local</li>
-                          </ul>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {success && (
-                    <div className="mb-4 rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">
-                      <div className="font-semibold mb-2">✅ Compte créé avec succès !</div>
-                      <div>
-                        {error === null ? (
-                          <span>Connexion en cours, redirection vers votre espace...</span>
-                        ) : (
-                          <div>
-                            <p className="mb-2">Un email de confirmation a été envoyé à <strong>{formData.email}</strong>.</p>
-                            <p className="text-xs text-green-300 mt-2">
-                              💡 Vérifiez votre boîte mail (et les spams) et cliquez sur le lien de confirmation pour activer votre compte.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-white">Nom complet</Label>
-                      <Input
-                        id="name"
-                        placeholder="Jean Dupont"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <Label htmlFor="email" className="text-white">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="votre.email@exemple.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="votre.email@exemple.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
                         className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                      />
-                    </div>
+                    />
+                  </div>
 
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <Label htmlFor="password" className="text-white">Mot de passe</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        minLength={6}
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      minLength={6}
                         className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                      />
-                      <p className="text-sm text-gray-500">
-                        Minimum 6 caractères
-                      </p>
-                    </div>
+                    />
+                    <p className="text-sm text-gray-500">
+                      Minimum 6 caractères
+                    </p>
+                  </div>
 
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <Label htmlFor="confirmPassword" className="text-white">Confirmer le mot de passe</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        required
-                        minLength={6}
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                      minLength={6}
                         className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                      />
-                    </div>
+                    />
+                  </div>
 
-                    <div className="flex items-start">
-                      <input
-                        id="terms"
-                        type="checkbox"
+                  <div className="flex items-start">
+                    <input
+                      id="terms"
+                      type="checkbox"
                         className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 mt-1"
-                        required
-                      />
+                      required
+                    />
                       <label htmlFor="terms" className="ml-2 text-sm text-gray-400">
                         J\'accepte les{" "}
                         <a href="/cgu" className="text-blue-400 hover:text-blue-300 transition-colors">
                           conditions générales d\'utilisation
-                        </a>{" "}
-                        et la{" "}
+                      </a>{" "}
+                      et la{" "}
                         <a href="/politique-confidentialite" className="text-blue-400 hover:text-blue-300 transition-colors">
-                          politique de confidentialité
-                        </a>
-                      </label>
-                    </div>
+                        politique de confidentialité
+                      </a>
+                    </label>
+                  </div>
 
-                    <Button
-                      type="submit"
-                      size="lg"
+                  <Button
+                    type="submit"
+                    size="lg"
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-full"
-                      disabled={loading || success}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="size-5 mr-2 animate-spin" />
-                          Création en cours...
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="size-5 mr-2" />
-                          Créer mon compte
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+                    disabled={loading || success}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="size-5 mr-2 animate-spin" />
+                        Création en cours...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="size-5 mr-2" />
+                        Créer mon compte
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
 
-              {/* Login Link */}
-              <div className="mt-6 text-center">
+            {/* Login Link */}
+            <div className="mt-6 text-center">
                 <p className="text-gray-400">
-                  Vous avez déjà un compte ?{" "}
+                Vous avez déjà un compte ?{" "}
                   <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-                    Se connecter
-                  </Link>
-                </p>
-              </div>
+                  Se connecter
+                </Link>
+              </p>
+            </div>
 
-              {/* Back to Home */}
-              <div className="mt-4 text-center">
+            {/* Back to Home */}
+            <div className="mt-4 text-center">
                 <Link href="/" className="text-sm text-gray-500 hover:text-white transition-colors inline-flex items-center gap-2">
                   <ArrowLeft className="size-4" />
                   Retour à l&apos;accueil
-                </Link>
-              </div>
+              </Link>
+            </div>
             </motion.div>
           </div>
         </div>
