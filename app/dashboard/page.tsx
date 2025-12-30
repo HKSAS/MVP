@@ -53,6 +53,7 @@ interface AnalyzedAd {
   price: number;
   date: string;
   image?: string;
+  url?: string;
 }
 
 
@@ -273,6 +274,7 @@ export default function DashboardPage() {
           price: item.price_eur || item.price || 0,
           date: item.created_at || new Date().toISOString(),
           image: item.image_url || item.image,
+          url: item.url || undefined,
         }));
         setAnalyzedAds(ads);
       } else {
