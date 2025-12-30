@@ -40,15 +40,29 @@ export default function ContactPage() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     
-    setTimeout(() => {
-      setSending(false);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'envoi du message');
+      }
+
       toast.success("Message envoyé avec succès !", {
         description: "Nous vous répondrons dans les plus brefs délais.",
       });
+      
       setFormData({
         name: "",
         email: "",
@@ -56,7 +70,14 @@ export default function ContactPage() {
         subject: "",
         message: "",
       });
-    }, 1500);
+    } catch (error: any) {
+      console.error('Erreur envoi message:', error);
+      toast.error("Erreur lors de l'envoi du message", {
+        description: error.message || "Veuillez réessayer plus tard.",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -120,8 +141,8 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="text-white font-medium mb-1">Email</h3>
-                      <a href="mailto:contact@autoia.fr" className="text-blue-400 hover:text-blue-300 transition-colors">
-                        contact@autoia.fr
+                      <a href="mailto:contact@autovalia.fr" className="text-blue-400 hover:text-blue-300 transition-colors">
+                        contact@autovalia.fr
                       </a>
                       <p className="text-sm text-gray-500 mt-1">
                         Réponse sous 24h
@@ -144,23 +165,6 @@ export default function ContactPage() {
                       </a>
                       <p className="text-sm text-gray-500 mt-1">
                         Lun-Ven, 9h-18h
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
-                      <MapPin className="size-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-medium mb-1">Adresse</h3>
-                      <p className="text-gray-400 text-sm">
-                        123 Avenue de l&apos;Innovation<br />
-                        75001 Paris, France
                       </p>
                     </div>
                   </div>

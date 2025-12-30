@@ -7,8 +7,12 @@ import { createErrorResponse, ValidationError, InternalServerError } from '@/lib
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { logContactRequest } from '@/lib/tracking'
 import { getAuthenticatedUser } from '@/lib/auth'
+import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@autovalia.fr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -72,6 +76,8 @@ export async function POST(request: NextRequest) {
       .insert({
         name: input.name,
         email: input.email,
+        phone: input.phone || null,
+        subject: input.subject || null,
         message: input.message,
         status: 'pending',
       })
@@ -86,6 +92,66 @@ export async function POST(request: NextRequest) {
     }
 
     log.info('Message enregistré', { messageId: data.id })
+
+    // Envoyer un email avec Resend si configuré
+    if (resend) {
+      try {
+        const emailSubject = input.subject || `Nouveau message de contact de ${input.name}`
+        const emailBody = `
+Bonjour,
+
+Vous avez reçu un nouveau message de contact depuis le site Autoval IA :
+
+Nom: ${input.name}
+Email: ${input.email}
+${input.phone ? `Téléphone: ${input.phone}` : ''}
+${input.subject ? `Sujet: ${input.subject}` : ''}
+
+Message:
+${input.message}
+
+---
+Ce message a été envoyé depuis le formulaire de contact du site.
+        `.trim()
+
+        await resend.emails.send({
+          from: 'Autoval IA <noreply@autovalia.fr>',
+          to: CONTACT_EMAIL,
+          replyTo: input.email,
+          subject: emailSubject,
+          text: emailBody,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3b82f6;">Nouveau message de contact</h2>
+              <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Nom:</strong> ${input.name}</p>
+                <p><strong>Email:</strong> <a href="mailto:${input.email}">${input.email}</a></p>
+                ${input.phone ? `<p><strong>Téléphone:</strong> <a href="tel:${input.phone}">${input.phone}</a></p>` : ''}
+                ${input.subject ? `<p><strong>Sujet:</strong> ${input.subject}</p>` : ''}
+              </div>
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1f2937;">Message:</h3>
+                <p style="white-space: pre-wrap; background: #ffffff; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 4px;">${input.message}</p>
+              </div>
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+              <p style="color: #6b7280; font-size: 12px;">Ce message a été envoyé depuis le formulaire de contact du site Autoval IA.</p>
+            </div>
+          `,
+        })
+
+        log.info('Email envoyé avec succès', { to: CONTACT_EMAIL })
+      } catch (emailError: any) {
+        log.warn('Erreur envoi email (non-bloquant)', { 
+          error: emailError?.message || String(emailError),
+          hasResend: !!resend,
+        })
+        // Ne pas bloquer la réponse si l'email échoue
+      }
+    } else {
+      log.warn('Resend non configuré, email non envoyé', { 
+        hasApiKey: !!process.env.RESEND_API_KEY,
+      })
+    }
 
     // Logging automatique dans contact_requests (non-bloquant)
     console.log('[Tracking] Appel logContactRequest', {
