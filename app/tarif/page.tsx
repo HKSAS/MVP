@@ -145,34 +145,34 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="bg-[#0a0a0a] text-white min-h-screen pt-20">
+    <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+        <div className="absolute top-1/4 left-1/3 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-12 px-4">
+      <section className="relative pt-16 sm:pt-24 md:pt-32 pb-8 sm:pb-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="space-y-6 mb-16"
+            className="space-y-4 sm:space-y-6 mb-8 sm:mb-12 md:mb-16"
           >
-            <Badge variant="secondary" className="bg-white/10 text-white border border-white/20 rounded-full px-4 py-2">
-              <Shield className="size-4 mr-2 inline" />
+            <Badge variant="secondary" className="bg-white/10 text-white border border-white/20 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
+              <Shield className="size-3 sm:size-4 mr-2 inline" />
               Tarifs transparents
             </Badge>
-            <h1 className="text-5xl md:text-6xl font-medium text-white">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white px-2">
               Choisissez votre
               <br />
               <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
                 mode d'accompagnement
               </span>
             </h1>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4">
               De l'autonomie complète à l'accompagnement premium, trouvez la formule qui vous correspond
             </p>
           </motion.div>
@@ -180,22 +180,22 @@ export default function PricingPage() {
       </section>
 
       {/* AutoIA Subscription Section */}
-      <section className="relative py-12 px-4">
+      <section className="relative py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm border border-blue-500/30 rounded-full px-6 py-2 mb-4">
-              <Zap className="size-5 text-blue-400" />
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm border border-blue-500/30 rounded-full px-4 sm:px-6 py-1.5 sm:py-2 mb-3 sm:mb-4 text-xs sm:text-sm">
+              <Zap className="size-4 sm:size-5 text-blue-400" />
               <span className="text-white">Abonnement mensuel</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-medium text-white mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-2 sm:mb-3 px-4">
               AutoIA en autonomie
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-4">
               Accédez à tous les outils IA pour rechercher et analyser vos annonces en toute autonomie
             </p>
           </motion.div>
@@ -207,26 +207,26 @@ export default function PricingPage() {
             className="max-w-2xl mx-auto"
           >
             <Card className="bg-gradient-to-br from-blue-600/10 to-purple-600/5 backdrop-blur-xl border-blue-500/30 rounded-2xl overflow-hidden">
-              <CardHeader className="space-y-4 p-8 pb-6">
+              <CardHeader className="space-y-3 sm:space-y-4 p-4 sm:p-6 md:p-8 pb-4 sm:pb-6">
                 <div>
-                  <h3 className="text-2xl font-medium text-white mb-2">{subscriptionPlan.name}</h3>
+                  <h3 className="text-xl sm:text-2xl font-medium text-white mb-2">{subscriptionPlan.name}</h3>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-6xl font-medium text-white">{subscriptionPlan.price}€</span>
-                  <span className="text-gray-400 text-lg">/ {subscriptionPlan.period}</span>
+                  <span className="text-4xl sm:text-5xl md:text-6xl font-medium text-white">{subscriptionPlan.price}€</span>
+                  <span className="text-sm sm:text-base md:text-lg text-gray-400">/ {subscriptionPlan.period}</span>
                 </div>
-                <p className="text-gray-300 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
                   {subscriptionPlan.description}
                 </p>
               </CardHeader>
-              <CardContent className="p-8 pt-0 space-y-6">
+              <CardContent className="p-4 sm:p-6 md:p-8 pt-0 space-y-4 sm:space-y-6">
                 <div>
-                  <h4 className="text-white font-medium mb-4">Contenu du pack :</h4>
-                  <ul className="space-y-3">
+                  <h4 className="text-sm sm:text-base text-white font-medium mb-3 sm:mb-4">Contenu du pack :</h4>
+                  <ul className="space-y-2 sm:space-y-3">
                     {subscriptionPlan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <Check className="size-5 text-green-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-200 text-sm">{feature}</span>
+                      <li key={i} className="flex items-start gap-2 sm:gap-3">
+                        <Check className="size-4 sm:size-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs sm:text-sm text-gray-200">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -234,11 +234,11 @@ export default function PricingPage() {
                 <Button
                   size="lg"
                   onClick={handleSubscribeClick}
-                  className="w-full py-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/25"
+                  className="w-full py-5 sm:py-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/25 text-sm sm:text-base h-12 sm:h-14"
                 >
                   <span className="flex items-center justify-center gap-2">
                     {subscriptionPlan.cta}
-                    <ArrowRight className="size-4" />
+                    <ArrowRight className="size-3 sm:size-4" />
                   </span>
                 </Button>
               </CardContent>
@@ -248,43 +248,43 @@ export default function PricingPage() {
       </section>
 
       {/* Divider */}
-      <div className="relative py-16 px-4">
+      <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/10"></div>
             </div>
-            <div className="relative bg-[#0a0a0a] px-6">
-              <span className="text-gray-500">ou</span>
+            <div className="relative bg-[#0a0a0a] px-4 sm:px-6">
+              <span className="text-sm sm:text-base text-gray-500">ou</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Concierge Services Section */}
-      <section className="relative py-12 px-4">
+      <section className="relative py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-sm border border-purple-500/30 rounded-full px-6 py-2 mb-4">
-              <Sparkles className="size-5 text-purple-400" />
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-sm border border-purple-500/30 rounded-full px-4 sm:px-6 py-1.5 sm:py-2 mb-3 sm:mb-4 text-xs sm:text-sm">
+              <Sparkles className="size-4 sm:size-5 text-purple-400" />
               <span className="text-white">Services de conciergerie</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-medium text-white mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-2 sm:mb-3 px-4">
               Conciergerie automobile clé en main
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-4">
               Bénéficiez d'un accompagnement complet de A à Z dans votre achat automobile
             </p>
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
             {conciergePlans.map((plan, index) => (
               <motion.div
                 key={plan.name}
@@ -295,8 +295,8 @@ export default function PricingPage() {
                 className="relative"
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <Badge className="bg-purple-600 text-white border-0 px-4 py-1.5 rounded-full shadow-lg">
+                  <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <Badge className="bg-purple-600 text-white border-0 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-lg text-xs sm:text-sm">
                       Le plus populaire
                     </Badge>
                   </div>
@@ -308,33 +308,33 @@ export default function PricingPage() {
                       : 'border-white/10 hover:border-white/20'
                   }`}
                 >
-                  <CardHeader className="space-y-4 p-8 pb-6">
+                  <CardHeader className="space-y-3 sm:space-y-4 p-4 sm:p-6 md:p-8 pb-4 sm:pb-6">
                     <div>
-                      <h3 className="text-2xl font-medium text-white mb-2">{plan.name}</h3>
+                      <h3 className="text-xl sm:text-2xl font-medium text-white mb-2">{plan.name}</h3>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-medium text-white">{plan.price}€</span>
-                      <span className="text-gray-400">/ {plan.period}</span>
+                      <span className="text-4xl sm:text-5xl font-medium text-white">{plan.price}€</span>
+                      <span className="text-sm sm:text-base text-gray-400">/ {plan.period}</span>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed">
+                    <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
                       {plan.description}
                     </p>
                   </CardHeader>
-                  <CardContent className="p-8 pt-0 space-y-6 flex-grow flex flex-col">
+                  <CardContent className="p-4 sm:p-6 md:p-8 pt-0 space-y-4 sm:space-y-6 flex-grow flex flex-col">
                     <div className="flex-grow">
-                      <h4 className="text-white font-medium mb-3 text-sm">Inclus :</h4>
-                      <ul className="space-y-2.5">
+                      <h4 className="text-xs sm:text-sm text-white font-medium mb-2 sm:mb-3">Inclus :</h4>
+                      <ul className="space-y-2 sm:space-y-2.5">
                         {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <Check className="size-4 text-green-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-300 text-sm">{feature}</span>
+                          <li key={i} className="flex items-start gap-2 sm:gap-3">
+                            <Check className="size-3 sm:size-4 text-green-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs sm:text-sm text-gray-300">{feature}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <Button
                       onClick={handlePackClick(plan.name, plan.price)}
-                      className={`w-full py-6 rounded-xl transition-all ${
+                      className={`w-full py-4 sm:py-5 md:py-6 rounded-xl transition-all text-sm sm:text-base h-11 sm:h-12 md:h-14 ${
                         plan.highlighted
                           ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/25'
                           : 'bg-white/10 text-white hover:bg-white/15 border border-white/20'
@@ -359,23 +359,23 @@ export default function PricingPage() {
             className="max-w-3xl mx-auto"
           >
             <Card className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 backdrop-blur-xl border-orange-500/30 rounded-2xl overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full p-3">
-                    <Gift className="size-6 text-white" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full p-2 sm:p-3 flex-shrink-0">
+                    <Gift className="size-5 sm:size-6 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium mb-2">Bonus exclusif</h4>
-                    <p className="text-gray-300 text-sm leading-relaxed mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm sm:text-base text-white font-medium mb-2">Bonus exclusif</h4>
+                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-3">
                       Le montant de l'abonnement AutoIA est déduit si vous passez à un pack Essentiel, Confort ou Premium.
                     </p>
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 text-xs text-gray-400">
                       <div className="flex items-center gap-1.5">
-                        <Shield className="size-3.5 text-green-400" />
+                        <Shield className="size-3 sm:size-3.5 text-green-400 flex-shrink-0" />
                         <span>Paiement sécurisé</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Check className="size-3.5 text-green-400" />
+                        <Check className="size-3 sm:size-3.5 text-green-400 flex-shrink-0" />
                         <span>Service sans engagement</span>
                       </div>
                     </div>
@@ -388,18 +388,18 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 px-4 border-t border-white/10 mt-12">
+      <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 border-t border-white/10 mt-6 sm:mt-12">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-medium text-white mb-4">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium text-white mb-3 sm:mb-4 px-4">
               Questions fréquentes
             </h2>
-            <p className="text-xl text-gray-400">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">
               Tout ce que vous devez savoir sur nos services
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {[
               {
                 question: "Quelle est la différence entre AutoIA et les prestations ?",
@@ -430,9 +430,9 @@ export default function PricingPage() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300 rounded-2xl">
-                  <CardContent className="p-8">
-                    <h3 className="text-xl font-medium text-white mb-3">{faq.question}</h3>
-                    <p className="text-gray-400 leading-relaxed">{faq.answer}</p>
+                  <CardContent className="p-4 sm:p-6 md:p-8">
+                    <h3 className="text-base sm:text-lg md:text-xl font-medium text-white mb-2 sm:mb-3">{faq.question}</h3>
+                    <p className="text-sm sm:text-base text-gray-400 leading-relaxed">{faq.answer}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -442,40 +442,42 @@ export default function PricingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4">
+      <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-12 space-y-8"
+            className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 space-y-6 sm:space-y-8"
           >
-            <h2 className="text-4xl md:text-5xl font-medium text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium text-white px-4">
               Prêt à trouver votre voiture ?
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
               Que vous préfériez l'autonomie ou l'accompagnement, nous avons la solution pour vous
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4">
               <Button 
                 size="lg" 
                 onClick={handleSubscribeClick}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-6 text-base rounded-full shadow-lg shadow-blue-500/25"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full shadow-lg shadow-blue-500/25 w-full sm:w-auto h-11 sm:h-12"
               >
-                <span className="flex items-center gap-2">
-                  Essayer AutoIA gratuitement
-                  <ArrowRight className="size-4" />
+                <span className="flex items-center justify-center gap-2">
+                  <span className="hidden sm:inline">Essayer AutoIA gratuitement</span>
+                  <span className="sm:hidden">Essayer AutoIA</span>
+                  <ArrowRight className="size-3 sm:size-4" />
                 </span>
               </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
                 asChild
-                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white px-8 py-6 text-base rounded-full backdrop-blur-sm"
+                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base rounded-full backdrop-blur-sm w-full sm:w-auto h-11 sm:h-12"
               >
-                <Link href="/contact">
-                  Demander un accompagnement
+                <Link href="/contact" className="flex items-center justify-center">
+                  <span className="hidden sm:inline">Demander un accompagnement</span>
+                  <span className="sm:hidden">Nous contacter</span>
                 </Link>
               </Button>
             </div>
