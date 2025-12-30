@@ -117,7 +117,7 @@ async function extractFromHTMLBrut(
   log.info(`[LBC] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
 
   // Chercher d'abord __NEXT_DATA__ dans le HTML brut (il peut être présent)
-  const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)
+  const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
   
   if (jsonMatch) {
     try {
@@ -176,7 +176,7 @@ async function extractFromNextData(
   log.info(`[LBC] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
 
   // Chercher le JSON __NEXT_DATA__
-  const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)
+  const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
   
   if (!jsonMatch) {
     log.warn('[LBC] ⚠️ __NEXT_DATA__ non trouvé dans le HTML')
