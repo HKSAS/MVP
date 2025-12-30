@@ -126,8 +126,19 @@ export async function GET(request: NextRequest) {
     // Si on demande une analyse spécifique (pour récupérer les résultats complets)
     const analysisId = searchParams.get('id')
     if (analysisId) {
+      log.info('Récupération analyse spécifique', {
+        analysisId,
+        userId: user.id,
+        totalAnalyses: analyzedListings?.length || 0,
+      })
+
       const analysis = analyzedListings?.find(a => a.id === analysisId)
       if (analysis) {
+        log.info('Analyse trouvée', {
+          analysisId: analysis.id,
+          hasAnalysisResult: !!analysis.analysis_result,
+          url: analysis.url,
+        })
         return NextResponse.json({
           success: true,
           data: {
@@ -141,9 +152,14 @@ export async function GET(request: NextRequest) {
           },
         })
       } else {
+        log.error('Analyse non trouvée', {
+          analysisId,
+          userId: user.id,
+          availableIds: analyzedListings?.map(a => a.id) || [],
+        })
         return NextResponse.json({
           success: false,
-          error: 'Analyse non trouvée',
+          error: 'Analyse non trouvée ou vous n\'avez pas les droits pour y accéder',
         }, { status: 404 })
       }
     }

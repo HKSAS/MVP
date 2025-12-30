@@ -191,8 +191,21 @@ export default function AnalyzedAdsPage() {
       
       if (sessionError || !session?.access_token) {
         toast.error('Session expirée. Veuillez vous reconnecter.');
+        router.push('/login');
         return;
       }
+
+      if (!ad.id) {
+        toast.error('ID d\'analyse manquant');
+        console.error('❌ [VIEW REPORT] ID manquant:', ad);
+        return;
+      }
+
+      console.log('🔍 [VIEW REPORT] Chargement analyse:', {
+        id: ad.id,
+        title: ad.title,
+        url: ad.url,
+      });
 
       // Récupérer les résultats complets de l'analyse
       const response = await fetch(`/api/me/analyzed-listings?id=${ad.id}`, {
@@ -201,36 +214,65 @@ export default function AnalyzedAdsPage() {
         }
       });
 
+      const data = await response.json();
+
+      console.log('📋 [VIEW REPORT] Réponse API:', {
+        ok: response.ok,
+        status: response.status,
+        success: data.success,
+        hasData: !!data.data,
+        hasAnalysisResult: !!data.data?.analysis_result,
+        error: data.error,
+      });
+
       if (!response.ok) {
-        throw new Error('Erreur lors de la récupération de l\'analyse');
+        if (response.status === 401) {
+          toast.error('Session expirée. Veuillez vous reconnecter.');
+          router.push('/login');
+          return;
+        }
+        if (response.status === 404) {
+          toast.error('Cette analyse n\'existe pas ou a été supprimée');
+          // Recharger la liste des analyses
+          loadAnalyses();
+          return;
+        }
+        toast.error(data.error || 'Erreur lors de la récupération de l\'analyse');
+        console.error('❌ [VIEW REPORT] Erreur API:', {
+          status: response.status,
+          error: data.error,
+        });
+        return;
       }
 
-      const data = await response.json();
-      
       if (data.success && data.data) {
         // Si on a des résultats complets, les utiliser
         if (data.data.analysis_result) {
+          console.log('✅ [VIEW REPORT] Analyse trouvée avec résultats complets');
           localStorage.setItem('analysisResult', JSON.stringify(data.data.analysis_result));
           localStorage.setItem('analysisId', ad.id);
-          localStorage.setItem('analysisUrl', ad.url || '');
+          localStorage.setItem('analysisUrl', ad.url || data.data.url || '');
           router.push('/analyser?fromHistory=true');
+          return;
         } else if (ad.url) {
           // Si pas de résultats complets mais qu'on a l'URL, ouvrir l'URL
+          console.log('⚠️ [VIEW REPORT] Pas de résultats complets, ouverture de l\'URL');
           window.open(ad.url, '_blank', 'noopener,noreferrer');
-        } else {
-          router.push('/analyser');
-        }
-      } else {
-        // Si pas de résultats complets, rediriger vers la page d'analyse normale
-        if (ad.url) {
-          window.open(ad.url, '_blank', 'noopener,noreferrer');
-        } else {
-          router.push('/analyser');
+          return;
         }
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement du rapport:', error);
-      toast.error('Erreur lors du chargement du rapport');
+
+      // Si pas de résultats complets, rediriger vers la page d'analyse normale
+      console.warn('⚠️ [VIEW REPORT] Aucune donnée disponible, fallback');
+      if (ad.url) {
+        window.open(ad.url, '_blank', 'noopener,noreferrer');
+      } else {
+        toast.info('Redirection vers la page d\'analyse');
+        router.push('/analyser');
+      }
+    } catch (error: any) {
+      console.error('❌ [VIEW REPORT] Erreur lors du chargement du rapport:', error);
+      toast.error(error.message || 'Erreur lors du chargement du rapport');
       // Fallback : rediriger vers la page d'analyse normale
       router.push('/analyser');
     }
