@@ -173,7 +173,14 @@ ${input.message}
 Ce message a été envoyé depuis le formulaire de contact du site.
         `.trim()
 
-        await resend.emails.send({
+        log.info('Tentative envoi email Resend', {
+          from: 'Autoval IA <noreply@autovalia.fr>',
+          to: CONTACT_EMAIL,
+          replyTo: input.email,
+          subject: emailSubject,
+        })
+
+        const emailResult = await resend.emails.send({
           from: 'Autoval IA <noreply@autovalia.fr>',
           to: CONTACT_EMAIL,
           replyTo: input.email,
@@ -190,7 +197,7 @@ Ce message a été envoyé depuis le formulaire de contact du site.
               </div>
               <div style="margin: 20px 0;">
                 <h3 style="color: #1f2937;">Message:</h3>
-                <p style="white-space: pre-wrap; background: #ffffff; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 4px;">${input.message}</p>
+                <p style="white-space: pre-wrap; background: #ffffff; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 4px;">${input.message.replace(/\n/g, '<br>')}</p>
               </div>
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
               <p style="color: #6b7280; font-size: 12px;">Ce message a été envoyé depuis le formulaire de contact du site Autoval IA.</p>
@@ -198,17 +205,28 @@ Ce message a été envoyé depuis le formulaire de contact du site.
           `,
         })
 
-        log.info('Email envoyé avec succès', { to: CONTACT_EMAIL })
-      } catch (emailError: any) {
-        log.warn('Erreur envoi email (non-bloquant)', { 
-          error: emailError?.message || String(emailError),
-          hasResend: !!resend,
+        log.info('Email envoyé avec succès', { 
+          to: CONTACT_EMAIL,
+          emailId: emailResult.data?.id,
         })
-        // Ne pas bloquer la réponse si l'email échoue
+      } catch (emailError: any) {
+        log.error('Erreur envoi email Resend', { 
+          error: emailError?.message || String(emailError),
+          stack: emailError?.stack,
+          hasResend: !!resend,
+          hasApiKey: !!process.env.RESEND_API_KEY,
+        })
+        // Ne pas bloquer la réponse si l'email échoue, mais logger l'erreur
+        console.error('[CONTACT] Erreur envoi email:', emailError)
       }
     } else {
       log.warn('Resend non configuré, email non envoyé', { 
         hasApiKey: !!process.env.RESEND_API_KEY,
+        contactEmail: CONTACT_EMAIL,
+      })
+      console.warn('[CONTACT] Resend non configuré. Variables:', {
+        hasApiKey: !!process.env.RESEND_API_KEY,
+        contactEmail: CONTACT_EMAIL,
       })
     }
 
