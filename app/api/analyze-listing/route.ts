@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { scrapeWithZenRows } from '@/lib/zenrows'
 import { openai } from '@/lib/openai'
 import { getAuthenticatedUser } from '@/lib/auth'
+
+export const dynamic = 'force-dynamic'
 import { analyzeListingSchema, type AnalyzeListingInput } from '@/lib/validation'
 import type { AnalyzeListingResponse } from '@/lib/types'
 import { createRouteLogger } from '@/lib/logger'

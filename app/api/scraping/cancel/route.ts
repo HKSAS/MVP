@@ -11,6 +11,8 @@ import { getAuthenticatedUser } from '@/lib/auth'
 import { createRouteLogger } from '@/lib/logger'
 import { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } from '@/lib/env'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('api-scraping-cancel')
 
 // Client Supabase avec service role pour les opérations serveur

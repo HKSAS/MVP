@@ -14,6 +14,8 @@ import { getAuthenticatedUser } from '@/lib/auth'
 import { SCRAPING_CONFIG } from '@/lib/scrapers/config'
 import crypto from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('api-search-v2')
 
 // ============================================================================

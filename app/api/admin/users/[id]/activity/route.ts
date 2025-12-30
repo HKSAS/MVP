@@ -4,6 +4,8 @@ import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse } from '@/lib/errors'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/users/[id]/activity
  * Retourne les 20 dernières recherches et 20 dernières analyses d'un utilisateur

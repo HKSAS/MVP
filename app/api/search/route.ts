@@ -19,6 +19,8 @@ import { scrapeWithZenRows } from '@/lib/zenrows'
 import { logAiSearch } from '@/lib/tracking'
 import { createScrapingJob, updateJobStatus, isJobCancelled, JobCancelledError } from '@/lib/scraping-jobs'
 
+export const dynamic = 'force-dynamic'
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================

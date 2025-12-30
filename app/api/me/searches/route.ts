@@ -5,6 +5,8 @@ import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse, AuthenticationError, InternalServerError } from '@/lib/errors'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/me/searches
  * Retourne les dernières recherches de l'utilisateur authentifié

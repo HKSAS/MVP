@@ -14,6 +14,8 @@ import { requireAuth } from '@/lib/auth'
 import { logAiSearch, logAiAnalysis, logContactRequest } from '@/lib/tracking'
 import { createRouteLogger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('/api/dev/tracking-smoke-test')
 
 export async function GET(request: NextRequest) {

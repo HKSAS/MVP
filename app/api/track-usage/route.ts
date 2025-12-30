@@ -10,6 +10,8 @@ import { requireAuth } from '@/lib/auth'
 import { trackUsage } from '@/lib/auth/usage-tracker'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Vérifier l'authentification

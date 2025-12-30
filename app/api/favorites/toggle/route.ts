@@ -6,6 +6,8 @@ import { createErrorResponse, ValidationError, AuthenticationError } from '@/lib
 import { z } from 'zod'
 import type { ToggleFavoriteBody, ToggleFavoriteResponse } from '@/lib/types/favorites'
 
+export const dynamic = 'force-dynamic'
+
 const log = createRouteLogger('/api/favorites/toggle')
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
