@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -974,8 +975,13 @@ export default function AnalyzePage() {
                 <p className="text-gray-400 mb-4">
                   Nos experts peuvent vous accompagner pour la négociation et l'achat final
                 </p>
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white">
-                  Contacter un expert
+                <Button 
+                  asChild
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                >
+                  <Link href="/contact">
+                    Contacter un expert
+                  </Link>
                 </Button>
               </div>
             </motion.div>
