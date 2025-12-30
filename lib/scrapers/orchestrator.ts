@@ -194,21 +194,9 @@ export async function orchestrateSearch(
   const allItems: Listing[] = []
   for (const siteResult of results) {
     if (siteResult.ok && siteResult.items.length > 0) {
-      // Convertir ListingResponse vers Listing temporairement
+      // Les items sont déjà de type Listing (pas ListingResponse)
       for (const item of siteResult.items) {
-        allItems.push({
-          id: item.id,
-          sourceSite: siteResult.site,
-          url: item.url,
-          title: item.title,
-          price: item.price_eur || 0,
-          year: item.year,
-          mileage: item.mileage_km,
-          imageUrl: item.imageUrl,
-          score_ia: item.score_ia,
-          matchScore: item.score_final,
-          scrapedAt: new Date().toISOString(),
-        })
+        allItems.push(item)
       }
     }
   }
