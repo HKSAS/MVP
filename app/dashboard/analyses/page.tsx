@@ -234,7 +234,7 @@ export default function AnalyzedAdsPage() {
         if (response.status === 404) {
           toast.error('Cette analyse n\'existe pas ou a été supprimée');
           // Recharger la liste des analyses
-          loadAnalyses();
+          loadAnalyzedAds();
           return;
         }
         toast.error(data.error || 'Erreur lors de la récupération de l\'analyse');
