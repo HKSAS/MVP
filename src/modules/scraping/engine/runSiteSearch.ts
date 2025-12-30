@@ -43,7 +43,8 @@ export async function runSiteSearch(
   const result = await oldRunSiteSearch(siteName, query, [])
   
   // Récupérer les listings depuis le résultat (propriété supplémentaire)
-  const resultWithListings = result as typeof result & { listings?: ListingNormalized[] }
+  // Le résultat de oldRunSiteSearch a une propriété listings de type ListingResponse[]
+  const resultWithListings = result as typeof result & { listings?: any[] }
   const rawListings = resultWithListings.listings || []
   
   // Mapper les listings depuis ListingResponse vers ListingNormalized
@@ -56,7 +57,7 @@ export async function runSiteSearch(
     mileage: listing.mileage_km ?? listing.mileage ?? null,
     fuel: listing.fuelType || listing.fuel || null,
     gearbox: listing.gearbox || null,
-    city: listing.city || null,
+    city: listing.city ?? null,
     url: listing.url || '',
     image_url: listing.imageUrl || listing.image_url || null,
     source: listing.source || listing.sourceSite || siteName,
