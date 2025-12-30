@@ -32,6 +32,11 @@ export async function GET(
 
     const searchId = params.id
 
+    log.info('Récupération recherche', {
+      searchId,
+      userId: user.id,
+    })
+
     // Récupérer la recherche
     const { data: searchQuery, error: queryError } = await supabase
       .from('search_queries')
@@ -41,16 +46,36 @@ export async function GET(
       .single()
 
     if (queryError || !searchQuery) {
+      // Log détaillé pour debug
       log.error('Recherche non trouvée', {
         searchId,
         userId: user.id,
         error: queryError?.message,
+        errorCode: queryError?.code,
+        errorDetails: queryError?.details,
+        errorHint: queryError?.hint,
       })
+
+      // Vérifier si c'est une erreur de permission ou si la recherche n'existe vraiment pas
+      if (queryError?.code === 'PGRST116') {
+        // Aucune ligne trouvée
+        log.warn('Aucune recherche trouvée avec cet ID pour cet utilisateur', {
+          searchId,
+          userId: user.id,
+        })
+      }
+
       return NextResponse.json(
-        { success: false, error: 'Recherche non trouvée' },
+        { success: false, error: 'Recherche non trouvée ou vous n\'avez pas les droits pour y accéder' },
         { status: 404 }
       )
     }
+
+    log.info('Recherche trouvée', {
+      searchId: searchQuery.id,
+      status: searchQuery.status,
+      resultsCount: searchQuery.results_count,
+    })
 
     // Récupérer les résultats de la recherche
     const { data: searchResults, error: resultsError } = await supabase
@@ -63,8 +88,15 @@ export async function GET(
       log.error('Erreur récupération résultats', {
         searchId,
         error: resultsError.message,
+        errorCode: resultsError.code,
       })
+      // Ne pas retourner d'erreur, on continue avec un tableau vide
     }
+
+    log.info('Résultats récupérés', {
+      searchId,
+      resultsCount: searchResults?.length || 0,
+    })
 
     // Formater les résultats
     const formattedResults = (searchResults || []).map((result: any) => ({
