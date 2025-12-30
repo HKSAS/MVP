@@ -23,9 +23,6 @@ export async function POST(req: NextRequest) {
     // Valider les variables d'environnement critiques
     try {
       getStripeSecretKey()
-      if (!NEXT_PUBLIC_SITE_URL) {
-        throw new Error('NEXT_PUBLIC_SITE_URL manquante')
-      }
     } catch (envError: any) {
       log.error('[CHECKOUT] Configuration manquante', { error: envError.message })
       return NextResponse.json(
@@ -90,9 +87,17 @@ export async function POST(req: NextRequest) {
     })
 
     // Créer la session Checkout
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
+    // Utiliser NEXT_PUBLIC_SITE_URL si définie, sinon construire depuis les headers de la requête
+    let siteUrl = NEXT_PUBLIC_SITE_URL
+    if (!siteUrl) {
+      // Fallback : construire l'URL depuis les headers de la requête
+      const host = req.headers.get('host')
+      const protocol = req.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+      siteUrl = `${protocol}://${host}`
+      log.warn('[CHECKOUT] NEXT_PUBLIC_SITE_URL non définie, utilisation du fallback', { siteUrl })
+    }
     
-      log.info('[CHECKOUT] Création session', { email, plan, priceId })
+    log.info('[CHECKOUT] Création session', { email, plan, priceId, siteUrl })
     
     // Récupérer les détails du prix depuis Stripe pour déterminer son type
     let priceDetails: Stripe.Price
