@@ -6,7 +6,7 @@ import { createSearch, updateSearchStatus, getSearch } from '../repo/searches'
 import { createSiteRun } from '../repo/site_runs'
 import { createListingRaw, createListingsBatch } from '../repo/listings'
 import { runAllSites } from '@/src/modules/scraping/engine/runAllSites'
-import { deduplicateListings } from '../domain/dedup'
+import { deduplicateListingsNormalized } from '../domain/dedup'
 import { scoreAllListings } from '../domain/scoring'
 import type { SearchParams, ListingNormalized } from '@/src/core/types'
 import { createRouteLogger } from '@/src/core/logger'
@@ -122,7 +122,7 @@ export async function executeSearch(searchId: string): Promise<SearchResult> {
     )
 
     // Déduplication
-    const uniqueListings = deduplicateListings(allListings)
+    const uniqueListings = deduplicateListingsNormalized(allListings)
     log.info('Déduplication terminée', {
       before: allListings.length,
       after: uniqueListings.length,
