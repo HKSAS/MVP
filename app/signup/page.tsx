@@ -719,23 +719,23 @@ export default function SignupPage() {
                     />
                   </div>
 
-                  <div className="flex items-start">
+                  <div className="flex items-start gap-3">
                     <input
                       id="terms"
                       type="checkbox"
-                        className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 mt-1"
+                        className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 mt-1 flex-shrink-0"
                       required
                     />
-                      <label htmlFor="terms" className="ml-2 text-sm text-gray-400">
-                        J\'accepte les{" "}
-                        <a href="/cgu" className="text-blue-400 hover:text-blue-300 transition-colors">
-                          conditions générales d\'utilisation
-                      </a>{" "}
-                      et la{" "}
-                        <a href="/politique-confidentialite" className="text-blue-400 hover:text-blue-300 transition-colors">
-                        politique de confidentialité
-                      </a>
-                    </label>
+                      <label htmlFor="terms" className="text-sm text-gray-400 leading-relaxed">
+                        J&apos;accepte les{" "}
+                        <Link href="/cgu" className="text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2">
+                          conditions générales d&apos;utilisation
+                        </Link>{" "}
+                        et la{" "}
+                        <Link href="/politique-confidentialite" className="text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2">
+                          politique de confidentialité
+                        </Link>
+                      </label>
                   </div>
 
                   <Button
