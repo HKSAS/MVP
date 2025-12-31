@@ -43,10 +43,13 @@ export async function scrapeLaCentrale(
     // STRATÉGIE 0 : Essayer HTML brut SANS js_render d'abord (comme LeBonCoin)
     // LaCentrale peut avoir les données dans le HTML brut, c'est beaucoup plus rapide
     log.info('[LACENTRALE] 📡 Tentative HTML brut SANS js_render (comme LeBonCoin)...', { pass })
-    const listingsFromHTMLBrutSansJS = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
+    let listingsFromHTMLBrutSansJS = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
+    
+    // Filtrer les résultats pour s'assurer qu'ils correspondent à la recherche
+    listingsFromHTMLBrutSansJS = filterListingsByQuery(listingsFromHTMLBrutSansJS, query, pass)
     
     if (listingsFromHTMLBrutSansJS.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrutSansJS.length} annonces via HTML brut sans JS`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrutSansJS.length} annonces via HTML brut sans JS (après filtrage)`, { pass })
       return {
         listings: listingsFromHTMLBrutSansJS,
         strategy: 'zenrows',
@@ -57,10 +60,13 @@ export async function scrapeLaCentrale(
     log.warn('[LACENTRALE] ⚠️ HTML brut sans JS vide, essai avec autoparse...', { pass })
     
     // STRATÉGIE 1 : Essayer avec autoparse de ZenRows pour extraire JSON directement
-    const listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
+    let listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
+    
+    // Filtrer les résultats
+    listingsFromAutoparse = filterListingsByQuery(listingsFromAutoparse, query, pass)
     
     if (listingsFromAutoparse.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse (après filtrage)`, { pass })
       return {
         listings: listingsFromAutoparse,
         strategy: 'zenrows',
@@ -71,10 +77,13 @@ export async function scrapeLaCentrale(
     log.warn('[LACENTRALE] ⚠️ Autoparse vide, essai HTML brut avec JSON embedded...', { pass })
     
     // STRATÉGIE 2 : Essayer HTML brut avec JSON embedded (si disponible)
-    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
+    let listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
+    
+    // Filtrer les résultats
+    listingsFromHTML = filterListingsByQuery(listingsFromHTML, query, pass)
     
     if (listingsFromHTML.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut (après filtrage)`, { pass })
       return {
         listings: listingsFromHTML,
         strategy: 'zenrows',
@@ -84,11 +93,14 @@ export async function scrapeLaCentrale(
 
     log.warn('[LACENTRALE] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
     
-    // STRATÉGIE 2 : Essayer avec JS rendering pour obtenir le JSON complet
-    const listings = await extractFromJSRender(targetUrl, abortSignal)
+    // STRATÉGIE 3 : Essayer avec JS rendering pour obtenir le JSON complet
+    let listings = await extractFromJSRender(targetUrl, abortSignal)
+    
+    // Filtrer les résultats
+    listings = filterListingsByQuery(listings, query, pass)
     
     if (listings.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via JS rendering`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via JS rendering (après filtrage)`, { pass })
       return {
         listings,
         strategy: 'zenrows',
@@ -98,11 +110,14 @@ export async function scrapeLaCentrale(
 
     log.warn('[LACENTRALE] ⚠️ JS rendering vide, essai avec parsing HTML...', { pass })
     
-    // STRATÉGIE 3 : Fallback vers parsing HTML classique
-    const listingsFromHTMLParsing = await extractFromHTMLParsing(targetUrl, abortSignal)
+    // STRATÉGIE 4 : Fallback vers parsing HTML classique
+    let listingsFromHTMLParsing = await extractFromHTMLParsing(targetUrl, abortSignal)
+    
+    // Filtrer les résultats
+    listingsFromHTMLParsing = filterListingsByQuery(listingsFromHTMLParsing, query, pass)
     
     if (listingsFromHTMLParsing.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLParsing.length} annonces via parsing HTML`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLParsing.length} annonces via parsing HTML (après filtrage)`, { pass })
       return {
         listings: listingsFromHTMLParsing,
         strategy: 'zenrows',
@@ -233,7 +248,7 @@ async function extractFromAutoparse(
     }
 
     log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites via autoparse`)
-    return listings.slice(0, 100) // Limiter à 100 annonces
+    return listings // Retourner toutes les annonces trouvées (pas de limite)
   } catch (error) {
     log.warn('[LACENTRALE] ⚠️ Erreur autoparse, passage à stratégie suivante', {
       error: error instanceof Error ? error.message : String(error),
@@ -698,7 +713,8 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
     // 2. Extraire depuis les matches HTML
     const allMatches = [...adLineMatches, ...vehicleMatches, ...articleMatches]
     
-    for (const match of allMatches.slice(0, 100)) {
+    // Augmenter la limite pour extraire plus d'annonces (500 au lieu de 100)
+    for (const match of allMatches.slice(0, 500)) {
       try {
         const listing = extractListingFromHtmlMatch(match)
         if (listing) {
@@ -719,7 +735,8 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
       const links: string[] = []
       let linkMatch
       
-      while ((linkMatch = adLinkRegex.exec(html)) !== null && links.length < 50) {
+      // Augmenter la limite pour extraire plus de liens (200 au lieu de 50)
+      while ((linkMatch = adLinkRegex.exec(html)) !== null && links.length < 200) {
         let linkPath = linkMatch[1]
         // Nettoyer l'URL (enlever fragments et query params inutiles)
         linkPath = linkPath.split('#')[0].split('?')[0]
@@ -899,14 +916,22 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
   const base = 'https://www.lacentrale.fr/listing'
   const searchParams = new URLSearchParams()
 
-  // Construire le filtre makesModels (format: "BRAND-MODEL")
-  const model = query.model || ''
-  const makesModels = `${query.brand}${model ? `-${model}` : ''}`
-  searchParams.set('makesModels', makesModels)
+  // Construire le filtre makesModels - LaCentrale utilise le format "BRAND-MODEL"
+  // Normaliser la marque et le modèle (majuscules, enlever espaces)
+  const brand = (query.brand || '').trim().toUpperCase().replace(/\s+/g, '-')
+  const model = (query.model || '').trim().toUpperCase().replace(/\s+/g, '-')
+  
+  // Si on a une marque, l'ajouter au makesModels
+  if (brand) {
+    const makesModels = model ? `${brand}-${model}` : brand
+    searchParams.set('makesModels', makesModels)
+  }
   
   // Prix selon la passe
   if (pass === 'strict') {
-    searchParams.set('priceMax', String(query.maxPrice || ''))
+    if (query.maxPrice) {
+      searchParams.set('priceMax', String(query.maxPrice))
+    }
     if (query.minPrice) {
       searchParams.set('priceMin', String(query.minPrice))
     }
@@ -928,7 +953,9 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
     searchParams.set('yearMin', String(query.minYear))
   }
 
-  return `${base}?${searchParams.toString()}`
+  const finalUrl = `${base}?${searchParams.toString()}`
+  log.info(`[LACENTRALE] 🔗 URL construite: ${finalUrl}`)
+  return finalUrl
 }
 
 /**
