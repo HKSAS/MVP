@@ -78,7 +78,7 @@ export async function scrapeLaCentrale(
       }
     }
 
-    log.warn('[LACENTRALE] ⚠️ Autoparse vide, essai HTML brut avec JSON embedded...', { pass })
+    log.warn(`[LACENTRALE] ⚠️ Autoparse: ${beforeFilterAutoparse} annonces trouvées mais ${listingsFromAutoparse.length} après filtrage, essai HTML brut avec JSON embedded...`, { pass })
     
     // STRATÉGIE 2 : Essayer HTML brut avec JSON embedded (si disponible)
     let listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
