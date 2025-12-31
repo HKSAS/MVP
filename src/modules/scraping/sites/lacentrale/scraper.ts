@@ -138,15 +138,13 @@ async function extractFromHTMLBrut(
   log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
   
   // Paramètres ZenRows premium pour éviter le blocage 422
-  const sessionId = generateSessionId()
-  log.info(`[LACENTRALE] Session ID généré: ${sessionId}`)
-  
+  // ⚠️ IMPORTANT : Ne PAS utiliser js_render pour LaCentrale (bloque)
+  // Les paramètres par défaut dans zenrows.ts ont js_render: 'true', on doit l'écraser
   const zenrowsParams = {
+    js_render: 'false', // ❌ PAS de JS rendering - LaCentrale bloque avec
     premium_proxy: 'true',
     proxy_country: 'fr',
     block_resources: 'image,media,font',
-    // Ajouter session_id pour éviter la détection (format alphanumérique valide)
-    session_id: sessionId,
   }
   
   const response = await scrapeWithZenRows(
@@ -167,6 +165,15 @@ async function extractFromHTMLBrut(
 
   const html = response
   log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
+  
+  // 🔍 DEBUG : Log HTML reçu
+  console.log('[LACENTRALE DEBUG] HTML reçu:', {
+    length: html.length,
+    hasListing: html.includes('listing') || html.includes('annonce'),
+    hasInitialState: html.includes('__INITIAL_STATE__'),
+    hasNextData: html.includes('__NEXT_DATA__'),
+    snippet: html.substring(0, 500),
+  })
 
   // Chercher d'abord __INITIAL_STATE__ ou __NEXT_DATA__ dans le HTML brut (comme LeBonCoin)
   // LaCentrale peut utiliser __INITIAL_STATE__ ou d'autres structures JSON
@@ -258,17 +265,13 @@ async function extractFromJSRender(
   log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
   
   // Paramètres ZenRows premium avec JS rendering pour fallback
-  const sessionId = generateSessionId()
-  log.info(`[LACENTRALE] Session ID généré (fallback JS): ${sessionId}`)
-  
+  // Essayer avec JS rendering en dernier recours, mais avec timeout réduit
   const zenrowsParams = {
     js_render: 'true',
     premium_proxy: 'true',
     proxy_country: 'fr',
     wait: '3000', // Réduire à 3s pour plus de vitesse
     block_resources: 'image,media,font',
-    // Ajouter session_id pour éviter la détection (format alphanumérique valide)
-    session_id: sessionId,
   }
   
   const response = await scrapeWithZenRows(
@@ -289,6 +292,15 @@ async function extractFromJSRender(
 
   const html = response
   log.info(`[LACENTRALE] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
+  
+  // 🔍 DEBUG : Log HTML reçu
+  console.log('[LACENTRALE DEBUG] HTML reçu (JS render):', {
+    length: html.length,
+    hasListing: html.includes('listing') || html.includes('annonce'),
+    hasInitialState: html.includes('__INITIAL_STATE__'),
+    hasNextData: html.includes('__NEXT_DATA__'),
+    snippet: html.substring(0, 500),
+  })
 
   // Chercher __INITIAL_STATE__ dans le HTML avec JS rendering
   const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
@@ -339,7 +351,19 @@ async function extractFromJSRender(
 
     log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__`)
 
-    return ads.map(mapLaCentraleAdToUnified)
+    const mappedAds = ads.map(mapLaCentraleAdToUnified)
+    
+    // 🔍 DEBUG : Log résultats mapping
+    console.log('[LACENTRALE DEBUG] Mapping terminé (JS render):', {
+      listingsFound: mappedAds.length,
+      firstListing: mappedAds[0] ? {
+        title: mappedAds[0].title,
+        price: mappedAds[0].price_eur,
+        url: mappedAds[0].url,
+      } : null,
+    })
+    
+    return mappedAds
 
   } catch (error) {
     log.error('[LACENTRALE] ❌ Erreur parsing JSON:', {
