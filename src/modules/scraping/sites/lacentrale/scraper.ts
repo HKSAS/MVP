@@ -46,7 +46,9 @@ export async function scrapeLaCentrale(
     let listingsFromHTMLBrutSansJS = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
     
     // Filtrer les résultats pour s'assurer qu'ils correspondent à la recherche
+    const beforeFilter = listingsFromHTMLBrutSansJS.length
     listingsFromHTMLBrutSansJS = filterListingsByQuery(listingsFromHTMLBrutSansJS, query, pass)
+    log.info(`[LACENTRALE] 📊 Filtrage HTML brut sans JS: ${beforeFilter} → ${listingsFromHTMLBrutSansJS.length} annonces`, { pass })
     
     if (listingsFromHTMLBrutSansJS.length > 0) {
       log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrutSansJS.length} annonces via HTML brut sans JS (après filtrage)`, { pass })
@@ -63,7 +65,9 @@ export async function scrapeLaCentrale(
     let listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
     
     // Filtrer les résultats
+    const beforeFilterAutoparse = listingsFromAutoparse.length
     listingsFromAutoparse = filterListingsByQuery(listingsFromAutoparse, query, pass)
+    log.info(`[LACENTRALE] 📊 Filtrage autoparse: ${beforeFilterAutoparse} → ${listingsFromAutoparse.length} annonces`, { pass })
     
     if (listingsFromAutoparse.length > 0) {
       log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse (après filtrage)`, { pass })
@@ -922,21 +926,50 @@ function filterListingsByQuery(
   const brandLower = query.brand.toLowerCase().trim()
   const modelLower = query.model?.toLowerCase().trim()
   
+  // Normaliser la marque (par exemple, "AUDI" peut être écrit "audi" ou "Audi")
+  const brandVariations = [
+    brandLower,
+    brandLower.replace(/\s+/g, ''), // Enlever espaces
+    brandLower.replace(/\s+/g, '-'), // Remplacer par tirets
+  ]
+  
   return listings.filter((listing) => {
     // Vérifier la marque dans le titre
-    const titleLower = (listing.title || '').toLowerCase()
-    const hasBrand = titleLower.includes(brandLower)
+    const titleLower = (listing.title || '').toLowerCase().trim()
     
-    // Si un modèle est spécifié, vérifier qu'il est dans le titre aussi
+    // Vérifier si une des variations de la marque est présente
+    const hasBrand = brandVariations.some(brandVar => titleLower.includes(brandVar))
+    
+    // Si pas de marque trouvée, rejeter
+    if (!hasBrand) {
+      return false
+    }
+    
+    // Si un modèle est spécifié
     if (modelLower) {
-      const hasModel = titleLower.includes(modelLower)
-      // En mode strict, exiger les deux. En mode relaxed/opportunity, accepter juste la marque
+      const modelVariations = [
+        modelLower,
+        modelLower.replace(/\s+/g, ''),
+        modelLower.replace(/\s+/g, '-'),
+        ` ${modelLower} `, // Modèle avec espaces autour pour éviter "a3" dans "fa3"
+      ]
+      
+      const hasModel = modelVariations.some(modelVar => titleLower.includes(modelVar))
+      
+      // En mode strict, exiger marque ET modèle (mais être tolérant si la marque est claire)
       if (pass === 'strict') {
-        return hasBrand && hasModel
+        // Si on a la marque et le modèle, OK
+        if (hasBrand && hasModel) return true
+        // Sinon, seulement si on a la marque ET que le modèle est court (risque de faux positif)
+        if (hasBrand && modelLower.length >= 3) return false
+        // Si modèle très court (2 caractères), accepter même sans modèle exact (car peut être dans l'URL)
+        return hasBrand
       }
+      // En mode relaxed/opportunity, accepter si on a la marque OU le modèle
       return hasBrand || hasModel
     }
     
+    // Si pas de modèle spécifié, accepter si on a la marque
     return hasBrand
   })
 }
