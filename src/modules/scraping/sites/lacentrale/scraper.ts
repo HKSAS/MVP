@@ -338,6 +338,7 @@ async function extractFromHTMLBrut(
         premium_proxy: 'true',
         proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
         js_render: 'true', // Nécessaire pour éviter RESP001
+        wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
         block_resources: 'image,media,font',
       },
       abortSignal
