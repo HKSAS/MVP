@@ -55,7 +55,7 @@ export default function MySearchesPage() {
   async function loadHistory() {
     try {
       setLoading(true);
-
+      
       const supabase = getSupabaseBrowserClient();
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -81,7 +81,7 @@ export default function MySearchesPage() {
       }
 
       const data = await response.json();
-
+      
       if (data.success && data.data && Array.isArray(data.data)) {
         setSearches(data.data);
       } else {
@@ -94,12 +94,12 @@ export default function MySearchesPage() {
     } finally {
       setLoading(false);
     }
-  }
+    }
 
   async function deleteSearch(searchId: string) {
     try {
       setDeletingId(searchId);
-
+      
       const supabase = getSupabaseBrowserClient();
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -137,11 +137,11 @@ export default function MySearchesPage() {
 
       const supabase = getSupabaseBrowserClient();
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError || !session?.access_token) {
         toast.error('Session expirée. Veuillez vous reconnecter.');
         return;
-      }
+    }
 
       const response = await fetch('/api/me/searches', {
         method: 'DELETE',
@@ -153,7 +153,7 @@ export default function MySearchesPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Erreur lors de la suppression');
-      }
+    }
 
       setSearches([]);
       toast.success('Historique supprimé');
@@ -191,7 +191,7 @@ export default function MySearchesPage() {
         if (search.model) params.set('model', search.model);
         if (search.max_price && search.max_price > 0) params.set('max_price', search.max_price.toString());
         params.set('fromHistory', 'true');
-        
+
         router.push(`/resultats?${params.toString()}`);
         return;
       } catch (e) {
@@ -226,7 +226,7 @@ export default function MySearchesPage() {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-10 left-1/4 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
-        </div>
+            </div>
         
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
@@ -239,7 +239,7 @@ export default function MySearchesPage() {
                 <ArrowLeft className="size-4 mr-2" />
                 Retour au dashboard
               </Button>
-            </Link>
+              </Link>
             <h1 className="text-5xl md:text-6xl font-medium text-white mb-4">
               Mes recherches
             </h1>
@@ -268,7 +268,7 @@ export default function MySearchesPage() {
               </CardContent>
             </Card>
             <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-              <CardContent className="p-6">
+                  <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400">Résultats trouvés</span>
                   <TrendingUp className="size-5 text-purple-400" />
@@ -277,14 +277,14 @@ export default function MySearchesPage() {
                   {loading ? '...' : totalResults.toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">Annonces analysées</p>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
             <Card className="bg-white/5 backdrop-blur-xl border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400">Cette semaine</span>
                   <Calendar className="size-5 text-green-400" />
-                </div>
+            </div>
                 <div className="text-4xl font-medium text-green-400">
                   {loading ? '...' : recentSearches}
                 </div>
@@ -344,7 +344,7 @@ export default function MySearchesPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {[...Array(4)].map((_, i) => (
                     <Skeleton key={i} className="h-24 w-full bg-white/5" />
                   ))}
@@ -359,7 +359,7 @@ export default function MySearchesPage() {
                   >
                     Lancer une recherche
                   </Button>
-                </div>
+                            </div>
               ) : (
                 <div className="space-y-4">
                   {searches.map((search) => {
@@ -374,7 +374,7 @@ export default function MySearchesPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                         className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all group relative"
-                      >
+                            >
                         {/* Bouton supprimer individuel */}
                         <button
                           onClick={(e) => {
@@ -397,7 +397,7 @@ export default function MySearchesPage() {
                           <div className="text-white text-lg font-medium mb-2">
                             {queryText}
                           </div>
-                          
+
                           {/* Détails */}
                           <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
                             {search.max_price && search.max_price > 0 && (
@@ -422,16 +422,16 @@ export default function MySearchesPage() {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* Bouton voir les résultats */}
-                        <Button
+                          <Button
                           onClick={() => handleViewResults(search)}
-                          variant="outline"
+                            variant="outline"
                           size="icon"
                           className="bg-white/5 border-white/20 text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:border-none transition-all rounded-lg flex-shrink-0"
-                        >
+                          >
                           <ChevronRight className="size-5" />
-                        </Button>
+                          </Button>
                       </motion.div>
                     );
                   })}

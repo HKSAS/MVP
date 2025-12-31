@@ -127,15 +127,24 @@ async function extractFromHTMLBrut(
 ): Promise<ListingResponse[]> {
   log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
   
+  // Paramètres ZenRows premium pour éviter le blocage 422
+  const zenrowsParams = {
+    premium_proxy: 'true',
+    proxy_country: 'fr',
+    block_resources: 'image,media,font',
+    // Ajouter session_id pour éviter la détection
+    session_id: `lacentrale_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+  }
+  
   const response = await scrapeWithZenRows(
     url,
+    zenrowsParams,
+    abortSignal,
     {
-      // ⚠️ PAS de js_render - comme LeBonCoin
-      premium_proxy: 'true',
-      proxy_country: 'fr',
-      block_resources: 'image,media,font',
-    },
-    abortSignal
+      maxAttempts: 2, // Retry si 422
+      retryableStatuses: [422, 403, 429],
+      backoffMs: 2000,
+    }
   )
 
   if (!response || response.length < 100) {
@@ -235,16 +244,26 @@ async function extractFromJSRender(
 ): Promise<ListingResponse[]> {
   log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
   
+  // Paramètres ZenRows premium avec JS rendering pour fallback
+  const zenrowsParams = {
+    js_render: 'true',
+    premium_proxy: 'true',
+    proxy_country: 'fr',
+    wait: '3000', // Réduire à 3s pour plus de vitesse
+    block_resources: 'image,media,font',
+    // Ajouter session_id pour éviter la détection
+    session_id: `lacentrale_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+  }
+  
   const response = await scrapeWithZenRows(
     url,
+    zenrowsParams,
+    abortSignal,
     {
-      js_render: 'true',
-      premium_proxy: 'true',
-      proxy_country: 'fr',
-      wait: '5000',
-      block_resources: 'image,media,font',
-    },
-    abortSignal
+      maxAttempts: 2, // Retry si 422
+      retryableStatuses: [422, 403, 429],
+      backoffMs: 2000,
+    }
   )
 
   if (!response || response.length < 100) {

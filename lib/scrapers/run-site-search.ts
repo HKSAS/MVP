@@ -8,6 +8,7 @@ import { getOpenAIApiKey } from '@/lib/env'
 import { deduplicateListings } from '@/lib/dedupe'
 import { scoreAllListings } from '@/lib/scoring'
 import { SCRAPING_CONFIG, getTimeoutForSite, clampPrice } from './config'
+import { isSiteEnabled, getSiteTimeout } from './scraper-config'
 import { normalizeListingUrl } from './url-normalizer'
 import OpenAI from 'openai'
 import { parseParuVenduHtml, convertParuVenduToListingResponse } from './paruvendu-parser'
@@ -370,14 +371,30 @@ export async function runSiteSearch(
   originalQuery: ScrapeQuery,
   allListings: ListingResponse[] // Pour le scoring
 ): Promise<SiteResult> {
+  // Vérifier si le site est activé
+  if (!isSiteEnabled(siteName)) {
+    log.info(`[SITE] ${siteName} désactivé dans la configuration`, {
+      reason: SCRAPER_CONFIG?.[siteName]?.reason || 'Non configuré',
+    })
+    return {
+      site: siteName,
+      ok: false,
+      items: 0,
+      ms: 0,
+      strategy: 'ai-fallback',
+      error: `Site désactivé: ${SCRAPER_CONFIG?.[siteName]?.reason || 'Non configuré'}`,
+      attempts: [],
+    }
+  }
+  
   const siteStartTime = Date.now()
   const attempts: PassAttempt[] = []
   let allSiteListings: ListingResponse[] = []
   let finalStrategy: ScrapingStrategy = 'ai-fallback'
   
-  // Timeout global de 25s par site
+  // Timeout global selon la configuration du site
   const globalAbortController = new AbortController()
-  const globalTimeoutMs = 25000
+  const globalTimeoutMs = getSiteTimeout(siteName)
   const globalTimeoutId = setTimeout(() => {
     globalAbortController.abort()
   }, globalTimeoutMs)

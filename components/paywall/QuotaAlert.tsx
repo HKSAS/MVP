@@ -45,31 +45,31 @@ export function QuotaAlert({ actionType, onDismiss, variant = 'inline' }: Props)
               <AlertTitle className="text-white font-semibold mb-2">Quota épuisé</AlertTitle>
               <AlertDescription className="text-gray-300">
                 <strong className="text-white">Vous avez utilisé toutes vos {actionType === 'recherche' ? 'recherches' : actionType === 'analyse' ? 'analyses' : 'actions'} gratuites ce mois-ci.</strong>
-                <br />
-                <br />
+        <br />
+        <br />
                 Pour continuer à utiliser Autoval IA et bénéficier d&apos;un accès illimité, passez à un abonnement Premium.
-              </AlertDescription>
-              <div className="flex gap-3 mt-4">
-                <Button
-                  onClick={() => router.push('/tarif')}
+      </AlertDescription>
+        <div className="flex gap-3 mt-4">
+          <Button
+            onClick={() => router.push('/tarif')}
                   className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
                   Voir les tarifs Premium
                   <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleDismiss}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleDismiss}
                   className="text-gray-400 hover:text-white hover:bg-white/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Fermer
-                </Button>
+          >
+            <X className="w-4 h-4 mr-2" />
+            Fermer
+          </Button>
               </div>
             </div>
-          </div>
-        </Alert>
+        </div>
+      </Alert>
       </motion.div>
     )
   }
@@ -87,36 +87,36 @@ export function QuotaAlert({ actionType, onDismiss, variant = 'inline' }: Props)
           </div>
           <div className="flex-1">
             <AlertTitle className="text-white font-semibold flex items-center justify-between mb-2">
-              <span>Quota épuisé</span>
-              {onDismiss && (
-                <button
-                  onClick={handleDismiss}
+        <span>Quota épuisé</span>
+        {onDismiss && (
+          <button
+            onClick={handleDismiss}
                   className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full p-1 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </AlertTitle>
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </AlertTitle>
             <AlertDescription className="text-gray-300">
               <strong className="text-white">Vous avez utilisé toutes vos {actionType === 'recherche' ? 'recherches' : actionType === 'analyse' ? 'analyses' : 'actions'} gratuites ce mois-ci.</strong>
-              <br />
-              <br />
+        <br />
+        <br />
               Pour continuer à utiliser Autoval IA, <strong className="text-white">passez à un abonnement Premium</strong> et bénéficiez d&apos;un accès illimité à toutes les fonctionnalités.
-            </AlertDescription>
-            <div className="mt-4">
-              <Button
-                onClick={() => router.push('/tarif')}
-                size="sm"
+      </AlertDescription>
+      <div className="mt-4">
+        <Button
+          onClick={() => router.push('/tarif')}
+          size="sm"
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-purple-500/25"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
                 Voir les tarifs Premium
                 <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+        </Button>
             </div>
           </div>
-        </div>
-      </Alert>
+      </div>
+    </Alert>
     </motion.div>
   )
 }

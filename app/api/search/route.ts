@@ -14,6 +14,7 @@ import { createErrorResponse, ValidationError, ExternalServiceError, InternalSer
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } from '@/lib/env'
 import { SCRAPING_CONFIG, clampPrice } from '@/lib/scrapers/config'
+import { isSiteEnabled, getEnabledSites } from '@/lib/scrapers/scraper-config'
 import { openai } from '@/lib/openai'
 import { scrapeWithZenRows } from '@/lib/zenrows'
 import { logAiSearch } from '@/lib/tracking'
@@ -1491,8 +1492,13 @@ export async function POST(request: NextRequest) {
       } as SearchResponse & { success?: boolean; query?: any; sites?: any; listings?: ListingResponse[]; pagination?: any })
     }
 
-    // Filtrer les sites actifs
-    const activeSites = SITE_CONFIGS.filter(site => site.active)
+    // Filtrer les sites actifs selon la nouvelle configuration
+    const activeSites = SITE_CONFIGS.filter(site => {
+      // Vérifier d'abord si le site est activé dans la nouvelle configuration
+      const enabledInConfig = isSiteEnabled(site.name)
+      // Ensuite vérifier si le site est actif dans l'ancienne config (pour compatibilité)
+      return enabledInConfig && site.active
+    })
     
     if (activeSites.length === 0) {
       throw new InternalServerError('Aucun site actif configuré')

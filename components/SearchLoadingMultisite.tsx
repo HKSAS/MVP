@@ -231,8 +231,8 @@ export function SearchLoadingMultisite({
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
-      </div>
-
+          </div>
+          
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         {/* En-tête avec animations */}
         <motion.div
@@ -261,16 +261,16 @@ export function SearchLoadingMultisite({
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <Card className="bg-white/5 backdrop-blur-xl border-white/10 mb-8">
-            <CardContent className="p-6">
+          <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-400 font-medium">
-                    Progression globale
-                  </span>
+                  Progression globale
+                </span>
                   <span className="text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    {Math.round(progress)}%
-                  </span>
-                </div>
+                  {Math.round(progress)}%
+                </span>
+              </div>
                 <div className="relative h-3 bg-white/10 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
@@ -280,9 +280,9 @@ export function SearchLoadingMultisite({
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
         </motion.div>
 
         {/* Sources analysées - Grille de bulles avec nouveau design */}
@@ -292,17 +292,17 @@ export function SearchLoadingMultisite({
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <Card className="bg-white/5 backdrop-blur-xl border-white/10 mb-8">
-            <CardContent className="p-6">
+          <CardContent className="p-6">
               <h2 className="text-lg font-medium text-white mb-4">SOURCES ANALYSÉES</h2>
-              <ScrapingSourcesGrid
-                realSiteResults={realSiteResults}
-                elapsedSeconds={elapsedTime}
-              />
+            <ScrapingSourcesGrid
+              realSiteResults={realSiteResults}
+              elapsedSeconds={elapsedTime}
+            />
               <p className="text-sm text-gray-400 mt-6 text-center">
                 Chaque plateforme est analysée indépendamment. Les résultats s&apos;affichent dès que toutes les sources sont consolidées.
               </p>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </motion.div>
 
         {/* Étape active unique avec animation */}
@@ -315,28 +315,28 @@ export function SearchLoadingMultisite({
             transition={{ duration: 0.3 }}
           >
             <Card className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-blue-600/10 backdrop-blur-xl border-blue-500/30 mb-8">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <CurrentStepIcon className="size-6 text-white animate-spin" />
-                  </div>
-                  <div className="flex-1">
+              </div>
+              <div className="flex-1">
                     <h3 className="text-lg font-medium text-white mb-2">
-                      {currentStep.label}
-                    </h3>
+                  {currentStep.label}
+                </h3>
                     <p className="text-sm text-gray-300">
-                      {currentStep.description}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  {currentStep.description}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
           </motion.div>
         </AnimatePresence>
 
         {/* Message contextuel selon le temps */}
         <AnimatePresence>
-          {contextualMessage && (
+        {contextualMessage && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -344,17 +344,17 @@ export function SearchLoadingMultisite({
               transition={{ duration: 0.3 }}
             >
               <Card className="bg-white/5 backdrop-blur-xl border-white/10 mb-6">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
                     <AlertCircle className="size-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      {contextualMessage}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                  {contextualMessage}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
             </motion.div>
-          )}
+        )}
         </AnimatePresence>
 
         {/* Bouton d'annulation */}

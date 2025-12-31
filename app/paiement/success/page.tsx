@@ -62,7 +62,7 @@ export default function PaymentSuccessPage() {
         className="relative z-10"
       >
         <Card className="max-w-md w-full text-center bg-white/5 backdrop-blur-xl border-white/10">
-          <CardContent className="p-12">
+        <CardContent className="p-12">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -85,7 +85,7 @@ export default function PaymentSuccessPage() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-gray-400 mb-8"
             >
-              Votre abonnement Autoval IA Analyse est maintenant actif. Vous pouvez commencer à analyser des annonces immédiatement.
+            Votre abonnement Autoval IA Analyse est maintenant actif. Vous pouvez commencer à analyser des annonces immédiatement.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -93,8 +93,8 @@ export default function PaymentSuccessPage() {
               transition={{ duration: 0.5, delay: 0.5 }}
             >
               <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white" size="lg">
-                <Link href="/dashboard">Aller au Dashboard</Link>
-              </Button>
+            <Link href="/dashboard">Aller au Dashboard</Link>
+          </Button>
             </motion.div>
             <motion.p
               initial={{ opacity: 0 }}
@@ -102,10 +102,10 @@ export default function PaymentSuccessPage() {
               transition={{ duration: 0.5, delay: 0.6 }}
               className="text-sm text-gray-400 mt-4"
             >
-              Un email de confirmation a été envoyé à votre adresse
+            Un email de confirmation a été envoyé à votre adresse
             </motion.p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       </motion.div>
     </div>
   );

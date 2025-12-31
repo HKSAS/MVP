@@ -60,22 +60,22 @@ export default function Footer() {
             {/* Support */}
             <div>
               <h3 className="text-white mb-4">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/faq" className="hover:text-blue-400 transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-blue-400 transition-colors">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/a-propos" className="hover:text-blue-400 transition-colors">
-                  À propos
-                </Link>
-              </li>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link href="/faq" className="hover:text-blue-400 transition-colors">
+                    FAQ
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-blue-400 transition-colors">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/a-propos" className="hover:text-blue-400 transition-colors">
+                    À propos
+                  </Link>
+                </li>
               <li>
                 <a 
                   href="https://calendly.com/kamelhadri94/30min" 
@@ -87,7 +87,7 @@ export default function Footer() {
                   <span className="text-xs">↗</span>
                 </a>
               </li>
-            </ul>
+              </ul>
             </div>
 
             {/* Légal */}

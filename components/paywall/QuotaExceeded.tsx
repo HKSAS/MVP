@@ -48,7 +48,7 @@ export function QuotaExceeded({ actionType, open, onClose }: Props) {
         </div>
 
         <div className="relative z-10 bg-white/5 backdrop-blur-xl border-b border-white/10 p-6">
-          <DialogHeader>
+        <DialogHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <motion.div
@@ -61,11 +61,11 @@ export function QuotaExceeded({ actionType, open, onClose }: Props) {
                 </motion.div>
                 <div>
                   <DialogTitle className="text-2xl md:text-3xl font-medium text-white mb-1">
-                    Quota épuisé
-                  </DialogTitle>
+            Quota épuisé
+          </DialogTitle>
                   <DialogDescription className="text-gray-400 text-base">
                     Vous avez utilisé toutes vos {actionType === 'recherche' ? 'recherches' : 'analyses'} gratuites ce mois-ci
-                  </DialogDescription>
+          </DialogDescription>
                 </div>
               </div>
               <Button
@@ -77,7 +77,7 @@ export function QuotaExceeded({ actionType, open, onClose }: Props) {
                 <X className="w-5 h-5" />
               </Button>
             </div>
-          </DialogHeader>
+        </DialogHeader>
         </div>
         
         <div className="relative z-10 p-6 space-y-6">
@@ -129,25 +129,25 @@ export function QuotaExceeded({ actionType, open, onClose }: Props) {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex flex-col gap-3"
           >
-            <Button
-              onClick={handleUpgrade}
+          <Button
+            onClick={handleUpgrade}
               size="lg"
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-6 rounded-xl shadow-lg shadow-purple-500/25 transition-all group"
-            >
+          >
               <span className="flex items-center justify-center gap-2">
                 Voir les tarifs Premium
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
-            </Button>
-            
-            <Button
-              onClick={onClose}
-              variant="outline"
+          </Button>
+          
+          <Button
+            onClick={onClose}
+            variant="outline"
               size="lg"
               className="w-full border-white/20 text-gray-300 hover:bg-white/10 hover:text-white py-6 rounded-xl"
-            >
-              Plus tard
-            </Button>
+          >
+            Plus tard
+          </Button>
           </motion.div>
           
           <motion.p

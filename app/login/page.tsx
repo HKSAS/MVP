@@ -148,8 +148,8 @@ export default function LoginPage() {
       </div>
 
       <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md">
-          {/* Logo */}
+      <div className="w-full max-w-md">
+        {/* Logo */}
           <motion.div 
             className="text-center mb-8"
             initial={{ opacity: 0, y: 20 }}
@@ -157,125 +157,125 @@ export default function LoginPage() {
             transition={{ duration: 0.6 }}
           >
             <Link href="/" className="inline-flex flex-col items-center gap-4 mb-6">
-              <Image
-                src="/logo.png"
-                alt="Autoval IA Logo"
+            <Image
+              src="/logo.png"
+              alt="Autoval IA Logo"
                 width={96}
                 height={96}
                 className="h-24 w-24 object-contain"
-                style={{ 
+              style={{ 
                   filter: 'brightness(2) saturate(1.5) drop-shadow(0 0 10px rgba(59, 130, 246, 0.5))'
-                }}
-              />
+              }}
+            />
               <span className="text-3xl font-light text-white tracking-wide">Autoval IA</span>
-            </Link>
+          </Link>
             <h1 className="text-4xl font-medium text-white mb-2">
               Bon retour parmi nous
             </h1>
             <p className="text-gray-400">
-              Content de vous revoir ! Connectez-vous à votre compte.
-            </p>
+            Content de vous revoir ! Connectez-vous à votre compte.
+          </p>
           </motion.div>
 
-          {/* Login Form */}
+        {/* Login Form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
-              <CardContent className="p-8">
-                {infoMessage && (
-                  <div className="mb-4 rounded-lg border border-blue-500/50 bg-blue-500/10 p-3 text-sm text-blue-400">
-                    {infoMessage}
-                  </div>
-                )}
-                {error && (
+          <CardContent className="p-8">
+            {infoMessage && (
+              <div className="mb-4 rounded-lg border border-blue-500/50 bg-blue-500/10 p-3 text-sm text-blue-400">
+                {infoMessage}
+              </div>
+            )}
+            {error && (
                   <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400 whitespace-pre-line">
-                    {error}
-                  </div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
+                {error}
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
                     <Label htmlFor="email" className="text-white">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="votre.email@exemple.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre.email@exemple.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                       className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                    />
-                  </div>
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-white">Mot de passe</Label>
                       <a href="#" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                        Mot de passe oublié ?
-                      </a>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
+                    Mot de passe oublié ?
+                  </a>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                       className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
-                    />
-                  </div>
+                />
+              </div>
 
-                  <div className="flex items-center">
-                    <input
-                      id="remember"
-                      type="checkbox"
+              <div className="flex items-center">
+                <input
+                  id="remember"
+                  type="checkbox"
                       className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                    />
+                />
                     <label htmlFor="remember" className="ml-2 text-sm text-gray-400">
-                      Se souvenir de moi
-                    </label>
-                  </div>
+                  Se souvenir de moi
+                </label>
+              </div>
 
-                  <Button
-                    type="submit"
-                    size="lg"
+              <Button
+                type="submit"
+                size="lg"
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-full"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="size-5 mr-2 animate-spin" />
-                        Connexion...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="size-5 mr-2" />
-                        Se connecter
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="size-5 mr-2 animate-spin" />
+                    Connexion...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="size-5 mr-2" />
+                    Se connecter
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-            {/* Sign Up Link */}
-            <div className="mt-6 text-center">
+        {/* Sign Up Link */}
+        <div className="mt-6 text-center">
               <p className="text-gray-400">
-                Pas encore de compte ?{" "}
+            Pas encore de compte ?{" "}
                 <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
-                  Créer un compte gratuit
-                </Link>
-              </p>
-            </div>
+              Créer un compte gratuit
+            </Link>
+          </p>
+        </div>
 
-            {/* Back to Home */}
-            <div className="mt-4 text-center">
+        {/* Back to Home */}
+        <div className="mt-4 text-center">
               <Link href="/" className="text-sm text-gray-500 hover:text-white transition-colors inline-flex items-center gap-2">
                 <ArrowLeft className="size-4" />
                 Retour à l&apos;accueil
-              </Link>
+          </Link>
             </div>
           </motion.div>
         </div>
