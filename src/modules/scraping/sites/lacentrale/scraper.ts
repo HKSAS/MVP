@@ -40,8 +40,23 @@ export async function scrapeLaCentrale(
   log.info(`[LACENTRALE] 🎯 Scraping: ${targetUrl}`, { pass })
 
   try {
-    // STRATÉGIE 0 : Essayer avec autoparse de ZenRows pour extraire JSON directement
-    log.info('[LACENTRALE] 📡 Tentative avec autoparse ZenRows (extraction JSON automatique)...', { pass })
+    // STRATÉGIE 0 : Essayer HTML brut SANS js_render d'abord (comme LeBonCoin)
+    // LaCentrale peut avoir les données dans le HTML brut, c'est beaucoup plus rapide
+    log.info('[LACENTRALE] 📡 Tentative HTML brut SANS js_render (comme LeBonCoin)...', { pass })
+    const listingsFromHTMLBrutSansJS = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
+    
+    if (listingsFromHTMLBrutSansJS.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrutSansJS.length} annonces via HTML brut sans JS`, { pass })
+      return {
+        listings: listingsFromHTMLBrutSansJS,
+        strategy: 'zenrows',
+        ms: Date.now() - startTime,
+      }
+    }
+
+    log.warn('[LACENTRALE] ⚠️ HTML brut sans JS vide, essai avec autoparse...', { pass })
+    
+    // STRATÉGIE 1 : Essayer avec autoparse de ZenRows pour extraire JSON directement
     const listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
     
     if (listingsFromAutoparse.length > 0) {
@@ -55,7 +70,7 @@ export async function scrapeLaCentrale(
 
     log.warn('[LACENTRALE] ⚠️ Autoparse vide, essai HTML brut avec JSON embedded...', { pass })
     
-    // STRATÉGIE 1 : Essayer HTML brut avec JSON embedded (si disponible)
+    // STRATÉGIE 2 : Essayer HTML brut avec JSON embedded (si disponible)
     const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
     
     if (listingsFromHTML.length > 0) {
