@@ -311,8 +311,15 @@ function extractListingFromAutoparseItem(item: any): ListingResponse | null {
       imageUrl = `https://www.lacentrale.fr${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`
     }
     
-    // Extraire l'ID depuis l'URL ou créer un ID unique
-    const adIdMatch = fullUrl.match(/\/annonce\/([^\/\?]+)/) || fullUrl.match(/listing[^\/]*\/([^\/\?]+)/)
+    // Extraire l'ID depuis l'URL - LaCentrale utilise plusieurs formats :
+    // - /auto-occasion-annonce-XXXXX.html -> XXXXX
+    // - /annonce/XXXXX -> XXXXX
+    // - /annonce-XXXXX.html -> XXXXX
+    const adIdMatch = 
+      fullUrl.match(/\/auto-occasion-annonce-([^\/\.\?]+)/) ||
+      fullUrl.match(/\/annonce\/([^\/\?]+)/) ||
+      fullUrl.match(/\/annonce-([^\/\.\?]+)\.html/) ||
+      fullUrl.match(/listing[^\/]*\/([^\/\?]+)/)
     const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     return {
