@@ -138,6 +138,8 @@ async function extractFromAutoparse(
     zenrowsUrl.searchParams.set('url', url)
     zenrowsUrl.searchParams.set('autoparse', 'true')
     zenrowsUrl.searchParams.set('premium_proxy', 'true')
+    zenrowsUrl.searchParams.set('proxy_country', 'fr') // Recommandé par ZenRows pour éviter restrictions géographiques
+    zenrowsUrl.searchParams.set('js_render', 'true') // Nécessaire pour RESP001
     // Ne pas utiliser mode: auto avec autoparse, cela peut causer des conflits
 
     const response = await fetch(zenrowsUrl.toString(), {
@@ -463,13 +465,13 @@ async function extractFromJSRender(
   log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering...')
   
   try {
-    // Essayer d'abord sans proxy_country pour éviter RESP001
+    // Utiliser proxy_country: 'fr' comme recommandé par ZenRows
     const response = await scrapeWithZenRows(
       url,
       {
         js_render: 'true',
         premium_proxy: 'true',
-        // Pas de proxy_country pour éviter le blocage
+        proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
         wait: '5000',
         block_resources: 'image,media,font',
       },
