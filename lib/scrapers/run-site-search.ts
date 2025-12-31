@@ -8,7 +8,7 @@ import { getOpenAIApiKey } from '@/lib/env'
 import { deduplicateListings } from '@/lib/dedupe'
 import { scoreAllListings } from '@/lib/scoring'
 import { SCRAPING_CONFIG, getTimeoutForSite, clampPrice } from './config'
-import { isSiteEnabled, getSiteTimeout, SCRAPER_CONFIG } from './scraper-config'
+import { isSiteEnabled, getSiteTimeout, SCRAPER_CONFIG, getSiteConfig } from './scraper-config'
 import { normalizeListingUrl } from './url-normalizer'
 import OpenAI from 'openai'
 import { parseParuVenduHtml, convertParuVenduToListingResponse } from './paruvendu-parser'
@@ -552,7 +552,22 @@ export async function runSiteSearch(
       ms: pass1Ms,
       strategy: pass1Result.strategy,
     })
+    
+    // ✅ SI RÉSULTATS TROUVÉS → ARRÊTER ICI (on a assez de résultats)
+    if (pass1Result.listings.length > 0) {
+      log.info(`[${siteName}] ✅ SUCCÈS avec pass=strict: ${pass1Result.listings.length} annonces en ${pass1Ms}ms - skip passes suivantes`)
+      // On continue quand même pour avoir plus de résultats (on garde le comportement actuel)
+    }
+    
+    // ✅ SI 0 RÉSULTATS ET skipIfNoResults ACTIVÉ → SKIP LES PASSES SUIVANTES
+    const siteConfig = getSiteConfig(siteName)
+    if (pass1Result.listings.length === 0 && siteConfig?.skipIfNoResults) {
+      log.info(`[${siteName}] ⏭️ SKIP passes relaxed et opportunity (0 résultats en strict + skipIfNoResults=true)`)
+      // On sort de la boucle en ne faisant pas les passes suivantes
+      // On va directement à la fin de la fonction
+    }
   } catch (error) {
+    const siteConfig = getSiteConfig(siteName)
     attempts.push({
       pass: 'strict',
       ok: false,
@@ -560,10 +575,19 @@ export async function runSiteSearch(
       ms: Date.now() - siteStartTime,
       note: error instanceof Error ? error.message : 'Erreur inconnue',
     })
+    
+    // Si erreur en strict et skipIfNoResults → on skip aussi
+    if (siteConfig?.skipIfNoResults) {
+      log.info(`[${siteName}] ⏭️ SKIP passes suivantes (erreur en strict + skipIfNoResults=true)`)
+      // On sort de la boucle
+    }
   }
   
-  // PASS 2 : RELAXED (si pass 1 a peu ou 0 résultats)
-  if (allSiteListings.length < 10) {
+  // PASS 2 : RELAXED (si pass 1 a peu ou 0 résultats ET pas de skip)
+  const siteConfig = getSiteConfig(siteName)
+  const shouldSkipRelaxed = siteConfig?.skipIfNoResults && allSiteListings.length === 0
+  
+  if (!shouldSkipRelaxed && allSiteListings.length < 10) {
     try {
       const pass2Start = Date.now()
       const pass2Query = buildRelaxedQuery(originalQuery, 'relaxed')
@@ -629,8 +653,9 @@ export async function runSiteSearch(
     }
   }
   
-  // PASS 3 : OPPORTUNITY (si encore peu de résultats, surtout pour LeBonCoin)
-  if (allSiteListings.length < 5 && siteName === 'LeBonCoin') {
+  // PASS 3 : OPPORTUNITY (si encore peu de résultats, surtout pour LeBonCoin ET pas de skip)
+  const shouldSkipOpportunity = siteConfig?.skipIfNoResults && allSiteListings.length === 0
+  if (!shouldSkipOpportunity && allSiteListings.length < 5 && siteName === 'LeBonCoin') {
     try {
       const pass3Start = Date.now()
       const pass3Query = buildRelaxedQuery(originalQuery, 'opportunity')

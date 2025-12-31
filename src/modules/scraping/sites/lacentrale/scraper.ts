@@ -474,51 +474,23 @@ function cleanHtml(html: string): string {
  * Construction URL de recherche LaCentrale
  */
 function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
-  const base = 'https://www.lacentrale.fr/listing'
-  const searchParams = new URLSearchParams()
-
-  // Construire le filtre makesModelsCommercialNames - LaCentrale utilise le format "BRAND:MODEL"
-  // Format correct : RENAULT:CLIO (avec deux-points, pas tiret)
+  // ✅ RETOUR À L'ANCIENNE URL QUI MARCHAIT
+  // Format: makesModels=BRAND-MODEL (avec tiret, pas deux-points)
   const brand = (query.brand || '').trim().toUpperCase().replace(/\s+/g, '')
   const model = (query.model || '').trim().toUpperCase().replace(/\s+/g, '')
   
-  if (brand) {
-    if (model) {
-      // Format avec deux-points pour marque:modèle
-      const makeModel = `${brand}:${model}`
-      searchParams.set('makesModelsCommercialNames', makeModel)
-    } else {
-      // Seulement la marque
-      searchParams.set('makesModelsCommercialNames', brand)
-    }
+  // Ajuster le prix selon la passe
+  let priceMax = query.maxPrice
+  if (pass === 'relaxed') {
+    priceMax = Math.round(query.maxPrice * 1.1)
+  } else if (pass === 'opportunity') {
+    priceMax = Math.round(query.maxPrice * 1.2)
   }
   
-  // Prix selon la passe
-  if (pass === 'strict') {
-    if (query.maxPrice) {
-      searchParams.set('priceMax', String(query.maxPrice))
-    }
-    if (query.minPrice) {
-      searchParams.set('priceMin', String(query.minPrice))
-    }
-  } else if (pass === 'relaxed') {
-    const relaxedMax = Math.floor(query.maxPrice * 1.1)
-    searchParams.set('priceMax', String(relaxedMax))
-  } else {
-    // opportunity
-    const opportunityMax = Math.floor(query.maxPrice * 1.2)
-    searchParams.set('priceMax', String(opportunityMax))
-  }
+  const makeModel = `${brand}-${model}`
+  const url = `https://www.lacentrale.fr/listing?makesModels=${encodeURIComponent(makeModel)}&priceMax=${priceMax}`
   
-  if (query.maxMileage) {
-    searchParams.set('mileageMax', String(query.maxMileage))
-  }
-  
-  if (query.minYear) {
-    searchParams.set('yearMin', String(query.minYear))
-  }
-
-  return `${base}?${searchParams.toString()}`
+  return url
 }
 
 /**
