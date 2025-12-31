@@ -59,7 +59,7 @@ export async function scrapeLaCentrale(
       }
     }
 
-    log.warn('[LACENTRALE] ⚠️ HTML brut sans JS vide, essai avec autoparse...', { pass })
+    log.warn(`[LACENTRALE] ⚠️ HTML brut sans JS: ${beforeFilter} annonces trouvées mais ${listingsFromHTMLBrutSansJS.length} après filtrage, essai avec autoparse...`, { pass })
     
     // STRATÉGIE 1 : Essayer avec autoparse de ZenRows pour extraire JSON directement
     let listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
