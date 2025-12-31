@@ -103,8 +103,8 @@ async function scrapeWithZenRowsOnce(
   logger.debug('ZenRows params', {
     url: targetUrl,
     params: finalParams,
-    sessionId: finalParams.session_id,
-    sessionIdType: typeof finalParams.session_id,
+    sessionId: (finalParams as any).session_id,
+    sessionIdType: typeof (finalParams as any).session_id,
   })
 
   // Ajout des paramètres à l'URL
