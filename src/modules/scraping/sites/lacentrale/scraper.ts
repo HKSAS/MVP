@@ -40,8 +40,22 @@ export async function scrapeLaCentrale(
   log.info(`[LACENTRALE] 🎯 Scraping: ${targetUrl}`, { pass })
 
   try {
+    // STRATÉGIE 0 : Essayer avec autoparse de ZenRows pour extraire JSON directement
+    log.info('[LACENTRALE] 📡 Tentative avec autoparse ZenRows (extraction JSON automatique)...', { pass })
+    const listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
+    
+    if (listingsFromAutoparse.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse`, { pass })
+      return {
+        listings: listingsFromAutoparse,
+        strategy: 'zenrows',
+        ms: Date.now() - startTime,
+      }
+    }
+
+    log.warn('[LACENTRALE] ⚠️ Autoparse vide, essai HTML brut avec JSON embedded...', { pass })
+    
     // STRATÉGIE 1 : Essayer HTML brut avec JSON embedded (si disponible)
-    log.info('[LACENTRALE] 📡 Tentative HTML brut avec JSON embedded...', { pass })
     const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
     
     if (listingsFromHTML.length > 0) {
