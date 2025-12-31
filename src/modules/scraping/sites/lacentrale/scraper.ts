@@ -1036,20 +1036,63 @@ function mapLaCentraleAdToUnified(ad: any): ListingResponse {
     mileage = typeof ad.mileageKm === 'number' ? ad.mileageKm : parseFloat(String(ad.mileageKm))
   }
   
-  // Extraire les images
+  // Extraire les images - chercher dans toutes les propriétés possibles (comme extractListingFromAutoparseItem)
   let imageUrl: string | null = null
-  if (ad.image) {
-    imageUrl = typeof ad.image === 'string' ? ad.image : ad.image.url || ad.image.src || null
-  } else if (ad.images?.[0]) {
-    imageUrl = typeof ad.images[0] === 'string' ? ad.images[0] : ad.images[0].url || ad.images[0].src || null
-  } else if (ad.photo) {
-    imageUrl = ad.photo
-  } else if (ad.thumbnail) {
-    imageUrl = ad.thumbnail
+  
+  const imageSources = [
+    ad.imageUrl,
+    ad.image,
+    ad.photo,
+    ad.thumbnail,
+    ad.img,
+    ad.picture,
+    ad.photoUrl,
+    ad.thumbnailUrl,
+    ad.media?.url,
+    ad.media?.src,
+    ad.pictures?.[0],
+    ad.photos?.[0],
+    ad.images?.[0],
+    ad.thumbnails?.[0],
+    ad.media?.images?.[0],
+  ]
+  
+  for (const src of imageSources) {
+    if (!src) continue
+    
+    if (typeof src === 'string') {
+      imageUrl = src
+      break
+    } else if (typeof src === 'object' && src !== null) {
+      imageUrl = src.url || src.src || src.href || src.path || null
+      if (imageUrl) break
+    } else if (Array.isArray(src) && src.length > 0) {
+      const firstImg = src[0]
+      if (typeof firstImg === 'string') {
+        imageUrl = firstImg
+        break
+      } else if (typeof firstImg === 'object') {
+        imageUrl = firstImg.url || firstImg.src || firstImg.href || null
+        if (imageUrl) break
+      }
+    }
   }
   
-  if (imageUrl && !imageUrl.startsWith('http')) {
-    imageUrl = `https://www.lacentrale.fr${imageUrl}`
+  // Normaliser l'URL de l'image
+  if (imageUrl) {
+    // Enlever les paramètres de requête inutiles
+    imageUrl = imageUrl.split('?')[0].split('#')[0]
+    
+    // Ajouter le domaine si nécessaire
+    if (!imageUrl.startsWith('http')) {
+      if (imageUrl.startsWith('//')) {
+        imageUrl = `https:${imageUrl}`
+      } else if (imageUrl.startsWith('/')) {
+        imageUrl = `https://www.lacentrale.fr${imageUrl}`
+      } else {
+        imageUrl = `https://www.lacentrale.fr/${imageUrl}`
+      }
+    }
   }
   
   // Extraire la localisation
