@@ -11,16 +11,6 @@ import { createRouteLogger } from '@/lib/logger'
 const log = createRouteLogger('lacentrale-scraper-zenrows')
 
 /**
- * ✅ Génère un session_id valide pour ZenRows
- * Format: "lc-{timestamp}-{random}" (chaîne alphanumérique)
- */
-function generateSessionId(): string {
-  const timestamp = Date.now().toString(36)
-  const random = Math.random().toString(36).substring(2, 7)
-  return `lc-${timestamp}-${random}`
-}
-
-/**
  * 🎯 SCRAPER LACENTRALE AVEC ZENROWS
  * Version identique à LeBonCoin
  */
@@ -205,7 +195,19 @@ async function extractFromHTMLBrut(
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
         log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (HTML brut)`)
-        return ads.map(mapLaCentraleAdToUnified)
+        const mappedAds = ads.map(mapLaCentraleAdToUnified)
+        
+        // 🔍 DEBUG : Log résultats mapping
+        console.log('[LACENTRALE DEBUG] Mapping terminé (__INITIAL_STATE__):', {
+          listingsFound: mappedAds.length,
+          firstListing: mappedAds[0] ? {
+            title: mappedAds[0].title,
+            price: mappedAds[0].price_eur,
+            url: mappedAds[0].url,
+          } : null,
+        })
+        
+        return mappedAds
       } else {
         console.log('[LACENTRALE DEBUG] Aucune annonce trouvée dans __INITIAL_STATE__')
       }
@@ -240,7 +242,19 @@ async function extractFromHTMLBrut(
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
         log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
-        return ads.map(mapLaCentraleAdToUnified)
+        const mappedAds = ads.map(mapLaCentraleAdToUnified)
+        
+        // 🔍 DEBUG : Log résultats mapping
+        console.log('[LACENTRALE DEBUG] Mapping terminé (__NEXT_DATA__):', {
+          listingsFound: mappedAds.length,
+          firstListing: mappedAds[0] ? {
+            title: mappedAds[0].title,
+            price: mappedAds[0].price_eur,
+            url: mappedAds[0].url,
+          } : null,
+        })
+        
+        return mappedAds
       } else {
         console.log('[LACENTRALE DEBUG] Aucune annonce trouvée dans __NEXT_DATA__')
       }
