@@ -910,6 +910,38 @@ function extractListingFromContext(context: string, url: string): ListingRespons
 }
 
 /**
+ * Filtrer les listings pour s'assurer qu'ils correspondent aux critères de recherche
+ */
+function filterListingsByQuery(
+  listings: ListingResponse[],
+  query: ScrapeQuery,
+  pass: ScrapePass
+): ListingResponse[] {
+  if (!query.brand) return listings // Si pas de marque, retourner tout
+  
+  const brandLower = query.brand.toLowerCase().trim()
+  const modelLower = query.model?.toLowerCase().trim()
+  
+  return listings.filter((listing) => {
+    // Vérifier la marque dans le titre
+    const titleLower = (listing.title || '').toLowerCase()
+    const hasBrand = titleLower.includes(brandLower)
+    
+    // Si un modèle est spécifié, vérifier qu'il est dans le titre aussi
+    if (modelLower) {
+      const hasModel = titleLower.includes(modelLower)
+      // En mode strict, exiger les deux. En mode relaxed/opportunity, accepter juste la marque
+      if (pass === 'strict') {
+        return hasBrand && hasModel
+      }
+      return hasBrand || hasModel
+    }
+    
+    return hasBrand
+  })
+}
+
+/**
  * Construction URL de recherche LaCentrale
  */
 function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
