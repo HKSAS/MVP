@@ -138,7 +138,7 @@ async function extractFromAutoparse(
     zenrowsUrl.searchParams.set('url', url)
     zenrowsUrl.searchParams.set('autoparse', 'true')
     zenrowsUrl.searchParams.set('premium_proxy', 'true')
-    zenrowsUrl.searchParams.set('mode', 'auto')
+    // Ne pas utiliser mode: auto avec autoparse, cela peut causer des conflits
 
     const response = await fetch(zenrowsUrl.toString(), {
       method: 'GET',
@@ -149,7 +149,11 @@ async function extractFromAutoparse(
     })
 
     if (!response.ok) {
-      log.warn('[LACENTRALE] Erreur autoparse ZenRows', { status: response.status })
+      const errorText = await response.text().catch(() => 'Erreur inconnue')
+      log.warn('[LACENTRALE] Erreur autoparse ZenRows', { 
+        status: response.status,
+        error: errorText.substring(0, 500) 
+      })
       return []
     }
 
@@ -204,13 +208,19 @@ async function extractFromAutoparse(
 function extractListingFromAutoparseItem(item: any): ListingResponse | null {
   try {
     // Chercher l'URL
-    const urlPath = item.href || item.url || item.lien || item.link
+    const urlPath = item.href || item.url || item.lien || item.link || item.path
     if (!urlPath) return null
     
     // Filtrer les URLs qui ne sont pas des annonces de véhicules
-    if (!urlPath.includes('/annonce') && !urlPath.includes('listing') && !urlPath.includes('occasion')) {
-      return null
-    }
+    // Accepter les URLs avec /listing, /annonce, /occasion, ou contenant un ID d'annonce
+    const urlStr = String(urlPath).toLowerCase()
+    const isListingUrl = urlStr.includes('/listing') || 
+                         urlStr.includes('/annonce') || 
+                         urlStr.includes('/occasion') ||
+                         urlStr.includes('/voiture') ||
+                         (urlStr.includes('lacentrale') && (item.price || item.priceEur || item.title))
+    
+    if (!isListingUrl) return null
     
     const fullUrl = urlPath.startsWith('http') 
       ? urlPath 
