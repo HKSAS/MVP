@@ -670,9 +670,6 @@ export default function SignupPage() {
                       onChange={handleChange}
                         className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500"
                     />
-                    <p className="text-sm text-gray-500">
-                      Optionnel
-                    </p>
                   </div>
 
                   <div className="space-y-2">
