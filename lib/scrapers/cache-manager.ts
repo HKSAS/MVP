@@ -93,7 +93,9 @@ class SearchCache {
     const now = Date.now()
     let cleaned = 0
     
-    for (const [key, entry] of this.cache.entries()) {
+    // Convertir en tableau pour compatibilité TypeScript
+    const entries = Array.from(this.cache.entries())
+    for (const [key, entry] of entries) {
       if (now - entry.timestamp > this.TTL) {
         this.cache.delete(key)
         cleaned++
@@ -109,9 +111,11 @@ class SearchCache {
    * Démarre le nettoyage automatique toutes les minutes
    */
   startCleanup(): void {
-    setInterval(() => {
-      this.cleanup()
-    }, 60000) // Toutes les minutes
+    if (typeof setInterval !== 'undefined') {
+      setInterval(() => {
+        this.cleanup()
+      }, 60000) // Toutes les minutes
+    }
   }
 }
 
