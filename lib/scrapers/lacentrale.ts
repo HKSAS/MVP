@@ -1,6 +1,6 @@
 /**
  * LaCentrale scraper
- * Utilise ZenRows pour le scraping et le parser existant
+ * Bridge vers le nouveau scraper amélioré avec fallback vers l'ancien
  */
 
 import type { SearchCriteria, Listing } from '@/lib/search-types'
@@ -8,6 +8,7 @@ import { createRouteLogger } from '@/lib/logger'
 import { scrapeWithZenRows } from '@/lib/zenrows'
 import { parseLaCentraleHtml } from './lacentrale-parser'
 import { SCRAPING_CONFIG } from './config'
+import { scrapeLaCentrale as scrapeLaCentraleNew } from '@/src/modules/scraping/sites/lacentrale/scraper'
 
 const log = createRouteLogger('lacentrale-scraper')
 
@@ -17,16 +18,64 @@ export const laCentraleScraper = {
     const startTime = Date.now()
     
     try {
+      // NOUVEAU SCRAPER AMÉLIORÉ - Essayer d'abord le nouveau scraper
+      try {
+        loggerInstance.info('[LACENTRALE] Tentative avec nouveau scraper amélioré...')
+        
+        const result = await scrapeLaCentraleNew(
+          {
+            brand: criteria.brand,
+            model: criteria.model,
+            maxPrice: criteria.maxPrice,
+            minPrice: criteria.minPrice,
+            maxMileage: criteria.maxMileage,
+            minYear: criteria.minYear,
+            zipCode: criteria.zipCode,
+            radiusKm: criteria.radiusKm,
+          },
+          'strict', // Pass strict pour commencer
+          undefined // abortSignal
+        )
+        
+        if (result.listings && result.listings.length > 0) {
+          // Convertir ListingResponse vers Listing
+          const listings: Listing[] = result.listings.map((listing) => ({
+            id: listing.id,
+            sourceSite: 'LaCentrale',
+            url: listing.url,
+            title: listing.title,
+            price: listing.price_eur || 0,
+            year: listing.year,
+            mileage: listing.mileage_km,
+            city: listing.city,
+            imageUrl: listing.image_url || listing.imageUrl,
+            score_ia: listing.score_ia || 50,
+            scrapedAt: new Date().toISOString(),
+          }))
+          
+          const ms = Date.now() - startTime
+          loggerInstance.info('[LACENTRALE] ✅ Nouveau scraper: succès', {
+            listingsFound: listings.length,
+            ms,
+            strategy: result.strategy,
+          })
+          
+          return listings
+        } else {
+          loggerInstance.warn('[LACENTRALE] ⚠️ Nouveau scraper: aucun résultat, fallback vers ancien...')
+        }
+      } catch (newScraperError) {
+        loggerInstance.warn('[LACENTRALE] ⚠️ Nouveau scraper: erreur, fallback vers ancien', {
+          error: newScraperError instanceof Error ? newScraperError.message : String(newScraperError),
+        })
+      }
+      
+      // FALLBACK: Ancien scraper (méthode classique)
+      loggerInstance.info('[LACENTRALE] Utilisation de l\'ancien scraper (fallback)...')
+      
       // Construire l'URL de recherche
       const model = criteria.model || ''
       const searchUrl = `https://www.lacentrale.fr/listing?makesModels=${encodeURIComponent(criteria.brand)}-${encodeURIComponent(model)}&priceMax=${criteria.maxPrice}`
-      
-      loggerInstance.info('[LACENTRALE] Démarrage scraping', {
-        url: searchUrl,
-        brand: criteria.brand,
-        model,
-        maxPrice: criteria.maxPrice,
-      })
       
       // Paramètres ZenRows pour LaCentrale
       const zenrowsParams = SCRAPING_CONFIG.zenrows.lacentrale || SCRAPING_CONFIG.zenrows.default
@@ -65,7 +114,7 @@ export const laCentraleScraper = {
       }))
       
       const ms = Date.now() - startTime
-      loggerInstance.info('[LACENTRALE] Scraping terminé', {
+      loggerInstance.info('[LACENTRALE] Ancien scraper: terminé', {
         listingsFound: listings.length,
         ms,
       })
@@ -73,7 +122,7 @@ export const laCentraleScraper = {
       return listings
     } catch (error) {
       const ms = Date.now() - startTime
-      loggerInstance.error('[LACENTRALE] Erreur scraping', {
+      loggerInstance.error('[LACENTRALE] ❌ Erreur scraping', {
         error: error instanceof Error ? error.message : String(error),
         ms,
       })
