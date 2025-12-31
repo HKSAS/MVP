@@ -704,12 +704,18 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
     
     // 3. Si pas de résultats, essayer extraction par liens (comme l'ancien parser)
     if (listings.length === 0 && html.length > 50000) {
-      const adLinkRegex = /href=["']([^"']*\/annonce[^"']*\/[^"']*)["']/gi
+      // LaCentrale utilise plusieurs formats d'URL, les capturer tous :
+      // - /auto-occasion-annonce-xxxxx.html
+      // - /annonce/xxxxx
+      // - /annonce-xxxxx.html
+      const adLinkRegex = /href=["']([^"']*(?:\/auto-occasion-annonce[^"']*\.html|\/annonce[^"']*(?:\/[^"']*|\.html)))["']/gi
       const links: string[] = []
       let linkMatch
       
       while ((linkMatch = adLinkRegex.exec(html)) !== null && links.length < 50) {
-        const linkPath = linkMatch[1]
+        let linkPath = linkMatch[1]
+        // Nettoyer l'URL (enlever fragments et query params inutiles)
+        linkPath = linkPath.split('#')[0].split('?')[0]
         // Éviter les doublons
         if (!links.includes(linkPath)) {
           links.push(linkPath)
@@ -720,9 +726,10 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
         log.info(`[LACENTRALE] 📊 Extraction par liens: ${links.length} liens trouvés`)
         for (const linkPath of links) {
           try {
+            // Construire l'URL complète
             const url = linkPath.startsWith('http') 
               ? linkPath 
-              : `https://www.lacentrale.fr${linkPath}`
+              : `https://www.lacentrale.fr${linkPath.startsWith('/') ? linkPath : `/${linkPath}`}`
             
             // Extraire le contexte autour du lien (2000 caractères avant et après)
             const linkIndex = html.indexOf(linkPath)
@@ -757,8 +764,15 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
  * Extraire une annonce depuis un match HTML (div, article, etc.)
  */
 function extractListingFromHtmlMatch(html: string): ListingResponse | null {
-  // Extraire l'URL
+  // Extraire l'URL - LaCentrale utilise plusieurs formats :
+  // - /auto-occasion-annonce-xxxxx.html
+  // - /annonce/xxxxx
+  // - /annonce-xxxxx.html
+  // - URLs complètes https://www.lacentrale.fr/...
   const urlMatch =
+    html.match(/href=["']([^"']*\/auto-occasion-annonce[^"']*)["']/i) ||
+    html.match(/href=["']([^"']*\/annonce[^"']*\.html)["']/i) ||
+    html.match(/href=["']([^"']*\/annonce[^"']*\/[^"']*)["']/i) ||
     html.match(/href=["']([^"']*\/annonce[^"']*)["']/i) ||
     html.match(/data-url=["']([^"']+)["']/i) ||
     html.match(/data-link=["']([^"']+)["']/i)
@@ -766,9 +780,13 @@ function extractListingFromHtmlMatch(html: string): ListingResponse | null {
   const urlPath = urlMatch ? urlMatch[1] : null
   if (!urlPath) return null
   
-  const fullUrl = urlPath.startsWith('http') 
-    ? urlPath 
-    : `https://www.lacentrale.fr${urlPath}`
+  // Nettoyer l'URL (enlever les fragments et query params inutiles)
+  let cleanUrlPath = urlPath.split('#')[0].split('?')[0]
+  
+  // Construire l'URL complète
+  const fullUrl = cleanUrlPath.startsWith('http') 
+    ? cleanUrlPath 
+    : `https://www.lacentrale.fr${cleanUrlPath.startsWith('/') ? cleanUrlPath : `/${cleanUrlPath}`}`
   
   // Extraire titre
   const titleMatch =
@@ -912,9 +930,16 @@ function mapLaCentraleAdToUnified(ad: any): ListingResponse {
   // Extraire l'ID
   const adId = ad.id || ad.adId || ad.listId || ad.externalId || `${Date.now()}`
   
-  // Construire l'URL
-  const urlPath = ad.url || ad.link || ad.href || `/annonce/${adId}`
-  const url = urlPath.startsWith('http') ? urlPath : `https://www.lacentrale.fr${urlPath}`
+  // Construire l'URL - LaCentrale peut avoir différents formats
+  let urlPath = ad.url || ad.link || ad.href || ad.path || `/auto-occasion-annonce-${adId}.html`
+  
+  // Nettoyer l'URL
+  urlPath = String(urlPath).split('#')[0].split('?')[0]
+  
+  // Construire l'URL complète
+  const url = urlPath.startsWith('http') 
+    ? urlPath 
+    : `https://www.lacentrale.fr${urlPath.startsWith('/') ? urlPath : `/${urlPath}`}`
   
   // Extraire le prix
   let price: number | null = null
