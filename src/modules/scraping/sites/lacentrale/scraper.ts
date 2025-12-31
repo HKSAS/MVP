@@ -40,37 +40,13 @@ export async function scrapeLaCentrale(
   log.info(`[LACENTRALE] 🎯 Scraping: ${targetUrl}`, { pass })
 
   try {
-    // STRATÉGIE 0 : Essayer HTML brut SANS js_render d'abord (comme LeBonCoin)
-    // LaCentrale peut avoir les données dans le HTML brut, c'est beaucoup plus rapide
-    log.info('[LACENTRALE] 📡 Tentative HTML brut SANS js_render (comme LeBonCoin)...', { pass })
-    let listingsFromHTMLBrutSansJS = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
-    
-    // Filtrer les résultats pour s'assurer qu'ils correspondent à la recherche
-    const beforeFilter = listingsFromHTMLBrutSansJS.length
-    listingsFromHTMLBrutSansJS = filterListingsByQuery(listingsFromHTMLBrutSansJS, query, pass)
-    log.info(`[LACENTRALE] 📊 Filtrage HTML brut sans JS: ${beforeFilter} → ${listingsFromHTMLBrutSansJS.length} annonces`, { pass })
-    
-    if (listingsFromHTMLBrutSansJS.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrutSansJS.length} annonces via HTML brut sans JS (après filtrage)`, { pass })
-      return {
-        listings: listingsFromHTMLBrutSansJS,
-        strategy: 'zenrows',
-        ms: Date.now() - startTime,
-      }
-    }
-
-    log.warn(`[LACENTRALE] ⚠️ HTML brut sans JS: ${beforeFilter} annonces trouvées mais ${listingsFromHTMLBrutSansJS.length} après filtrage, essai avec autoparse...`, { pass })
-    
-    // STRATÉGIE 1 : Essayer avec autoparse de ZenRows pour extraire JSON directement
-    let listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
-    
-    // Filtrer les résultats
-    const beforeFilterAutoparse = listingsFromAutoparse.length
-    listingsFromAutoparse = filterListingsByQuery(listingsFromAutoparse, query, pass)
-    log.info(`[LACENTRALE] 📊 Filtrage autoparse: ${beforeFilterAutoparse} → ${listingsFromAutoparse.length} annonces`, { pass })
+    // STRATÉGIE 1 : Essayer avec autoparse de ZenRows (c'est la seule qui fonctionne vraiment)
+    // D'après les logs: autoparse trouve 124 annonces, les autres stratégies échouent ou timeout
+    log.info('[LACENTRALE] 📡 Tentative avec autoparse ZenRows (stratégie principale)...', { pass })
+    const listingsFromAutoparse = await extractFromAutoparse(targetUrl, abortSignal)
     
     if (listingsFromAutoparse.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse (après filtrage)`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromAutoparse.length} annonces via autoparse`, { pass })
       return {
         listings: listingsFromAutoparse,
         strategy: 'zenrows',
@@ -78,52 +54,15 @@ export async function scrapeLaCentrale(
       }
     }
 
-    log.warn(`[LACENTRALE] ⚠️ Autoparse: ${beforeFilterAutoparse} annonces trouvées mais ${listingsFromAutoparse.length} après filtrage, essai HTML brut avec JSON embedded...`, { pass })
+    log.warn('[LACENTRALE] ⚠️ Autoparse vide, essai HTML brut avec JSON embedded...', { pass })
     
-    // STRATÉGIE 2 : Essayer HTML brut avec JSON embedded (si disponible)
-    let listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
-    
-    // Filtrer les résultats
-    listingsFromHTML = filterListingsByQuery(listingsFromHTML, query, pass)
+    // STRATÉGIE 2 : Fallback vers HTML brut avec JSON embedded
+    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
     
     if (listingsFromHTML.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut (après filtrage)`, { pass })
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
       return {
         listings: listingsFromHTML,
-        strategy: 'zenrows',
-        ms: Date.now() - startTime,
-      }
-    }
-
-    log.warn('[LACENTRALE] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
-    
-    // STRATÉGIE 3 : Essayer avec JS rendering pour obtenir le JSON complet
-    let listings = await extractFromJSRender(targetUrl, abortSignal)
-    
-    // Filtrer les résultats
-    listings = filterListingsByQuery(listings, query, pass)
-    
-    if (listings.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via JS rendering (après filtrage)`, { pass })
-      return {
-        listings,
-        strategy: 'zenrows',
-        ms: Date.now() - startTime,
-      }
-    }
-
-    log.warn('[LACENTRALE] ⚠️ JS rendering vide, essai avec parsing HTML...', { pass })
-    
-    // STRATÉGIE 4 : Fallback vers parsing HTML classique
-    let listingsFromHTMLParsing = await extractFromHTMLParsing(targetUrl, abortSignal)
-    
-    // Filtrer les résultats
-    listingsFromHTMLParsing = filterListingsByQuery(listingsFromHTMLParsing, query, pass)
-    
-    if (listingsFromHTMLParsing.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLParsing.length} annonces via parsing HTML (après filtrage)`, { pass })
-      return {
-        listings: listingsFromHTMLParsing,
         strategy: 'zenrows',
         ms: Date.now() - startTime,
       }
@@ -319,15 +258,68 @@ function extractListingFromAutoparseItem(item: any): ListingResponse | null {
     // Extraire la ville
     const city = item.city || item.ville || item.location || null
     
-    // Extraire l'image
+    // Extraire l'image - chercher dans toutes les propriétés possibles
     let imageUrl: string | null = null
-    if (item.imageUrl) {
-      imageUrl = Array.isArray(item.imageUrl) ? item.imageUrl[0] : item.imageUrl
-    } else if (item.image) {
-      imageUrl = Array.isArray(item.image) ? item.image[0] : item.image
+    
+    // Essayer différentes propriétés (comme LeBonCoin extrait directement depuis HTML)
+    const imageSources = [
+      item.imageUrl,
+      item.image,
+      item.photo,
+      item.thumbnail,
+      item.img,
+      item.picture,
+      item.imageUrl,
+      item.photoUrl,
+      item.thumbnailUrl,
+      item.media?.url,
+      item.media?.src,
+      item.pictures?.[0],
+      item.photos?.[0],
+      item.images?.[0],
+      item.thumbnails?.[0],
+      item.media?.images?.[0],
+    ]
+    
+    for (const src of imageSources) {
+      if (!src) continue
+      
+      if (typeof src === 'string') {
+        // URL directe
+        imageUrl = src
+        break
+      } else if (typeof src === 'object' && src !== null) {
+        // Objet avec url, src, etc.
+        imageUrl = src.url || src.src || src.href || src.path || null
+        if (imageUrl) break
+      } else if (Array.isArray(src) && src.length > 0) {
+        // Tableau d'images
+        const firstImg = src[0]
+        if (typeof firstImg === 'string') {
+          imageUrl = firstImg
+          break
+        } else if (typeof firstImg === 'object') {
+          imageUrl = firstImg.url || firstImg.src || firstImg.href || null
+          if (imageUrl) break
+        }
+      }
     }
-    if (imageUrl && !imageUrl.startsWith('http')) {
-      imageUrl = `https://www.lacentrale.fr${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`
+    
+    // Normaliser l'URL de l'image
+    if (imageUrl) {
+      // Enlever les paramètres de requête inutiles parfois présents
+      imageUrl = imageUrl.split('?')[0].split('#')[0]
+      
+      // Ajouter le domaine si nécessaire
+      if (!imageUrl.startsWith('http')) {
+        if (imageUrl.startsWith('//')) {
+          imageUrl = `https:${imageUrl}`
+        } else if (imageUrl.startsWith('/')) {
+          imageUrl = `https://www.lacentrale.fr${imageUrl}`
+        } else {
+          imageUrl = `https://www.lacentrale.fr/${imageUrl}`
+        }
+      }
     }
     
     // Extraire l'ID depuis l'URL - LaCentrale utilise plusieurs formats :
@@ -845,11 +837,42 @@ function extractListingFromHtmlMatch(html: string): ListingResponse | null {
     html.match(/data-city=["']([^"']+)["']/i)
   const city = cityMatch ? cleanHtml(cityMatch[1]).trim() : null
   
-  // Extraire image
-  const imageMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i)
-  const imageUrl = imageMatch 
-    ? (imageMatch[1].startsWith('http') ? imageMatch[1] : `https://www.lacentrale.fr${imageMatch[1]}`)
-    : null
+  // Extraire image - chercher plusieurs formats
+  let imageUrl: string | null = null
+  
+  // Chercher dans différentes balises img
+  const imageMatches = [
+    html.match(/<img[^>]+src=["']([^"']+)["']/i),
+    html.match(/<img[^>]+data-src=["']([^"']+)["']/i), // lazy loading
+    html.match(/<img[^>]+data-lazy=["']([^"']+)["']/i),
+    html.match(/background-image:\s*url\(["']?([^"')]+)["']?\)/i),
+    html.match(/data-image=["']([^"']+)["']/i),
+  ]
+  
+  for (const match of imageMatches) {
+    if (match && match[1]) {
+      let imgSrc = match[1]
+      
+      // Nettoyer l'URL
+      imgSrc = imgSrc.split('?')[0].split('#')[0]
+      
+      // Normaliser l'URL
+      if (imgSrc.startsWith('http')) {
+        imageUrl = imgSrc
+      } else if (imgSrc.startsWith('//')) {
+        imageUrl = `https:${imgSrc}`
+      } else if (imgSrc.startsWith('/')) {
+        imageUrl = `https://www.lacentrale.fr${imgSrc}`
+      } else {
+        imageUrl = `https://www.lacentrale.fr/${imgSrc}`
+      }
+      
+      // S'assurer que c'est une image (pas une icône, etc.)
+      if (imageUrl && (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg') || imageUrl.includes('.png') || imageUrl.includes('.webp') || imageUrl.includes('/image'))) {
+        break
+      }
+    }
+  }
   
   // Extraire ID depuis l'URL
   const adIdMatch = fullUrl.match(/\/annonce\/([^\/]+)/)
@@ -911,67 +934,6 @@ function extractListingFromContext(context: string, url: string): ListingRespons
     score_ia: 50,
     score_final: 50,
   }
-}
-
-/**
- * Filtrer les listings pour s'assurer qu'ils correspondent aux critères de recherche
- */
-function filterListingsByQuery(
-  listings: ListingResponse[],
-  query: ScrapeQuery,
-  pass: ScrapePass
-): ListingResponse[] {
-  if (!query.brand) return listings // Si pas de marque, retourner tout
-  
-  const brandLower = query.brand.toLowerCase().trim()
-  const modelLower = query.model?.toLowerCase().trim()
-  
-  // Normaliser la marque (par exemple, "AUDI" peut être écrit "audi" ou "Audi")
-  const brandVariations = [
-    brandLower,
-    brandLower.replace(/\s+/g, ''), // Enlever espaces
-    brandLower.replace(/\s+/g, '-'), // Remplacer par tirets
-  ]
-  
-  return listings.filter((listing) => {
-    // Vérifier la marque dans le titre
-    const titleLower = (listing.title || '').toLowerCase().trim()
-    
-    // Vérifier si une des variations de la marque est présente
-    const hasBrand = brandVariations.some(brandVar => titleLower.includes(brandVar))
-    
-    // Si pas de marque trouvée, rejeter
-    if (!hasBrand) {
-      return false
-    }
-    
-    // Si un modèle est spécifié
-    if (modelLower) {
-      const modelVariations = [
-        modelLower,
-        modelLower.replace(/\s+/g, ''),
-        modelLower.replace(/\s+/g, '-'),
-        ` ${modelLower} `, // Modèle avec espaces autour pour éviter "a3" dans "fa3"
-      ]
-      
-      const hasModel = modelVariations.some(modelVar => titleLower.includes(modelVar))
-      
-      // En mode strict, exiger marque ET modèle (mais être tolérant si la marque est claire)
-      if (pass === 'strict') {
-        // Si on a la marque et le modèle, OK
-        if (hasBrand && hasModel) return true
-        // Sinon, seulement si on a la marque ET que le modèle est court (risque de faux positif)
-        if (hasBrand && modelLower.length >= 3) return false
-        // Si modèle très court (2 caractères), accepter même sans modèle exact (car peut être dans l'URL)
-        return hasBrand
-      }
-      // En mode relaxed/opportunity, accepter si on a la marque OU le modèle
-      return hasBrand || hasModel
-    }
-    
-    // Si pas de modèle spécifié, accepter si on a la marque
-    return hasBrand
-  })
 }
 
 /**
