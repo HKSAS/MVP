@@ -204,8 +204,36 @@ async function extractFromHTMLBrut(
     }
   }
 
-  // Si pas de JSON trouvé, essayer parsing HTML direct
-  return extractFromHTMLAttributes(html)
+    // Si pas de JSON trouvé, essayer parsing HTML direct
+    return extractFromHTMLAttributes(html)
+  } catch (error: any) {
+    // Si erreur RESP001 ou 422, LaCentrale bloque - essayer sans proxy_country
+    if (error?.message?.includes('422') || error?.message?.includes('RESP001')) {
+      log.warn('[LACENTRALE] ⚠️ Blocage détecté (RESP001), essai sans proxy_country...')
+      try {
+        const responseRetry = await scrapeWithZenRows(
+          url,
+          {
+            premium_proxy: 'true',
+            // Pas de proxy_country pour éviter le blocage
+            block_resources: 'image,media,font',
+          },
+          abortSignal
+        )
+        
+        if (responseRetry && responseRetry.length >= 100) {
+          log.info(`[LACENTRALE] 📊 HTML brut reçu (retry): ${(responseRetry.length / 1024).toFixed(2)} KB`)
+          // Essayer d'extraire depuis le HTML
+          return extractFromHTMLAttributes(responseRetry)
+        }
+      } catch (retryError) {
+        log.warn('[LACENTRALE] ⚠️ Retry échoué aussi')
+      }
+    }
+    // Si erreur, retourner vide pour passer à la stratégie suivante
+    log.warn('[LACENTRALE] ⚠️ Erreur HTML brut, passage à stratégie suivante')
+    return []
+  }
 }
 
 /**
@@ -217,49 +245,51 @@ async function extractFromJSRender(
 ): Promise<ListingResponse[]> {
   log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering...')
   
-  const response = await scrapeWithZenRows(
-    url,
-    {
-      js_render: 'true',
-      premium_proxy: 'true',
-      proxy_country: 'fr',
-      wait: '5000',
-      block_resources: 'image,media,font',
-    },
-    abortSignal
-  )
+  try {
+    // Essayer d'abord sans proxy_country pour éviter RESP001
+    const response = await scrapeWithZenRows(
+      url,
+      {
+        js_render: 'true',
+        premium_proxy: 'true',
+        // Pas de proxy_country pour éviter le blocage
+        wait: '5000',
+        block_resources: 'image,media,font',
+      },
+      abortSignal
+    )
 
-  if (!response || response.length < 100) {
-    log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
-    return []
-  }
-
-  const html = response
-  log.info(`[LACENTRALE] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
-
-  // Essayer les mêmes extractions JSON que dans HTML brut
-  // (car le JS rendering peut avoir généré plus de données)
-  const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
-  if (initialStateMatch) {
-    try {
-      const jsonStr = initialStateMatch[1]
-      const jsonData = JSON.parse(jsonStr)
-      
-      const ads = 
-        jsonData?.ads ||
-        jsonData?.listings ||
-        jsonData?.vehicles ||
-        jsonData?.data?.ads ||
-        []
-
-      if (ads && Array.isArray(ads) && ads.length > 0) {
-        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (JS render)`)
-        return ads.map(mapLaCentraleAdToUnified)
-      }
-    } catch (error) {
-      log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (JS render)')
+    if (!response || response.length < 100) {
+      log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
+      return []
     }
-  }
+
+    const html = response
+    log.info(`[LACENTRALE] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
+
+    // Essayer les mêmes extractions JSON que dans HTML brut
+    // (car le JS rendering peut avoir généré plus de données)
+    const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
+    if (initialStateMatch) {
+      try {
+        const jsonStr = initialStateMatch[1]
+        const jsonData = JSON.parse(jsonStr)
+        
+        const ads = 
+          jsonData?.ads ||
+          jsonData?.listings ||
+          jsonData?.vehicles ||
+          jsonData?.data?.ads ||
+          []
+
+        if (ads && Array.isArray(ads) && ads.length > 0) {
+          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (JS render)`)
+          return ads.map(mapLaCentraleAdToUnified)
+        }
+      } catch (error) {
+        log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (JS render)')
+      }
+    }
 
     // Si pas de JSON, essayer parsing HTML
     return extractFromHTMLAttributes(html)
