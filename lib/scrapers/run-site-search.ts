@@ -15,6 +15,7 @@ import { parseAutoScout24Html, convertAutoScout24ToListingResponse } from './aut
 import { parseLeParkingHtml, convertLeParkingToListingResponse } from './leparking-parser'
 import { parseProCarLeaseHtml, convertProCarLeaseToListingResponse } from './procarlease-parser'
 import { parseLaCentraleHtml, convertLaCentraleToListingResponse } from './lacentrale-parser'
+import { scrapeLaCentrale as scrapeLaCentraleNew } from '@/src/modules/scraping/sites/lacentrale/scraper'
 
 const log = createRouteLogger('run-site-search')
 
@@ -182,7 +183,24 @@ async function scrapeOtherSite(
 }> {
   const startTime = Date.now()
   
-  // Construire l'URL selon le site
+  // Gestion spéciale pour LaCentrale : utiliser le nouveau scraper amélioré
+  if (siteName === 'LaCentrale') {
+    try {
+      log.info(`[${siteName}] Utilisation du nouveau scraper amélioré`, { pass })
+      const result = await scrapeLaCentraleNew(query, pass, abortSignal)
+      if (result.listings && result.listings.length > 0) {
+        return result
+      }
+      log.warn(`[${siteName}] Nouveau scraper: aucun résultat, fallback vers ancien parser`, { pass })
+    } catch (error) {
+      log.warn(`[${siteName}] Nouveau scraper: erreur, fallback vers ancien parser`, {
+        pass,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  // Construire l'URL selon le site (fallback pour LaCentrale ou autres sites)
   let searchUrl = ''
   switch (siteName) {
     case 'LaCentrale':
