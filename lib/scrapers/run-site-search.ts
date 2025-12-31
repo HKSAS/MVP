@@ -189,7 +189,12 @@ async function scrapeOtherSite(
       log.info(`[${siteName}] Utilisation du nouveau scraper amélioré`, { pass })
       const result = await scrapeLaCentraleNew(query, pass, abortSignal)
       if (result.listings && result.listings.length > 0) {
-        return result
+        // Normaliser le type de stratégie pour compatibilité
+        return {
+          listings: result.listings,
+          strategy: result.strategy as ScrapingStrategy,
+          ms: result.ms,
+        }
       }
       log.warn(`[${siteName}] Nouveau scraper: aucun résultat, fallback vers ancien parser`, { pass })
     } catch (error) {
