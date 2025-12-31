@@ -111,24 +111,25 @@ async function extractFromHTMLBrut(
 ): Promise<ListingResponse[]> {
   log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut...')
   
-  const response = await scrapeWithZenRows(
-    url,
-    {
-      // Pas de js_render pour commencer (plus rapide)
-      premium_proxy: 'true',
-      proxy_country: 'fr',
-      block_resources: 'image,media,font',
-    },
-    abortSignal
-  )
+  try {
+    const response = await scrapeWithZenRows(
+      url,
+      {
+        // Pas de js_render pour commencer (plus rapide)
+        premium_proxy: 'true',
+        proxy_country: 'fr',
+        block_resources: 'image,media,font',
+      },
+      abortSignal
+    )
 
-  if (!response || response.length < 100) {
-    log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
-    return []
-  }
+    if (!response || response.length < 100) {
+      log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
+      return []
+    }
 
-  const html = response
-  log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
+    const html = response
+    log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
 
   // Chercher différents types de JSON embedded
   // 1. __INITIAL_STATE__
@@ -260,8 +261,34 @@ async function extractFromJSRender(
     }
   }
 
-  // Si pas de JSON, essayer parsing HTML
-  return extractFromHTMLAttributes(html)
+    // Si pas de JSON, essayer parsing HTML
+    return extractFromHTMLAttributes(html)
+  } catch (error: any) {
+    // Si erreur RESP001, essayer avec des paramètres différents
+    if (error?.message?.includes('422') || error?.message?.includes('RESP001')) {
+      log.warn('[LACENTRALE] ⚠️ Blocage JS rendering, essai avec paramètres minimaux...')
+      try {
+        const responseRetry = await scrapeWithZenRows(
+          url,
+          {
+            premium_proxy: 'true',
+            block_resources: 'image,media,font',
+            // Pas de js_render, pas de proxy_country
+          },
+          abortSignal
+        )
+        
+        if (responseRetry && responseRetry.length >= 100) {
+          log.info(`[LACENTRALE] 📊 HTML reçu (retry minimal): ${(responseRetry.length / 1024).toFixed(2)} KB`)
+          return extractFromHTMLAttributes(responseRetry)
+        }
+      } catch (retryError) {
+        log.warn('[LACENTRALE] ⚠️ Retry minimal échoué aussi')
+      }
+    }
+    log.warn('[LACENTRALE] ⚠️ Erreur JS rendering, passage à stratégie suivante')
+    return []
+  }
 }
 
 /**
