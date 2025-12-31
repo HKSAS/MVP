@@ -140,6 +140,7 @@ async function extractFromAutoparse(
     zenrowsUrl.searchParams.set('premium_proxy', 'true')
     zenrowsUrl.searchParams.set('proxy_country', 'fr') // Recommandé par ZenRows pour éviter restrictions géographiques
     zenrowsUrl.searchParams.set('js_render', 'true') // Nécessaire pour RESP001
+    zenrowsUrl.searchParams.set('wait', '3000') // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
     // Ne pas utiliser mode: auto avec autoparse, cela peut causer des conflits
 
     const response = await fetch(zenrowsUrl.toString(), {
@@ -472,7 +473,7 @@ async function extractFromJSRender(
         js_render: 'true',
         premium_proxy: 'true',
         proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
-        wait: '5000',
+        wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
         block_resources: 'image,media,font',
       },
       abortSignal
@@ -555,7 +556,7 @@ async function extractFromHTMLParsing(
       js_render: 'true',
       premium_proxy: 'true',
       proxy_country: 'fr',
-      wait: '5000',
+      wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
       block_resources: 'image,media,font',
     },
     abortSignal

@@ -73,9 +73,14 @@ export const ZENROWS_CONFIG = {
  * Récupère le timeout approprié pour un site
  */
 export function getTimeoutForSite(siteName: string): number {
-  return siteName === 'LeBonCoin'
-    ? SCRAPING_CONSTANTS.timeouts.leboncoinMs
-    : SCRAPING_CONSTANTS.timeouts.defaultMs
+  if (siteName === 'LeBonCoin') {
+    return SCRAPING_CONSTANTS.timeouts.leboncoinMs
+  }
+  // LaCentrale nécessite plus de temps car JS rendering + proxy_country
+  if (siteName === 'LaCentrale') {
+    return 300000 // 5 minutes pour LaCentrale (au lieu de 4 minutes)
+  }
+  return SCRAPING_CONSTANTS.timeouts.defaultMs
 }
 
 /**
