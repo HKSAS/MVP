@@ -99,10 +99,31 @@ async function scrapeWithZenRowsOnce(
   // Fusion des paramètres (les params passés en argument écrasent les defaults)
   const finalParams = { ...defaultParams, ...params }
 
+  // 🔍 DEBUG : Log les paramètres avant envoi
+  logger.debug('ZenRows params', {
+    url: targetUrl,
+    params: finalParams,
+    sessionId: finalParams.session_id,
+    sessionIdType: typeof finalParams.session_id,
+  })
+
   // Ajout des paramètres à l'URL
+  // ⚠️ IMPORTANT : ZenRows peut ne pas supporter session_id - le supprimer si présent pour éviter erreurs
   for (const [key, value] of Object.entries(finalParams)) {
+    // ❌ TEMPORAIRE : Supprimer session_id car ZenRows le rejette
+    // ZenRows n'accepte pas session_id comme paramètre standard
+    if (key === 'session_id') {
+      logger.warn(`ZenRows: session_id ignoré (non supporté)`, { session_id: value })
+      continue
+    }
     url.searchParams.set(key, String(value))
   }
+  
+  // 🔍 DEBUG : Log l'URL finale
+  logger.debug('ZenRows URL finale', {
+    url: url.toString().replace(apiKey, 'REDACTED'),
+    paramCount: Array.from(url.searchParams.keys()).length,
+  })
 
   try {
     const res = await fetch(url.toString(), {
