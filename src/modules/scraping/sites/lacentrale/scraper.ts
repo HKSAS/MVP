@@ -116,6 +116,177 @@ export async function scrapeLaCentrale(
 }
 
 /**
+ * STRATÉGIE 0 : Utiliser autoparse de ZenRows pour extraire JSON directement
+ * ZenRows peut automatiquement parser et extraire les données structurées
+ */
+async function extractFromAutoparse(
+  url: string,
+  abortSignal?: AbortSignal
+): Promise<ListingResponse[]> {
+  log.info('[LACENTRALE] 📡 Requête ZenRows avec autoparse...')
+  
+  try {
+    // Utiliser ZenRows avec autoparse pour obtenir directement du JSON
+    const apiKey = getZenRowsApiKey()
+    if (!apiKey) {
+      log.warn('[LACENTRALE] ZENROWS_API_KEY manquant')
+      return []
+    }
+
+    const zenrowsUrl = new URL('https://api.zenrows.com/v1')
+    zenrowsUrl.searchParams.set('apikey', apiKey)
+    zenrowsUrl.searchParams.set('url', url)
+    zenrowsUrl.searchParams.set('autoparse', 'true')
+    zenrowsUrl.searchParams.set('premium_proxy', 'true')
+    zenrowsUrl.searchParams.set('mode', 'auto')
+
+    const response = await fetch(zenrowsUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: abortSignal,
+    })
+
+    if (!response.ok) {
+      log.warn('[LACENTRALE] Erreur autoparse ZenRows', { status: response.status })
+      return []
+    }
+
+    const jsonData = await response.json()
+    
+    // Le JSON peut être un tableau ou un objet
+    const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData]
+    
+    const listings: ListingResponse[] = []
+    
+    // Chercher les objets qui ressemblent à des annonces de véhicules
+    for (const item of dataArray) {
+      // Chercher des objets avec des propriétés de véhicule
+      if (item && typeof item === 'object') {
+        // Pattern 1: Chercher dans des structures imbriquées
+        // Vérifier s'il y a des annonces dans des propriétés comme 'ads', 'listings', 'vehicles'
+        const nestedAds = item.ads || item.listings || item.vehicles || item.recommandations
+        if (Array.isArray(nestedAds)) {
+          for (const ad of nestedAds) {
+            if (ad && typeof ad === 'object' && (ad.href || ad.url || ad.lien)) {
+              const listing = extractListingFromAutoparseItem(ad)
+              if (listing) {
+                listings.push(listing)
+              }
+            }
+          }
+        }
+        
+        // Pattern 2: Si l'objet lui-même a href/url/lien et ressemble à une annonce
+        if ((item.href || item.url || item.lien) && item.title) {
+          const listing = extractListingFromAutoparseItem(item)
+          if (listing) {
+            listings.push(listing)
+          }
+        }
+      }
+    }
+
+    log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites via autoparse`)
+    return listings.slice(0, 100) // Limiter à 100 annonces
+  } catch (error) {
+    log.warn('[LACENTRALE] ⚠️ Erreur autoparse, passage à stratégie suivante', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return []
+  }
+}
+
+/**
+ * Extraire une annonce depuis un objet JSON d'autoparse
+ */
+function extractListingFromAutoparseItem(item: any): ListingResponse | null {
+  try {
+    // Chercher l'URL
+    const urlPath = item.href || item.url || item.lien || item.link
+    if (!urlPath) return null
+    
+    // Filtrer les URLs qui ne sont pas des annonces de véhicules
+    if (!urlPath.includes('/annonce') && !urlPath.includes('listing') && !urlPath.includes('occasion')) {
+      return null
+    }
+    
+    const fullUrl = urlPath.startsWith('http') 
+      ? urlPath 
+      : `https://www.lacentrale.fr${urlPath.startsWith('/') ? urlPath : `/${urlPath}`}`
+    
+    // Extraire le titre
+    const title = item.title || item.titre || item.label || item.name || 'Annonce LaCentrale'
+    
+    // Extraire le prix (peut être dans différentes propriétés)
+    let price: number | null = null
+    if (typeof item.price === 'number') {
+      price = item.price
+    } else if (typeof item.price === 'string') {
+      price = parseFloat(item.price.replace(/\s/g, ''))
+    } else if (item.priceEur) {
+      price = typeof item.priceEur === 'number' ? item.priceEur : parseFloat(String(item.priceEur))
+    }
+    
+    // Extraire l'année
+    let year: number | null = null
+    if (typeof item.year === 'number') {
+      year = item.year
+    } else if (typeof item.year === 'string') {
+      year = parseInt(item.year)
+    }
+    
+    // Extraire le kilométrage
+    let mileage: number | null = null
+    if (typeof item.mileage === 'number') {
+      mileage = item.mileage
+    } else if (typeof item.mileage === 'string') {
+      mileage = parseFloat(item.mileage.replace(/\s/g, ''))
+    } else if (item.mileageKm) {
+      mileage = typeof item.mileageKm === 'number' ? item.mileageKm : parseFloat(String(item.mileageKm))
+    }
+    
+    // Extraire la ville
+    const city = item.city || item.ville || item.location || null
+    
+    // Extraire l'image
+    let imageUrl: string | null = null
+    if (item.imageUrl) {
+      imageUrl = Array.isArray(item.imageUrl) ? item.imageUrl[0] : item.imageUrl
+    } else if (item.image) {
+      imageUrl = Array.isArray(item.image) ? item.image[0] : item.image
+    }
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      imageUrl = `https://www.lacentrale.fr${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`
+    }
+    
+    // Extraire l'ID depuis l'URL ou créer un ID unique
+    const adIdMatch = fullUrl.match(/\/annonce\/([^\/\?]+)/) || fullUrl.match(/listing[^\/]*\/([^\/\?]+)/)
+    const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    return {
+      id: `lacentrale_${adId}`,
+      title: String(title),
+      price_eur: price,
+      year,
+      mileage_km: mileage,
+      url: fullUrl,
+      imageUrl,
+      source: 'LaCentrale',
+      city,
+      score_ia: 50,
+      score_final: 50,
+    }
+  } catch (error) {
+    log.warn('[LACENTRALE] Erreur extraction item autoparse', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
+/**
  * STRATÉGIE 1 : Extraire depuis HTML brut avec JSON embedded
  * LaCentrale peut avoir des données dans __INITIAL_STATE__ ou autres structures JSON
  */
