@@ -870,7 +870,11 @@ function extractListingFromContext(context: string, url: string): ListingRespons
   const mileageMatch = context.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
   const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
   
-  const adIdMatch = url.match(/\/annonce\/([^\/]+)/)
+  // Extraire l'ID depuis l'URL - LaCentrale utilise plusieurs formats
+  const adIdMatch = 
+    url.match(/\/auto-occasion-annonce-([^\/\.\?]+)/) ||
+    url.match(/\/annonce\/([^\/\?]+)/) ||
+    url.match(/\/annonce-([^\/\.\?]+)\.html/)
   const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   
   return {
