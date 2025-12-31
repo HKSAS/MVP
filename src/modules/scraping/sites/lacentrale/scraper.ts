@@ -334,9 +334,9 @@ async function extractFromHTMLBrut(
     const response = await scrapeWithZenRows(
       url,
       {
-        // Pas de js_render pour commencer (plus rapide)
         premium_proxy: 'true',
-        proxy_country: 'fr',
+        proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
+        js_render: 'true', // Nécessaire pour éviter RESP001
         block_resources: 'image,media,font',
       },
       abortSignal
