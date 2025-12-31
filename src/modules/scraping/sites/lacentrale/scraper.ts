@@ -11,6 +11,16 @@ import { createRouteLogger } from '@/lib/logger'
 const log = createRouteLogger('lacentrale-scraper-zenrows')
 
 /**
+ * ✅ Génère un session_id valide pour ZenRows
+ * Format: "lc-{timestamp}-{random}" (chaîne alphanumérique)
+ */
+function generateSessionId(): string {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 7)
+  return `lc-${timestamp}-${random}`
+}
+
+/**
  * 🎯 SCRAPER LACENTRALE AVEC ZENROWS
  * Version identique à LeBonCoin
  */
@@ -128,12 +138,15 @@ async function extractFromHTMLBrut(
   log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
   
   // Paramètres ZenRows premium pour éviter le blocage 422
+  const sessionId = generateSessionId()
+  log.info(`[LACENTRALE] Session ID généré: ${sessionId}`)
+  
   const zenrowsParams = {
     premium_proxy: 'true',
     proxy_country: 'fr',
     block_resources: 'image,media,font',
-    // Ajouter session_id pour éviter la détection
-    session_id: `lacentrale_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    // Ajouter session_id pour éviter la détection (format alphanumérique valide)
+    session_id: sessionId,
   }
   
   const response = await scrapeWithZenRows(
@@ -245,14 +258,17 @@ async function extractFromJSRender(
   log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
   
   // Paramètres ZenRows premium avec JS rendering pour fallback
+  const sessionId = generateSessionId()
+  log.info(`[LACENTRALE] Session ID généré (fallback JS): ${sessionId}`)
+  
   const zenrowsParams = {
     js_render: 'true',
     premium_proxy: 'true',
     proxy_country: 'fr',
     wait: '3000', // Réduire à 3s pour plus de vitesse
     block_resources: 'image,media,font',
-    // Ajouter session_id pour éviter la détection
-    session_id: `lacentrale_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    // Ajouter session_id pour éviter la détection (format alphanumérique valide)
+    session_id: sessionId,
   }
   
   const response = await scrapeWithZenRows(
