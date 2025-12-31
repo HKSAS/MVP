@@ -157,39 +157,61 @@ async function extractFromAutoparse(
       return []
     }
 
-    const jsonData = await response.json()
+    let jsonData: any
+    try {
+      jsonData = await response.json()
+    } catch (error) {
+      log.warn('[LACENTRALE] Impossible de parser la réponse JSON', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return []
+    }
     
     // Le JSON peut être un tableau ou un objet
     const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData]
     
-    const listings: ListingResponse[] = []
+    log.info(`[LACENTRALE] 📊 JSON autoparse reçu: ${dataArray.length} objets à analyser`)
     
-    // Chercher les objets qui ressemblent à des annonces de véhicules
-    for (const item of dataArray) {
-      // Chercher des objets avec des propriétés de véhicule
-      if (item && typeof item === 'object') {
-        // Pattern 1: Chercher dans des structures imbriquées
-        // Vérifier s'il y a des annonces dans des propriétés comme 'ads', 'listings', 'vehicles'
-        const nestedAds = item.ads || item.listings || item.vehicles || item.recommandations
-        if (Array.isArray(nestedAds)) {
-          for (const ad of nestedAds) {
-            if (ad && typeof ad === 'object' && (ad.href || ad.url || ad.lien)) {
-              const listing = extractListingFromAutoparseItem(ad)
-              if (listing) {
-                listings.push(listing)
-              }
+    const listings: ListingResponse[] = []
+    const seenUrls = new Set<string>() // Éviter les doublons
+    
+    // Fonction récursive pour chercher des annonces dans des structures imbriquées
+    const findListingsInObject = (obj: any, depth = 0): void => {
+      if (depth > 5) return // Limiter la profondeur de recherche
+      if (!obj || typeof obj !== 'object') return
+      
+      // Pattern 1: Si l'objet lui-même ressemble à une annonce
+      if ((obj.href || obj.url || obj.lien || obj.link) && (obj.title || obj.titre || obj.label || obj.name)) {
+        const listing = extractListingFromAutoparseItem(obj)
+        if (listing && !seenUrls.has(listing.url)) {
+          seenUrls.add(listing.url)
+          listings.push(listing)
+        }
+      }
+      
+      // Pattern 2: Chercher dans des propriétés connues contenant des tableaux
+      const arrayProps = ['ads', 'listings', 'vehicles', 'results', 'items', 'data', 'vehiclesList', 'classifieds', 'products', 'offers']
+      for (const prop of arrayProps) {
+        if (Array.isArray(obj[prop])) {
+          for (const item of obj[prop]) {
+            if (item && typeof item === 'object') {
+              findListingsInObject(item, depth + 1)
             }
           }
         }
-        
-        // Pattern 2: Si l'objet lui-même a href/url/lien et ressemble à une annonce
-        if ((item.href || item.url || item.lien) && item.title) {
-          const listing = extractListingFromAutoparseItem(item)
-          if (listing) {
-            listings.push(listing)
-          }
+      }
+      
+      // Pattern 3: Chercher récursivement dans toutes les propriétés
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
+          findListingsInObject(obj[key], depth + 1)
         }
       }
+    }
+    
+    // Chercher les objets qui ressemblent à des annonces de véhicules
+    for (const item of dataArray) {
+      findListingsInObject(item)
     }
 
     log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites via autoparse`)
