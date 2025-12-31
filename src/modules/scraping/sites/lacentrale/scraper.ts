@@ -351,89 +351,190 @@ async function extractFromHTMLParsing(
 
 /**
  * Parser les attributs HTML depuis le HTML
+ * Amélioré avec la logique de l'ancien parser LaCentrale
  */
 function extractFromHTMLAttributes(html: string): ListingResponse[] {
   const listings: ListingResponse[] = []
   
-  // Chercher les containers d'annonces avec différentes structures possibles
-  // 1. Structure avec data-* attributes
-  const dataContainerRegex = /<div[^>]*data-[^>]*ad[^>]*>([\s\S]*?)<\/div>/gi
-  // 2. Structure avec class="adLineContainer" ou similaire
-  const classContainerRegex = /<div[^>]*class=["'][^"']*(?:ad|listing|vehicle|annonce)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi
-  // 3. Structure <article>
-  const articleRegex = /<article[^>]*>([\s\S]*?)<\/article>/gi
-  
-  const allMatches = [
-    ...Array.from(html.matchAll(dataContainerRegex)),
-    ...Array.from(html.matchAll(classContainerRegex)),
-    ...Array.from(html.matchAll(articleRegex)),
-  ]
-
-  for (const match of allMatches.slice(0, 100)) {
-    const content = match[1] || match[0]
+  try {
+    // 1. Chercher les containers d'annonces spécifiques à LaCentrale
+    const adLineMatches = html.match(/<div[^>]*class=["'][^"']*adLineContainer[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []
+    const vehicleMatches = html.match(/<div[^>]*class=["'][^"']*vehicle[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []
+    const articleMatches = html.match(/<article[^>]*>[\s\S]*?<\/article>/gi) || []
     
-    // Extraire URL
-    const urlMatch = content.match(/href=["']([^"']*\/annonce[^"']*)["']/i)
-    if (!urlMatch) continue
+    // 2. Extraire depuis les matches HTML
+    const allMatches = [...adLineMatches, ...vehicleMatches, ...articleMatches]
     
-    const urlPath = urlMatch[1]
-    const fullUrl = urlPath.startsWith('http') 
-      ? urlPath 
-      : `https://www.lacentrale.fr${urlPath}`
+    for (const match of allMatches.slice(0, 100)) {
+      try {
+        const listing = extractListingFromHtmlMatch(match)
+        if (listing) {
+          listings.push(listing)
+        }
+      } catch (error) {
+        continue
+      }
+    }
     
-    // Extraire titre
-    const titleMatch = 
-      content.match(/data-title=["']([^"']+)["']/i) ||
-      content.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i) ||
-      content.match(/title=["']([^"']+)["']/i)
-    const title = titleMatch ? cleanHtml(titleMatch[1]).trim() : 'Annonce LaCentrale'
-    
-    // Extraire prix
-    const priceMatch = content.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i) || 
-                       content.match(/data-price=["']?(\d+)/i)
-    const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
-    
-    // Extraire année
-    const yearMatch = content.match(/\b(19|20)\d{2}\b/)
-    const year = yearMatch ? parseInt(yearMatch[0]) : null
-    
-    // Extraire kilométrage
-    const mileageMatch = content.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
-    const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
-    
-    // Extraire ville
-    const cityMatch = 
-      content.match(/<span[^>]*class=["'][^"']*city[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) ||
-      content.match(/data-city=["']([^"']+)["']/i)
-    const city = cityMatch ? cleanHtml(cityMatch[1]).trim() : null
-    
-    // Extraire image
-    const imageMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
-    const imageUrl = imageMatch 
-      ? (imageMatch[1].startsWith('http') ? imageMatch[1] : `https://www.lacentrale.fr${imageMatch[1]}`)
-      : null
-    
-    // Extraire ID depuis l'URL
-    const adIdMatch = fullUrl.match(/\/annonce\/([^\/]+)/)
-    const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${listings.length}`
-    
-    listings.push({
-      id: `lacentrale_${adId}`,
-      title,
-      price_eur: price,
-      year,
-      mileage_km: mileage,
-      url: fullUrl,
-      imageUrl,
-      source: 'LaCentrale',
-      city,
-      score_ia: 50,
-      score_final: 50,
+    // 3. Si pas de résultats, essayer extraction par liens (comme l'ancien parser)
+    if (listings.length === 0 && html.length > 50000) {
+      const adLinkRegex = /href=["']([^"']*\/annonce[^"']*\/[^"']*)["']/gi
+      const links: string[] = []
+      let linkMatch
+      
+      while ((linkMatch = adLinkRegex.exec(html)) !== null && links.length < 50) {
+        const linkPath = linkMatch[1]
+        // Éviter les doublons
+        if (!links.includes(linkPath)) {
+          links.push(linkPath)
+        }
+      }
+      
+      if (links.length > 0) {
+        log.info(`[LACENTRALE] 📊 Extraction par liens: ${links.length} liens trouvés`)
+        for (const linkPath of links) {
+          try {
+            const url = linkPath.startsWith('http') 
+              ? linkPath 
+              : `https://www.lacentrale.fr${linkPath}`
+            
+            // Extraire le contexte autour du lien (2000 caractères avant et après)
+            const linkIndex = html.indexOf(linkPath)
+            if (linkIndex !== -1) {
+              const context = html.substring(
+                Math.max(0, linkIndex - 2000),
+                Math.min(html.length, linkIndex + 2000)
+              )
+              
+              const listing = extractListingFromContext(context, url)
+              if (listing) {
+                listings.push(listing)
+              }
+            }
+          } catch (error) {
+            continue
+          }
+        }
+      }
+    }
+  } catch (error) {
+    log.warn('[LACENTRALE] Erreur extraction HTML', {
+      error: error instanceof Error ? error.message : String(error),
     })
   }
 
   log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites depuis attributs HTML`)
   return listings
+}
+
+/**
+ * Extraire une annonce depuis un match HTML (div, article, etc.)
+ */
+function extractListingFromHtmlMatch(html: string): ListingResponse | null {
+  // Extraire l'URL
+  const urlMatch =
+    html.match(/href=["']([^"']*\/annonce[^"']*)["']/i) ||
+    html.match(/data-url=["']([^"']+)["']/i) ||
+    html.match(/data-link=["']([^"']+)["']/i)
+  
+  const urlPath = urlMatch ? urlMatch[1] : null
+  if (!urlPath) return null
+  
+  const fullUrl = urlPath.startsWith('http') 
+    ? urlPath 
+    : `https://www.lacentrale.fr${urlPath}`
+  
+  // Extraire titre
+  const titleMatch =
+    html.match(/data-title=["']([^"']+)["']/i) ||
+    html.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i) ||
+    html.match(/<a[^>]*title=["']([^"']+)["']/i)
+  
+  const title = titleMatch
+    ? cleanHtml(titleMatch[1]).replace(/\s+/g, ' ').trim()
+    : 'Annonce LaCentrale'
+  
+  // Extraire prix
+  const priceMatch = html.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i) || 
+                     html.match(/data-price=["']?(\d+)/i)
+  const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
+  
+  // Extraire année
+  const yearMatch = html.match(/\b(19|20)\d{2}\b/)
+  const year = yearMatch ? parseInt(yearMatch[0]) : null
+  
+  // Extraire kilométrage
+  const mileageMatch = html.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
+  const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
+  
+  // Extraire ville
+  const cityMatch =
+    html.match(/<span[^>]*class=["'][^"']*city[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) ||
+    html.match(/data-city=["']([^"']+)["']/i)
+  const city = cityMatch ? cleanHtml(cityMatch[1]).trim() : null
+  
+  // Extraire image
+  const imageMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+  const imageUrl = imageMatch 
+    ? (imageMatch[1].startsWith('http') ? imageMatch[1] : `https://www.lacentrale.fr${imageMatch[1]}`)
+    : null
+  
+  // Extraire ID depuis l'URL
+  const adIdMatch = fullUrl.match(/\/annonce\/([^\/]+)/)
+  const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  return {
+    id: `lacentrale_${adId}`,
+    title,
+    price_eur: price,
+    year,
+    mileage_km: mileage,
+    url: fullUrl,
+    imageUrl,
+    source: 'LaCentrale',
+    city,
+    score_ia: 50,
+    score_final: 50,
+  }
+}
+
+/**
+ * Extraire une annonce depuis le contexte autour d'un lien
+ */
+function extractListingFromContext(context: string, url: string): ListingResponse | null {
+  const titleMatch =
+    context.match(/data-title=["']([^"']+)["']/i) ||
+    context.match(/title=["']([^"']+)["']/i)
+  
+  const title = titleMatch
+    ? cleanHtml(titleMatch[1]).trim()
+    : 'Annonce LaCentrale'
+  
+  const priceMatch = context.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i)
+  const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
+  
+  const yearMatch = context.match(/\b(19|20)\d{2}\b/)
+  const year = yearMatch ? parseInt(yearMatch[0]) : null
+  
+  const mileageMatch = context.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
+  const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
+  
+  const adIdMatch = url.match(/\/annonce\/([^\/]+)/)
+  const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  return {
+    id: `lacentrale_${adId}`,
+    title,
+    price_eur: price,
+    year,
+    mileage_km: mileage,
+    url,
+    imageUrl: null,
+    source: 'LaCentrale',
+    city: null,
+    score_ia: 50,
+    score_final: 50,
+  }
 }
 
 /**
