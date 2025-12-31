@@ -224,6 +224,33 @@ const SITE_CONFIGS: SiteConfig[] = [
     active: true,
   },
   {
+    name: 'Aramisauto',
+    getUrl: (query, relaxed = false) => {
+      const { brand, model, maxPrice } = query
+      const priceMax = relaxed ? Math.min(maxPrice * 1.2, maxPrice + 10000) : maxPrice
+      return `https://www.aramisauto.com/acheter/recherche?makes[]=${encodeURIComponent(brand.toUpperCase())}&models[]=${encodeURIComponent((model || '').toUpperCase())}&priceMax=${priceMax}`
+    },
+    active: true,
+  },
+  {
+    name: 'Reezocar',
+    getUrl: (query, relaxed = false) => {
+      const { brand, model, maxPrice } = query
+      const priceMax = relaxed ? Math.min(maxPrice * 1.2, maxPrice + 10000) : maxPrice
+      return `https://www.reezocar.com/recherche?marque=${encodeURIComponent(brand.toLowerCase())}&modele=${encodeURIComponent((model || '').toLowerCase())}&prixMax=${priceMax}`
+    },
+    active: true,
+  },
+  {
+    name: 'Kyump',
+    getUrl: (query, relaxed = false) => {
+      const { brand, model, maxPrice } = query
+      const priceMax = relaxed ? Math.min(maxPrice * 1.2, maxPrice + 10000) : maxPrice
+      return `https://www.kyump.com/voiture-occasion?marque=${encodeURIComponent(brand.toUpperCase())}&modele=${encodeURIComponent((model || '').toUpperCase())}&prixMax=${priceMax}`
+    },
+    active: true,
+  },
+  {
     name: 'TransakAuto',
     getUrl: (query, relaxed = false) => {
       const { brand, model, maxPrice } = query

@@ -17,6 +17,11 @@ import { parseLeParkingHtml, convertLeParkingToListingResponse } from './leparki
 import { parseProCarLeaseHtml, convertProCarLeaseToListingResponse } from './procarlease-parser'
 import { parseLaCentraleHtml, convertLaCentraleToListingResponse } from './lacentrale-parser'
 import { scrapeLaCentrale as scrapeLaCentraleNew } from '@/src/modules/scraping/sites/lacentrale/scraper'
+import { scrapeAramisauto, parseAramisautoHtml, convertAramisautoToListingResponse } from './aramisauto-parser'
+import { scrapeReezocar, parseReezocarHtml, convertReezocarToListingResponse } from './reezocar-parser'
+import { scrapeKyump, parseKyumpHtml, convertKyumpToListingResponse } from './kyump-parser'
+import { scrapeWithParallelStrategies } from './parallel-scraper'
+import { searchCache } from './cache-manager'
 
 const log = createRouteLogger('run-site-search')
 
@@ -184,13 +189,12 @@ async function scrapeOtherSite(
 }> {
   const startTime = Date.now()
   
-  // Gestion spéciale pour LaCentrale : utiliser le nouveau scraper amélioré
+  // Gestion spéciale pour les sites qui ont leur propre scraper complet
   if (siteName === 'LaCentrale') {
     try {
       log.info(`[${siteName}] Utilisation du nouveau scraper amélioré`, { pass })
       const result = await scrapeLaCentraleNew(query, pass, abortSignal)
       if (result.listings && result.listings.length > 0) {
-        // Normaliser le type de stratégie pour compatibilité
         return {
           listings: result.listings,
           strategy: result.strategy as ScrapingStrategy,
@@ -205,8 +209,66 @@ async function scrapeOtherSite(
       })
     }
   }
+  
+  // Sites avec scraper complet (font scraping + parsing)
+  if (siteName === 'Aramisauto') {
+    try {
+      log.info(`[${siteName}] Utilisation scraper complet`, { pass })
+      const rawListings = await scrapeAramisauto(query.brand, query.model || '', query.maxPrice)
+      const listings = rawListings.map((raw, index) => convertAramisautoToListingResponse(raw, index))
+      return {
+        listings,
+        strategy: 'http-html',
+        ms: Date.now() - startTime,
+      }
+    } catch (error) {
+      log.error(`[${siteName}] Erreur scraping`, {
+        pass,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
+    }
+  }
+  
+  if (siteName === 'Reezocar') {
+    try {
+      log.info(`[${siteName}] Utilisation scraper complet`, { pass })
+      const rawListings = await scrapeReezocar(query.brand, query.model || '', query.maxPrice)
+      const listings = rawListings.map((raw, index) => convertReezocarToListingResponse(raw, index))
+      return {
+        listings,
+        strategy: 'http-html',
+        ms: Date.now() - startTime,
+      }
+    } catch (error) {
+      log.error(`[${siteName}] Erreur scraping`, {
+        pass,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
+    }
+  }
+  
+  if (siteName === 'Kyump') {
+    try {
+      log.info(`[${siteName}] Utilisation scraper complet`, { pass })
+      const rawListings = await scrapeKyump(query.brand, query.model || '', query.maxPrice)
+      const listings = rawListings.map((raw, index) => convertKyumpToListingResponse(raw, index))
+      return {
+        listings,
+        strategy: 'http-html',
+        ms: Date.now() - startTime,
+      }
+    } catch (error) {
+      log.error(`[${siteName}] Erreur scraping`, {
+        pass,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
+    }
+  }
 
-  // Construire l'URL selon le site (fallback pour LaCentrale ou autres sites)
+  // Construire l'URL selon le site (pour les sites qui utilisent scraping + parsing séparés)
   let searchUrl = ''
   switch (siteName) {
     case 'LaCentrale':
@@ -244,16 +306,36 @@ async function scrapeOtherSite(
         let zenrowsParams: Record<string, any> = SCRAPING_CONFIG.zenrows.default
         let retryConfig: { maxAttempts: number; retryableStatuses: number[]; backoffMs: number } | undefined
         
-        if (siteName === 'LaCentrale') {
+        // Gestion spécifique selon le site et la stratégie configurée
+        const siteConfig = SCRAPER_CONFIG[siteName]
+        const strategy = siteConfig?.strategy || 'html-first'
+        
+        let html: string
+        
+        if (strategy === 'parallel' && (siteName === 'AutoScout24' || siteName === 'LeParking')) {
+          // ✅ Utiliser la parallélisation pour AutoScout24 et LeParking
+          log.info(`[${siteName}] Utilisation stratégie parallèle (HTML + JS)`)
+          try {
+            const parallelResult = await scrapeWithParallelStrategies(searchUrl, siteName, abortSignal)
+            html = parallelResult.html
+          } catch (parallelError) {
+            log.warn(`[${siteName}] Parallélisation échouée, fallback vers méthode standard`, {
+              error: parallelError instanceof Error ? parallelError.message : String(parallelError),
+            })
+            // Fallback vers méthode standard
+            html = await scrapeWithZenRows(searchUrl, zenrowsParams, abortSignal, retryConfig)
+          }
+        } else if (siteName === 'LaCentrale') {
           zenrowsParams = { ...SCRAPING_CONFIG.zenrows.lacentrale } as Record<string, any>
           retryConfig = {
             maxAttempts: 2,
             retryableStatuses: [422, 403, 429],
             backoffMs: 2000,
           }
+          html = await scrapeWithZenRows(searchUrl, zenrowsParams, abortSignal, retryConfig)
+        } else {
+          html = await scrapeWithZenRows(searchUrl, zenrowsParams, abortSignal, retryConfig)
         }
-        
-        const html = await scrapeWithZenRows(searchUrl, zenrowsParams, abortSignal, retryConfig)
     const htmlMs = Date.now() - startTime
     
     // Logs debug pour extraction (cette fonction est uniquement pour les sites non-LeBonCoin)
@@ -388,6 +470,36 @@ export async function runSiteSearch(
   }
   
   const siteStartTime = Date.now()
+  
+  // ✅ VÉRIFIER LE CACHE D'ABORD (seulement pour pass strict)
+  // On ne cache pas les passes relaxed/opportunity pour avoir des résultats frais
+  if (originalQuery.maxPrice) {
+    const cached = searchCache.get(
+      siteName,
+      originalQuery.brand,
+      originalQuery.model || null,
+      originalQuery.maxPrice,
+      'strict'
+    )
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      log.info(`[${siteName}] ⚡ Résultats depuis le cache (${cached.length} annonces)`)
+      return {
+        site: siteName,
+        ok: true,
+        items: cached.length,
+        ms: 0,
+        strategy: 'cache',
+        attempts: [{
+          pass: 'strict',
+          ok: true,
+          items: cached.length,
+          ms: 0,
+          note: 'Résultats depuis le cache',
+        }],
+        listings: cached,
+      } as SiteResult & { listings: ListingResponse[] }
+    }
+  }
   const attempts: PassAttempt[] = []
   let allSiteListings: ListingResponse[] = []
   let finalStrategy: ScrapingStrategy = 'ai-fallback'
@@ -605,6 +717,18 @@ export async function runSiteSearch(
   
   // Limiter à MAX_RESULTS_PER_PASS * 2 (on a fait plusieurs passes)
   allSiteListings = allSiteListings.slice(0, SCRAPING_CONFIG.limits.maxResultsPerPass * 2)
+  
+  // ✅ SAUVEGARDER EN CACHE (seulement si résultats trouvés et pass strict)
+  if (allSiteListings.length > 0 && originalQuery.maxPrice) {
+    searchCache.set(
+      siteName,
+      originalQuery.brand,
+      originalQuery.model || null,
+      originalQuery.maxPrice,
+      allSiteListings,
+      'strict'
+    )
+  }
   
   const totalMs = Date.now() - siteStartTime
   // Distinguer "ok mais 0 résultats" vs "erreur technique"

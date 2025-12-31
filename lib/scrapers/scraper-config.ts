@@ -7,6 +7,7 @@ export interface SiteConfig {
   enabled: boolean
   timeout: number
   priority: number
+  strategy?: 'html-first' | 'js-render' | 'parallel' // Stratégie de scraping
   reason?: string // Pour expliquer pourquoi un site est désactivé
 }
 
@@ -14,40 +15,61 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
   'LeBonCoin': {
     enabled: true,
     timeout: 15000,
-    priority: 1, // Toujours le meilleur
+    priority: 1,
+    strategy: 'html-first',
   },
   'LaCentrale': {
     enabled: true,
     timeout: 20000,
     priority: 2,
+    strategy: 'html-first',
+  },
+  'Aramisauto': {
+    enabled: true,
+    timeout: 15000,
+    priority: 3,
+    strategy: 'js-render',
+  },
+  'Reezocar': {
+    enabled: true,
+    timeout: 18000,
+    priority: 4,
+    strategy: 'js-render',
   },
   'ProCarLease': {
     enabled: true,
     timeout: 15000,
-    priority: 3,
+    priority: 5,
+    strategy: 'html-first',
+  },
+  'Kyump': {
+    enabled: true,
+    timeout: 15000,
+    priority: 6,
+    strategy: 'js-render',
   },
   'AutoScout24': {
-    enabled: false, // ❌ Temporairement désactivé (trop lent)
-    timeout: 20000,
-    priority: 4,
-    reason: '163s pour 1 annonce - À optimiser',
+    enabled: true, // ✅ Réactivé avec parallélisation
+    timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
+    priority: 7,
+    strategy: 'parallel',
   },
   'LeParking': {
-    enabled: false, // ❌ Temporairement désactivé (trop lent)
-    timeout: 20000,
-    priority: 5,
-    reason: '64s pour 1 annonce - À optimiser',
+    enabled: true, // ✅ Réactivé avec parallélisation
+    timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
+    priority: 8,
+    strategy: 'parallel',
   },
   'ParuVendu': {
     enabled: false, // ❌ Parser cassé
     timeout: 10000,
-    priority: 6,
+    priority: 9,
     reason: 'Parser ne trouve pas les annonces (HTML reçu mais 0 résultats)',
   },
   'TransakAuto': {
     enabled: false, // ❌ Ne fonctionne pas
     timeout: 5000,
-    priority: 7,
+    priority: 10,
     reason: 'Retourne 0 résultats',
   },
 }
