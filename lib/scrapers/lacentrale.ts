@@ -48,7 +48,7 @@ export const laCentraleScraper = {
             year: listing.year ?? null,
             mileage: listing.mileage_km ?? null,
             city: listing.city ?? null,
-            imageUrl: listing.image_url || listing.imageUrl || null,
+            imageUrl: listing.imageUrl || null,
             score_ia: listing.score_ia || 50,
             scrapedAt: new Date().toISOString(),
           }))
