@@ -30,12 +30,6 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
     priority: 3,
     strategy: 'js-render',
   },
-  'Reezocar': {
-    enabled: true,
-    timeout: 18000,
-    priority: 4,
-    strategy: 'js-render',
-  },
   'ProCarLease': {
     enabled: true,
     timeout: 15000,
@@ -45,19 +39,19 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
   'Kyump': {
     enabled: true,
     timeout: 15000,
-    priority: 6,
+    priority: 4,
     strategy: 'js-render',
   },
   'AutoScout24': {
     enabled: true, // ✅ Réactivé avec parallélisation
     timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
-    priority: 7,
+    priority: 5,
     strategy: 'parallel',
   },
   'LeParking': {
     enabled: true, // ✅ Réactivé avec parallélisation
     timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
-    priority: 8,
+    priority: 6,
     strategy: 'parallel',
   },
   'ParuVendu': {

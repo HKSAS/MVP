@@ -18,7 +18,6 @@ import { parseProCarLeaseHtml, convertProCarLeaseToListingResponse } from './pro
 import { parseLaCentraleHtml, convertLaCentraleToListingResponse } from './lacentrale-parser'
 import { scrapeLaCentrale as scrapeLaCentraleNew } from '@/src/modules/scraping/sites/lacentrale/scraper'
 import { scrapeAramisauto, parseAramisautoHtml, convertAramisautoToListingResponse } from './aramisauto-parser'
-import { scrapeReezocar, parseReezocarHtml, convertReezocarToListingResponse } from './reezocar-parser'
 import { scrapeKyump, parseKyumpHtml, convertKyumpToListingResponse } from './kyump-parser'
 import { scrapeWithParallelStrategies } from './parallel-scraper'
 import { searchCache } from './cache-manager'
@@ -216,25 +215,6 @@ async function scrapeOtherSite(
       log.info(`[${siteName}] Utilisation scraper complet`, { pass })
       const rawListings = await scrapeAramisauto(query.brand, query.model || '', query.maxPrice)
       const listings = rawListings.map((raw, index) => convertAramisautoToListingResponse(raw, index))
-      return {
-        listings,
-        strategy: 'http-html',
-        ms: Date.now() - startTime,
-      }
-    } catch (error) {
-      log.error(`[${siteName}] Erreur scraping`, {
-        pass,
-        error: error instanceof Error ? error.message : String(error),
-      })
-      return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
-    }
-  }
-  
-  if (siteName === 'Reezocar') {
-    try {
-      log.info(`[${siteName}] Utilisation scraper complet`, { pass })
-      const rawListings = await scrapeReezocar(query.brand, query.model || '', query.maxPrice)
-      const listings = rawListings.map((raw, index) => convertReezocarToListingResponse(raw, index))
       return {
         listings,
         strategy: 'http-html',

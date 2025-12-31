@@ -233,15 +233,6 @@ const SITE_CONFIGS: SiteConfig[] = [
     active: true,
   },
   {
-    name: 'Reezocar',
-    getUrl: (query, relaxed = false) => {
-      const { brand, model, maxPrice } = query
-      const priceMax = relaxed ? Math.min(maxPrice * 1.2, maxPrice + 10000) : maxPrice
-      return `https://www.reezocar.com/recherche?marque=${encodeURIComponent(brand.toLowerCase())}&modele=${encodeURIComponent((model || '').toLowerCase())}&prixMax=${priceMax}`
-    },
-    active: true,
-  },
-  {
     name: 'Kyump',
     getUrl: (query, relaxed = false) => {
       const { brand, model, maxPrice } = query
