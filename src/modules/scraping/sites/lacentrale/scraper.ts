@@ -38,6 +38,9 @@ export async function scrapeLaCentrale(
 
   const targetUrl = buildLaCentraleURL(query, pass)
   log.info(`[LACENTRALE] 🎯 Scraping: ${targetUrl}`, { pass })
+  
+  // 🔍 DEBUG : Log de l'URL générée
+  console.log('[LACENTRALE DEBUG] URL générée:', targetUrl)
 
   try {
     // STRATÉGIE 1 : HTML BRUT SANS JS (comme LeBonCoin)
@@ -47,6 +50,19 @@ export async function scrapeLaCentrale(
     
     if (listingsFromHTML.length > 0) {
       log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
+      
+      // 🔍 DEBUG : Log des premières annonces extraites
+      console.log('[LACENTRALE DEBUG] Premières annonces extraites:', {
+        count: listingsFromHTML.length,
+        sample: listingsFromHTML.slice(0, 3).map(l => ({
+          title: l.title,
+          price: l.price_eur,
+          url: l.url,
+          year: l.year,
+          mileage: l.mileage_km
+        }))
+      })
+      
       return {
         listings: listingsFromHTML,
         strategy: 'zenrows',
@@ -61,6 +77,19 @@ export async function scrapeLaCentrale(
     
     if (listings.length > 0) {
       log.info(`[LACENTRALE] ✅ ${listings.length} annonces via JS rendering`, { pass })
+      
+      // 🔍 DEBUG : Log des premières annonces extraites
+      console.log('[LACENTRALE DEBUG] Premières annonces extraites:', {
+        count: listings.length,
+        sample: listings.slice(0, 3).map(l => ({
+          title: l.title,
+          price: l.price_eur,
+          url: l.url,
+          year: l.year,
+          mileage: l.mileage_km
+        }))
+      })
+      
       return {
         listings,
         strategy: 'zenrows',
@@ -125,17 +154,31 @@ async function extractFromHTMLBrut(
       const jsonStr = initialStateMatch[1]
       const jsonData = JSON.parse(jsonStr)
       
+      // 🔍 DEBUG : Log la structure JSON pour voir ce qui est disponible
+      console.log('[LACENTRALE DEBUG] Structure __INITIAL_STATE__:', {
+        keys: Object.keys(jsonData || {}),
+        hasAds: !!jsonData?.ads,
+        hasListings: !!jsonData?.listings,
+        hasVehicles: !!jsonData?.vehicles,
+        hasData: !!jsonData?.data,
+      })
+      
       const ads = 
         jsonData?.ads ||
         jsonData?.listings ||
         jsonData?.vehicles ||
         jsonData?.data?.ads ||
         jsonData?.data?.listings ||
+        jsonData?.searchResults?.ads ||
+        jsonData?.search?.results?.listings ||
+        jsonData?.listing?.results ||
         []
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
         log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (HTML brut)`)
         return ads.map(mapLaCentraleAdToUnified)
+      } else {
+        console.log('[LACENTRALE DEBUG] Aucune annonce trouvée dans __INITIAL_STATE__')
       }
     } catch (error) {
       log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__:', {
@@ -150,17 +193,27 @@ async function extractFromHTMLBrut(
     try {
       const jsonData = JSON.parse(nextDataMatch[1])
       
+      // 🔍 DEBUG : Log la structure JSON pour voir ce qui est disponible
+      console.log('[LACENTRALE DEBUG] Structure __NEXT_DATA__:', {
+        hasPageProps: !!jsonData?.props?.pageProps,
+        pagePropsKeys: Object.keys(jsonData?.props?.pageProps || {}),
+      })
+      
       const ads = 
         jsonData?.props?.pageProps?.ads ||
         jsonData?.props?.pageProps?.listings ||
         jsonData?.props?.pageProps?.data?.ads ||
         jsonData?.props?.pageProps?.data?.listings ||
+        jsonData?.props?.pageProps?.searchResults?.ads ||
+        jsonData?.props?.pageProps?.search?.results?.listings ||
         jsonData?.props?.initialState?.ads ||
         []
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
         log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
         return ads.map(mapLaCentraleAdToUnified)
+      } else {
+        console.log('[LACENTRALE DEBUG] Aucune annonce trouvée dans __NEXT_DATA__')
       }
     } catch (error) {
       log.warn('[LACENTRALE] Erreur parsing __NEXT_DATA__:', {
@@ -351,13 +404,20 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
   const base = 'https://www.lacentrale.fr/listing'
   const searchParams = new URLSearchParams()
 
-  // Construire le filtre makesModels - LaCentrale utilise le format "BRAND-MODEL"
-  const brand = (query.brand || '').trim().toUpperCase().replace(/\s+/g, '-')
-  const model = (query.model || '').trim().toUpperCase().replace(/\s+/g, '-')
+  // Construire le filtre makesModelsCommercialNames - LaCentrale utilise le format "BRAND:MODEL"
+  // Format correct : RENAULT:CLIO (avec deux-points, pas tiret)
+  const brand = (query.brand || '').trim().toUpperCase().replace(/\s+/g, '')
+  const model = (query.model || '').trim().toUpperCase().replace(/\s+/g, '')
   
   if (brand) {
-    const makesModels = model ? `${brand}-${model}` : brand
-    searchParams.set('makesModels', makesModels)
+    if (model) {
+      // Format avec deux-points pour marque:modèle
+      const makeModel = `${brand}:${model}`
+      searchParams.set('makesModelsCommercialNames', makeModel)
+    } else {
+      // Seulement la marque
+      searchParams.set('makesModelsCommercialNames', brand)
+    }
   }
   
   // Prix selon la passe
