@@ -1,6 +1,6 @@
 // src/modules/scraping/sites/lacentrale/scraper.ts
 // 🎯 SCRAPER LACENTRALE - ZENROWS ONLY - ULTRA PROPRE
-// Version améliorée avec multi-stratégies comme LeBonCoin
+// Même structure exacte que LeBonCoin
 
 import { scrapeWithZenRows } from '@/lib/zenrows'
 import { getZenRowsApiKey } from '@/src/core/config/env'
@@ -12,7 +12,7 @@ const log = createRouteLogger('lacentrale-scraper-zenrows')
 
 /**
  * 🎯 SCRAPER LACENTRALE AVEC ZENROWS
- * Version améliorée avec multi-stratégies de fallback
+ * Version identique à LeBonCoin
  */
 export async function scrapeLaCentrale(
   query: ScrapeQuery,
@@ -40,28 +40,29 @@ export async function scrapeLaCentrale(
   log.info(`[LACENTRALE] 🎯 Scraping: ${targetUrl}`, { pass })
 
   try {
-    // STRATÉGIE 1 : HTML brut SANS js_render (comme LeBonCoin - c'est le plus rapide et fiable)
-    log.info('[LACENTRALE] 📡 Tentative HTML brut sans JS (comme LeBonCoin)...', { pass })
-    const listingsFromHTMLBrut = await extractFromHTMLBrutSansJS(targetUrl, abortSignal)
+    // STRATÉGIE 1 : HTML BRUT SANS JS (comme LeBonCoin)
+    // LaCentrale retourne les annonces dans le HTML brut, pas besoin de JS rendering
+    log.info('[LACENTRALE] 📡 Tentative HTML brut (sans js_render)...', { pass })
+    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
     
-    if (listingsFromHTMLBrut.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTMLBrut.length} annonces via HTML brut sans JS`, { pass })
+    if (listingsFromHTML.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
       return {
-        listings: listingsFromHTMLBrut,
+        listings: listingsFromHTML,
         strategy: 'zenrows',
         ms: Date.now() - startTime,
       }
     }
 
-    log.warn('[LACENTRALE] ⚠️ HTML brut sans JS vide, essai HTML brut avec JS...', { pass })
+    log.warn('[LACENTRALE] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
     
-    // STRATÉGIE 2 : Fallback vers HTML brut avec js_render (si nécessaire)
-    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
+    // STRATÉGIE 2 : Essayer d'extraire avec js_render (fallback si HTML brut échoue)
+    const listings = await extractFromJSRender(targetUrl, abortSignal)
     
-    if (listingsFromHTML.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut avec JS`, { pass })
+    if (listings.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via JS rendering`, { pass })
       return {
-        listings: listingsFromHTML,
+        listings,
         strategy: 'zenrows',
         ms: Date.now() - startTime,
       }
@@ -88,412 +89,52 @@ export async function scrapeLaCentrale(
 }
 
 /**
- * STRATÉGIE 0 : Utiliser autoparse de ZenRows pour extraire JSON directement
- * ZenRows peut automatiquement parser et extraire les données structurées
- */
-async function extractFromAutoparse(
-  url: string,
-  abortSignal?: AbortSignal
-): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows avec autoparse...')
-  
-  try {
-    // Utiliser ZenRows avec autoparse pour obtenir directement du JSON
-    const apiKey = getZenRowsApiKey()
-    if (!apiKey) {
-      log.warn('[LACENTRALE] ZENROWS_API_KEY manquant')
-      return []
-    }
-
-    const zenrowsUrl = new URL('https://api.zenrows.com/v1')
-    zenrowsUrl.searchParams.set('apikey', apiKey)
-    zenrowsUrl.searchParams.set('url', url)
-    zenrowsUrl.searchParams.set('autoparse', 'true')
-    zenrowsUrl.searchParams.set('premium_proxy', 'true')
-    zenrowsUrl.searchParams.set('proxy_country', 'fr') // Recommandé par ZenRows pour éviter restrictions géographiques
-    zenrowsUrl.searchParams.set('js_render', 'true') // Nécessaire pour RESP001
-    zenrowsUrl.searchParams.set('wait', '3000') // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
-    // Ne pas utiliser mode: auto avec autoparse, cela peut causer des conflits
-
-    const response = await fetch(zenrowsUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      signal: abortSignal,
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Erreur inconnue')
-      log.warn('[LACENTRALE] Erreur autoparse ZenRows', { 
-        status: response.status,
-        error: errorText.substring(0, 500) 
-      })
-      return []
-    }
-
-    let jsonData: any
-    try {
-      jsonData = await response.json()
-    } catch (error) {
-      log.warn('[LACENTRALE] Impossible de parser la réponse JSON', {
-        error: error instanceof Error ? error.message : String(error),
-      })
-      return []
-    }
-    
-    // Le JSON peut être un tableau ou un objet
-    const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData]
-    
-    log.info(`[LACENTRALE] 📊 JSON autoparse reçu: ${dataArray.length} objets à analyser`)
-    
-    const listings: ListingResponse[] = []
-    const seenUrls = new Set<string>() // Éviter les doublons
-    
-    // Fonction récursive pour chercher des annonces dans des structures imbriquées
-    const findListingsInObject = (obj: any, depth = 0): void => {
-      if (depth > 5) return // Limiter la profondeur de recherche
-      if (!obj || typeof obj !== 'object') return
-      
-      // Pattern 1: Si l'objet lui-même ressemble à une annonce
-      if ((obj.href || obj.url || obj.lien || obj.link) && (obj.title || obj.titre || obj.label || obj.name)) {
-        const listing = extractListingFromAutoparseItem(obj)
-        if (listing && !seenUrls.has(listing.url)) {
-          seenUrls.add(listing.url)
-          listings.push(listing)
-        }
-      }
-      
-      // Pattern 2: Chercher dans des propriétés connues contenant des tableaux
-      const arrayProps = ['ads', 'listings', 'vehicles', 'results', 'items', 'data', 'vehiclesList', 'classifieds', 'products', 'offers']
-      for (const prop of arrayProps) {
-        if (Array.isArray(obj[prop])) {
-          for (const item of obj[prop]) {
-            if (item && typeof item === 'object') {
-              findListingsInObject(item, depth + 1)
-            }
-          }
-        }
-      }
-      
-      // Pattern 3: Chercher récursivement dans toutes les propriétés
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
-          findListingsInObject(obj[key], depth + 1)
-        }
-      }
-    }
-    
-    // Chercher les objets qui ressemblent à des annonces de véhicules
-    for (const item of dataArray) {
-      findListingsInObject(item)
-    }
-
-    log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites via autoparse`)
-    return listings // Retourner toutes les annonces trouvées (pas de limite)
-  } catch (error) {
-    log.warn('[LACENTRALE] ⚠️ Erreur autoparse, passage à stratégie suivante', {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return []
-  }
-}
-
-/**
- * Extraire une annonce depuis un objet JSON d'autoparse
- */
-function extractListingFromAutoparseItem(item: any): ListingResponse | null {
-  try {
-    // Chercher l'URL
-    const urlPath = item.href || item.url || item.lien || item.link || item.path
-    if (!urlPath) return null
-    
-    // Filtrer les URLs qui ne sont pas des annonces de véhicules
-    // Accepter les URLs avec /listing, /annonce, /occasion, ou contenant un ID d'annonce
-    const urlStr = String(urlPath).toLowerCase()
-    const isListingUrl = urlStr.includes('/listing') || 
-                         urlStr.includes('/annonce') || 
-                         urlStr.includes('/occasion') ||
-                         urlStr.includes('/voiture') ||
-                         (urlStr.includes('lacentrale') && (item.price || item.priceEur || item.title))
-    
-    if (!isListingUrl) return null
-    
-    const fullUrl = urlPath.startsWith('http') 
-      ? urlPath 
-      : `https://www.lacentrale.fr${urlPath.startsWith('/') ? urlPath : `/${urlPath}`}`
-    
-    // Extraire le titre
-    const title = item.title || item.titre || item.label || item.name || 'Annonce LaCentrale'
-    
-    // Extraire le prix (peut être dans différentes propriétés)
-    let price: number | null = null
-    if (typeof item.price === 'number') {
-      price = item.price
-    } else if (typeof item.price === 'string') {
-      price = parseFloat(item.price.replace(/\s/g, ''))
-    } else if (item.priceEur) {
-      price = typeof item.priceEur === 'number' ? item.priceEur : parseFloat(String(item.priceEur))
-    }
-    
-    // Extraire l'année
-    let year: number | null = null
-    if (typeof item.year === 'number') {
-      year = item.year
-    } else if (typeof item.year === 'string') {
-      year = parseInt(item.year)
-    }
-    
-    // Extraire le kilométrage
-    let mileage: number | null = null
-    if (typeof item.mileage === 'number') {
-      mileage = item.mileage
-    } else if (typeof item.mileage === 'string') {
-      mileage = parseFloat(item.mileage.replace(/\s/g, ''))
-    } else if (item.mileageKm) {
-      mileage = typeof item.mileageKm === 'number' ? item.mileageKm : parseFloat(String(item.mileageKm))
-    }
-    
-    // Extraire la ville
-    const city = item.city || item.ville || item.location || null
-    
-    // Extraire l'image - chercher dans toutes les propriétés possibles
-    let imageUrl: string | null = null
-    
-    // Essayer différentes propriétés (comme LeBonCoin extrait directement depuis HTML)
-    const imageSources = [
-      item.imageUrl,
-      item.image,
-      item.photo,
-      item.thumbnail,
-      item.img,
-      item.picture,
-      item.imageUrl,
-      item.photoUrl,
-      item.thumbnailUrl,
-      item.media?.url,
-      item.media?.src,
-      item.pictures?.[0],
-      item.photos?.[0],
-      item.images?.[0],
-      item.thumbnails?.[0],
-      item.media?.images?.[0],
-    ]
-    
-    for (const src of imageSources) {
-      if (!src) continue
-      
-      if (typeof src === 'string') {
-        // URL directe
-        imageUrl = src
-        break
-      } else if (typeof src === 'object' && src !== null) {
-        // Objet avec url, src, etc.
-        imageUrl = src.url || src.src || src.href || src.path || null
-        if (imageUrl) break
-      } else if (Array.isArray(src) && src.length > 0) {
-        // Tableau d'images
-        const firstImg = src[0]
-        if (typeof firstImg === 'string') {
-          imageUrl = firstImg
-          break
-        } else if (typeof firstImg === 'object') {
-          imageUrl = firstImg.url || firstImg.src || firstImg.href || null
-          if (imageUrl) break
-        }
-      }
-    }
-    
-    // Normaliser l'URL de l'image
-    if (imageUrl) {
-      // Enlever les paramètres de requête inutiles parfois présents
-      imageUrl = imageUrl.split('?')[0].split('#')[0]
-      
-      // Ajouter le domaine si nécessaire
-      if (!imageUrl.startsWith('http')) {
-        if (imageUrl.startsWith('//')) {
-          imageUrl = `https:${imageUrl}`
-        } else if (imageUrl.startsWith('/')) {
-          imageUrl = `https://www.lacentrale.fr${imageUrl}`
-        } else {
-          imageUrl = `https://www.lacentrale.fr/${imageUrl}`
-        }
-      }
-    }
-    
-    // Extraire l'ID depuis l'URL - LaCentrale utilise plusieurs formats :
-    // - /auto-occasion-annonce-XXXXX.html -> XXXXX
-    // - /annonce/XXXXX -> XXXXX
-    // - /annonce-XXXXX.html -> XXXXX
-    const adIdMatch = 
-      fullUrl.match(/\/auto-occasion-annonce-([^\/\.\?]+)/) ||
-      fullUrl.match(/\/annonce\/([^\/\?]+)/) ||
-      fullUrl.match(/\/annonce-([^\/\.\?]+)\.html/) ||
-      fullUrl.match(/listing[^\/]*\/([^\/\?]+)/)
-    const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    return {
-      id: `lacentrale_${adId}`,
-      title: String(title),
-      price_eur: price,
-      year,
-      mileage_km: mileage,
-      url: fullUrl,
-      imageUrl,
-      source: 'LaCentrale',
-      city,
-      score_ia: 50,
-      score_final: 50,
-    }
-  } catch (error) {
-    log.warn('[LACENTRALE] Erreur extraction item autoparse', {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return null
-  }
-}
-
-/**
- * STRATÉGIE 0 : Extraire depuis HTML brut SANS js_render (comme LeBonCoin)
- * Teste d'abord sans JS rendering car c'est beaucoup plus rapide et peut fonctionner
- */
-async function extractFromHTMLBrutSansJS(
-  url: string,
-  abortSignal?: AbortSignal
-): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
-  
-  try {
-    const response = await scrapeWithZenRows(
-      url,
-      {
-        // PAS de js_render - comme LeBonCoin, on essaie d'abord sans JS
-        premium_proxy: 'true',
-        proxy_country: 'fr',
-        block_resources: 'image,media,font',
-      },
-      abortSignal
-    )
-
-    if (!response || response.length < 100) {
-      log.warn('[LACENTRALE] ❌ HTML brut sans JS trop court ou vide')
-      return []
-    }
-
-    const html = response
-    log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
-
-    // Chercher JSON embedded dans le HTML brut (comme LeBonCoin avec __NEXT_DATA__)
-    // 1. __INITIAL_STATE__
-    const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
-    if (initialStateMatch) {
-      try {
-        const jsonStr = initialStateMatch[1]
-        const jsonData = JSON.parse(jsonStr)
-        
-        const ads = 
-          jsonData?.ads ||
-          jsonData?.listings ||
-          jsonData?.vehicles ||
-          jsonData?.data?.ads ||
-          []
-
-        if (ads && Array.isArray(ads) && ads.length > 0) {
-          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (HTML brut)`)
-          return ads.map(mapLaCentraleAdToUnified)
-        }
-      } catch (error) {
-        log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (HTML brut)', {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    }
-
-    // 2. __NEXT_DATA__
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
-    if (nextDataMatch) {
-      try {
-        const jsonData = JSON.parse(nextDataMatch[1])
-        
-        const ads = 
-          jsonData?.props?.pageProps?.ads ||
-          jsonData?.props?.pageProps?.listings ||
-          jsonData?.props?.pageProps?.data?.ads ||
-          jsonData?.props?.initialState?.ads ||
-          []
-
-        if (ads && Array.isArray(ads) && ads.length > 0) {
-          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
-          return ads.map(mapLaCentraleAdToUnified)
-        }
-      } catch (error) {
-        log.warn('[LACENTRALE] Erreur parsing __NEXT_DATA__ (HTML brut)', {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    }
-
-    // 3. Si pas de JSON, essayer parsing HTML classique
-    return extractFromHTMLAttributes(html)
-  } catch (error) {
-    log.warn('[LACENTRALE] ⚠️ Erreur HTML brut sans JS, passage à stratégie suivante', {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return []
-  }
-}
-
-/**
- * STRATÉGIE 1 : Extraire depuis HTML brut avec JSON embedded
- * LaCentrale peut avoir des données dans __INITIAL_STATE__ ou autres structures JSON
+ * STRATÉGIE 1 : Extraire depuis HTML brut (SANS js_render)
+ * LaCentrale bloque avec js_render mais retourne les données dans le HTML brut
  */
 async function extractFromHTMLBrut(
   url: string,
   abortSignal?: AbortSignal
 ): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut...')
+  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
   
-  try {
-    const response = await scrapeWithZenRows(
-      url,
-      {
-        premium_proxy: 'true',
-        proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
-        js_render: 'true', // Nécessaire pour éviter RESP001
-        wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
-        block_resources: 'image,media,font',
-      },
-      abortSignal
-    )
+  const response = await scrapeWithZenRows(
+    url,
+    {
+      // ⚠️ PAS de js_render - comme LeBonCoin
+      premium_proxy: 'true',
+      proxy_country: 'fr',
+      block_resources: 'image,media,font',
+    },
+    abortSignal
+  )
 
-    if (!response || response.length < 100) {
-      log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
-      return []
-    }
+  if (!response || response.length < 100) {
+    log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
+    return []
+  }
 
-    const html = response
-    log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
+  const html = response
+  log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
 
-  // Chercher différents types de JSON embedded
-  // 1. __INITIAL_STATE__
+  // Chercher d'abord __INITIAL_STATE__ ou __NEXT_DATA__ dans le HTML brut (comme LeBonCoin)
+  // LaCentrale peut utiliser __INITIAL_STATE__ ou d'autres structures JSON
   const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
   if (initialStateMatch) {
     try {
       const jsonStr = initialStateMatch[1]
       const jsonData = JSON.parse(jsonStr)
       
-      // Chercher les annonces dans différentes structures possibles
       const ads = 
         jsonData?.ads ||
         jsonData?.listings ||
         jsonData?.vehicles ||
         jsonData?.data?.ads ||
         jsonData?.data?.listings ||
-        jsonData?.searchResults?.ads ||
         []
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
-        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__`)
+        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (HTML brut)`)
         return ads.map(mapLaCentraleAdToUnified)
       }
     } catch (error) {
@@ -503,7 +144,7 @@ async function extractFromHTMLBrut(
     }
   }
 
-  // 2. __NEXT_DATA__ (si LaCentrale utilise Next.js)
+  // Chercher __NEXT_DATA__ (si LaCentrale utilise Next.js)
   const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
   if (nextDataMatch) {
     try {
@@ -513,11 +154,12 @@ async function extractFromHTMLBrut(
         jsonData?.props?.pageProps?.ads ||
         jsonData?.props?.pageProps?.listings ||
         jsonData?.props?.pageProps?.data?.ads ||
+        jsonData?.props?.pageProps?.data?.listings ||
         jsonData?.props?.initialState?.ads ||
         []
 
       if (ads && Array.isArray(ads) && ads.length > 0) {
-        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__`)
+        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
         return ads.map(mapLaCentraleAdToUnified)
       }
     } catch (error) {
@@ -527,151 +169,18 @@ async function extractFromHTMLBrut(
     }
   }
 
-  // 3. JSON-LD (structured data)
-  const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g) || []
-  for (const jsonLdMatch of jsonLdMatches) {
-    try {
-      const jsonStr = jsonLdMatch.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1]
-      if (jsonStr) {
-        const jsonData = JSON.parse(jsonStr)
-        if (jsonData['@type'] === 'Product' || jsonData['@type'] === 'Vehicle') {
-          const listing = mapJsonLdToUnified(jsonData)
-          if (listing) {
-            log.info('[LACENTRALE] ✅ Annonce trouvée dans JSON-LD')
-            return [listing]
-          }
-        }
-      }
-    } catch (error) {
-      continue
-    }
-  }
-
-    // Si pas de JSON trouvé, essayer parsing HTML direct
-    return extractFromHTMLAttributes(html)
-  } catch (error: any) {
-    // Si erreur RESP001 ou 422, LaCentrale bloque - essayer sans proxy_country
-    if (error?.message?.includes('422') || error?.message?.includes('RESP001')) {
-      log.warn('[LACENTRALE] ⚠️ Blocage détecté (RESP001), essai sans proxy_country...')
-      try {
-        const responseRetry = await scrapeWithZenRows(
-          url,
-          {
-            premium_proxy: 'true',
-            // Pas de proxy_country pour éviter le blocage
-            block_resources: 'image,media,font',
-          },
-          abortSignal
-        )
-        
-        if (responseRetry && responseRetry.length >= 100) {
-          log.info(`[LACENTRALE] 📊 HTML brut reçu (retry): ${(responseRetry.length / 1024).toFixed(2)} KB`)
-          // Essayer d'extraire depuis le HTML
-          return extractFromHTMLAttributes(responseRetry)
-        }
-      } catch (retryError) {
-        log.warn('[LACENTRALE] ⚠️ Retry échoué aussi')
-      }
-    }
-    // Si erreur, retourner vide pour passer à la stratégie suivante
-    log.warn('[LACENTRALE] ⚠️ Erreur HTML brut, passage à stratégie suivante')
-    return []
-  }
+  // Si pas de JSON, parser les attributs HTML
+  return extractFromHTMLAttributes(html)
 }
 
 /**
- * STRATÉGIE 2 : Extraire depuis JS rendering (fallback)
+ * STRATÉGIE 2 : Extraire depuis HTML avec js_render (fallback si HTML brut échoue)
  */
 async function extractFromJSRender(
   url: string,
   abortSignal?: AbortSignal
 ): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering...')
-  
-  try {
-    // Utiliser proxy_country: 'fr' comme recommandé par ZenRows
-    const response = await scrapeWithZenRows(
-      url,
-      {
-        js_render: 'true',
-        premium_proxy: 'true',
-        proxy_country: 'fr', // Recommandé par ZenRows pour éviter restrictions géographiques
-        wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
-        block_resources: 'image,media,font',
-      },
-      abortSignal
-    )
-
-    if (!response || response.length < 100) {
-      log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
-      return []
-    }
-
-    const html = response
-    log.info(`[LACENTRALE] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
-
-    // Essayer les mêmes extractions JSON que dans HTML brut
-    // (car le JS rendering peut avoir généré plus de données)
-    const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
-    if (initialStateMatch) {
-      try {
-        const jsonStr = initialStateMatch[1]
-        const jsonData = JSON.parse(jsonStr)
-        
-        const ads = 
-          jsonData?.ads ||
-          jsonData?.listings ||
-          jsonData?.vehicles ||
-          jsonData?.data?.ads ||
-          []
-
-        if (ads && Array.isArray(ads) && ads.length > 0) {
-          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (JS render)`)
-          return ads.map(mapLaCentraleAdToUnified)
-        }
-      } catch (error) {
-        log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (JS render)')
-      }
-    }
-
-    // Si pas de JSON, essayer parsing HTML
-    return extractFromHTMLAttributes(html)
-  } catch (error: any) {
-    // Si erreur RESP001, essayer avec des paramètres différents
-    if (error?.message?.includes('422') || error?.message?.includes('RESP001')) {
-      log.warn('[LACENTRALE] ⚠️ Blocage JS rendering, essai avec paramètres minimaux...')
-      try {
-        const responseRetry = await scrapeWithZenRows(
-          url,
-          {
-            premium_proxy: 'true',
-            block_resources: 'image,media,font',
-            // Pas de js_render, pas de proxy_country
-          },
-          abortSignal
-        )
-        
-        if (responseRetry && responseRetry.length >= 100) {
-          log.info(`[LACENTRALE] 📊 HTML reçu (retry minimal): ${(responseRetry.length / 1024).toFixed(2)} KB`)
-          return extractFromHTMLAttributes(responseRetry)
-        }
-      } catch (retryError) {
-        log.warn('[LACENTRALE] ⚠️ Retry minimal échoué aussi')
-      }
-    }
-    log.warn('[LACENTRALE] ⚠️ Erreur JS rendering, passage à stratégie suivante')
-    return []
-  }
-}
-
-/**
- * STRATÉGIE 3 : Fallback parsing HTML classique
- */
-async function extractFromHTMLParsing(
-  url: string,
-  abortSignal?: AbortSignal
-): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows pour parsing HTML...')
+  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
   
   const response = await scrapeWithZenRows(
     url,
@@ -679,100 +188,146 @@ async function extractFromHTMLParsing(
       js_render: 'true',
       premium_proxy: 'true',
       proxy_country: 'fr',
-      wait: '3000', // Réduire le temps d'attente pour JS rendering (3s au lieu de 5s par défaut)
+      wait: '5000',
       block_resources: 'image,media,font',
     },
     abortSignal
   )
 
   if (!response || response.length < 100) {
+    log.warn('[LACENTRALE] ❌ ZenRows HTML trop court ou vide')
     return []
   }
 
-  return extractFromHTMLAttributes(response)
+  const html = response
+  log.info(`[LACENTRALE] 📊 HTML reçu: ${(html.length / 1024).toFixed(2)} KB`)
+
+  // Chercher __INITIAL_STATE__ dans le HTML avec JS rendering
+  const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
+  if (initialStateMatch) {
+    try {
+      const jsonStr = initialStateMatch[1]
+      const jsonData = JSON.parse(jsonStr)
+      
+      const ads = 
+        jsonData?.ads ||
+        jsonData?.listings ||
+        jsonData?.vehicles ||
+        jsonData?.data?.ads ||
+        jsonData?.data?.listings ||
+        []
+
+      if (ads && Array.isArray(ads) && ads.length > 0) {
+        log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (JS render)`)
+        return ads.map(mapLaCentraleAdToUnified)
+      }
+    } catch (error) {
+      log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (JS render)')
+    }
+  }
+
+  // Chercher __NEXT_DATA__
+  const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
+  if (!nextDataMatch) {
+    log.warn('[LACENTRALE] ⚠️ __INITIAL_STATE__ et __NEXT_DATA__ non trouvés dans le HTML')
+    return []
+  }
+
+  try {
+    const jsonData = JSON.parse(nextDataMatch[1])
+    
+    const ads = 
+      jsonData?.props?.pageProps?.ads ||
+      jsonData?.props?.pageProps?.listings ||
+      jsonData?.props?.pageProps?.data?.ads ||
+      jsonData?.props?.pageProps?.data?.listings ||
+      jsonData?.props?.initialState?.ads ||
+      []
+
+    if (!ads || !Array.isArray(ads)) {
+      log.warn('[LACENTRALE] ⚠️ Structure JSON inattendue')
+      return []
+    }
+
+    log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__`)
+
+    return ads.map(mapLaCentraleAdToUnified)
+
+  } catch (error) {
+    log.error('[LACENTRALE] ❌ Erreur parsing JSON:', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return []
+  }
 }
 
 /**
- * Parser les attributs HTML depuis le HTML
- * Amélioré avec la logique de l'ancien parser LaCentrale
+ * Parser les attributs HTML depuis le HTML brut
  */
 function extractFromHTMLAttributes(html: string): ListingResponse[] {
   const listings: ListingResponse[] = []
   
-  try {
-    // 1. Chercher les containers d'annonces spécifiques à LaCentrale
-    const adLineMatches = html.match(/<div[^>]*class=["'][^"']*adLineContainer[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []
-    const vehicleMatches = html.match(/<div[^>]*class=["'][^"']*vehicle[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []
-    const articleMatches = html.match(/<article[^>]*>[\s\S]*?<\/article>/gi) || []
+  // Chercher les containers d'annonces LaCentrale
+  // LaCentrale utilise différents formats de conteneurs
+  const containerRegex = /<a[^>]*href=["']([^"']*(?:\/auto-occasion-annonce[^"']*|\/annonce[^"']*))["'][^>]*>([\s\S]*?)<\/a>/gi
+  
+  let match
+  while ((match = containerRegex.exec(html)) !== null && listings.length < 200) {
+    const urlPath = match[1]
+    const content = match[2]
     
-    // 2. Extraire depuis les matches HTML
-    const allMatches = [...adLineMatches, ...vehicleMatches, ...articleMatches]
+    // Extraire prix
+    const priceMatch = content.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i) || 
+                       content.match(/data-price=["']?(\d+)/i)
+    const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
     
-    // Augmenter la limite pour extraire plus d'annonces (500 au lieu de 100)
-    for (const match of allMatches.slice(0, 500)) {
-      try {
-        const listing = extractListingFromHtmlMatch(match)
-        if (listing) {
-          listings.push(listing)
-        }
-      } catch (error) {
-        continue
-      }
+    // Extraire titre
+    const titleMatch = content.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i) ||
+                       content.match(/<a[^>]*title=["']([^"']+)["']/i) ||
+                       content.match(/data-title=["']([^"']+)["']/i)
+    const title = titleMatch ? cleanHtml(titleMatch[1]).replace(/\s+/g, ' ').trim() : ''
+    
+    // Extraire image
+    const imageMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i) ||
+                       content.match(/<img[^>]+data-src=["']([^"']+)["']/i)
+    let imageUrl = imageMatch ? imageMatch[1] : null
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      imageUrl = imageUrl.startsWith('//') ? `https:${imageUrl}` : `https://www.lacentrale.fr${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`
     }
     
-    // 3. Si pas de résultats, essayer extraction par liens (comme l'ancien parser)
-    if (listings.length === 0 && html.length > 50000) {
-      // LaCentrale utilise plusieurs formats d'URL, les capturer tous :
-      // - /auto-occasion-annonce-xxxxx.html
-      // - /annonce/xxxxx
-      // - /annonce-xxxxx.html
-      const adLinkRegex = /href=["']([^"']*(?:\/auto-occasion-annonce[^"']*\.html|\/annonce[^"']*(?:\/[^"']*|\.html)))["']/gi
-      const links: string[] = []
-      let linkMatch
+    // Extraire localisation
+    const locationMatch = content.match(/<span[^>]*class=["'][^"']*city[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                          content.match(/data-city=["']([^"']+)["']/i)
+    const city = locationMatch ? cleanHtml(locationMatch[1]).trim() : null
+    
+    if (title || urlPath) {
+      const fullUrl = urlPath.startsWith('http') 
+        ? urlPath 
+        : `https://www.lacentrale.fr${urlPath.startsWith('/') ? urlPath : `/${urlPath}`}`
       
-      // Augmenter la limite pour extraire plus de liens (200 au lieu de 50)
-      while ((linkMatch = adLinkRegex.exec(html)) !== null && links.length < 200) {
-        let linkPath = linkMatch[1]
-        // Nettoyer l'URL (enlever fragments et query params inutiles)
-        linkPath = linkPath.split('#')[0].split('?')[0]
-        // Éviter les doublons
-        if (!links.includes(linkPath)) {
-          links.push(linkPath)
-        }
-      }
+      // Nettoyer l'URL
+      const cleanUrl = fullUrl.split('#')[0].split('?')[0]
       
-      if (links.length > 0) {
-        log.info(`[LACENTRALE] 📊 Extraction par liens: ${links.length} liens trouvés`)
-        for (const linkPath of links) {
-          try {
-            // Construire l'URL complète
-            const url = linkPath.startsWith('http') 
-              ? linkPath 
-              : `https://www.lacentrale.fr${linkPath.startsWith('/') ? linkPath : `/${linkPath}`}`
-            
-            // Extraire le contexte autour du lien (2000 caractères avant et après)
-            const linkIndex = html.indexOf(linkPath)
-            if (linkIndex !== -1) {
-              const context = html.substring(
-                Math.max(0, linkIndex - 2000),
-                Math.min(html.length, linkIndex + 2000)
-              )
-              
-              const listing = extractListingFromContext(context, url)
-              if (listing) {
-                listings.push(listing)
-              }
-            }
-          } catch (error) {
-            continue
-          }
-        }
-      }
+      // Extraire l'ID depuis l'URL
+      const adIdMatch = cleanUrl.match(/\/auto-occasion-annonce-([^\/\.\?]+)/) ||
+                        cleanUrl.match(/\/annonce\/([^\/\?]+)/) ||
+                        cleanUrl.match(/\/annonce-([^\/\.\?]+)\.html/)
+      const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${listings.length}`
+      
+      listings.push({
+        id: `lacentrale_${adId}`,
+        title: title || 'Annonce LaCentrale',
+        price_eur: price,
+        year: null,
+        mileage_km: null,
+        url: cleanUrl,
+        imageUrl,
+        source: 'LaCentrale',
+        city,
+        score_ia: 50,
+        score_final: 50,
+      })
     }
-  } catch (error) {
-    log.warn('[LACENTRALE] Erreur extraction HTML', {
-      error: error instanceof Error ? error.message : String(error),
-    })
   }
 
   log.info(`[LACENTRALE] 📊 ${listings.length} annonces extraites depuis attributs HTML`)
@@ -780,159 +335,13 @@ function extractFromHTMLAttributes(html: string): ListingResponse[] {
 }
 
 /**
- * Extraire une annonce depuis un match HTML (div, article, etc.)
+ * Nettoyer le HTML
  */
-function extractListingFromHtmlMatch(html: string): ListingResponse | null {
-  // Extraire l'URL - LaCentrale utilise plusieurs formats :
-  // - /auto-occasion-annonce-xxxxx.html
-  // - /annonce/xxxxx
-  // - /annonce-xxxxx.html
-  // - URLs complètes https://www.lacentrale.fr/...
-  const urlMatch =
-    html.match(/href=["']([^"']*\/auto-occasion-annonce[^"']*)["']/i) ||
-    html.match(/href=["']([^"']*\/annonce[^"']*\.html)["']/i) ||
-    html.match(/href=["']([^"']*\/annonce[^"']*\/[^"']*)["']/i) ||
-    html.match(/href=["']([^"']*\/annonce[^"']*)["']/i) ||
-    html.match(/data-url=["']([^"']+)["']/i) ||
-    html.match(/data-link=["']([^"']+)["']/i)
-  
-  const urlPath = urlMatch ? urlMatch[1] : null
-  if (!urlPath) return null
-  
-  // Nettoyer l'URL (enlever les fragments et query params inutiles)
-  let cleanUrlPath = urlPath.split('#')[0].split('?')[0]
-  
-  // Construire l'URL complète
-  const fullUrl = cleanUrlPath.startsWith('http') 
-    ? cleanUrlPath 
-    : `https://www.lacentrale.fr${cleanUrlPath.startsWith('/') ? cleanUrlPath : `/${cleanUrlPath}`}`
-  
-  // Extraire titre
-  const titleMatch =
-    html.match(/data-title=["']([^"']+)["']/i) ||
-    html.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i) ||
-    html.match(/<a[^>]*title=["']([^"']+)["']/i)
-  
-  const title = titleMatch
-    ? cleanHtml(titleMatch[1]).replace(/\s+/g, ' ').trim()
-    : 'Annonce LaCentrale'
-  
-  // Extraire prix
-  const priceMatch = html.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i) || 
-                     html.match(/data-price=["']?(\d+)/i)
-  const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
-  
-  // Extraire année
-  const yearMatch = html.match(/\b(19|20)\d{2}\b/)
-  const year = yearMatch ? parseInt(yearMatch[0]) : null
-  
-  // Extraire kilométrage
-  const mileageMatch = html.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
-  const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
-  
-  // Extraire ville
-  const cityMatch =
-    html.match(/<span[^>]*class=["'][^"']*city[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) ||
-    html.match(/data-city=["']([^"']+)["']/i)
-  const city = cityMatch ? cleanHtml(cityMatch[1]).trim() : null
-  
-  // Extraire image - chercher plusieurs formats
-  let imageUrl: string | null = null
-  
-  // Chercher dans différentes balises img
-  const imageMatches = [
-    html.match(/<img[^>]+src=["']([^"']+)["']/i),
-    html.match(/<img[^>]+data-src=["']([^"']+)["']/i), // lazy loading
-    html.match(/<img[^>]+data-lazy=["']([^"']+)["']/i),
-    html.match(/background-image:\s*url\(["']?([^"')]+)["']?\)/i),
-    html.match(/data-image=["']([^"']+)["']/i),
-  ]
-  
-  for (const match of imageMatches) {
-    if (match && match[1]) {
-      let imgSrc = match[1]
-      
-      // Nettoyer l'URL
-      imgSrc = imgSrc.split('?')[0].split('#')[0]
-      
-      // Normaliser l'URL
-      if (imgSrc.startsWith('http')) {
-        imageUrl = imgSrc
-      } else if (imgSrc.startsWith('//')) {
-        imageUrl = `https:${imgSrc}`
-      } else if (imgSrc.startsWith('/')) {
-        imageUrl = `https://www.lacentrale.fr${imgSrc}`
-      } else {
-        imageUrl = `https://www.lacentrale.fr/${imgSrc}`
-      }
-      
-      // S'assurer que c'est une image (pas une icône, etc.)
-      if (imageUrl && (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg') || imageUrl.includes('.png') || imageUrl.includes('.webp') || imageUrl.includes('/image'))) {
-        break
-      }
-    }
-  }
-  
-  // Extraire ID depuis l'URL
-  const adIdMatch = fullUrl.match(/\/annonce\/([^\/]+)/)
-  const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  
-  return {
-    id: `lacentrale_${adId}`,
-    title,
-    price_eur: price,
-    year,
-    mileage_km: mileage,
-    url: fullUrl,
-    imageUrl,
-    source: 'LaCentrale',
-    city,
-    score_ia: 50,
-    score_final: 50,
-  }
-}
-
-/**
- * Extraire une annonce depuis le contexte autour d'un lien
- */
-function extractListingFromContext(context: string, url: string): ListingResponse | null {
-  const titleMatch =
-    context.match(/data-title=["']([^"']+)["']/i) ||
-    context.match(/title=["']([^"']+)["']/i)
-  
-  const title = titleMatch
-    ? cleanHtml(titleMatch[1]).trim()
-    : 'Annonce LaCentrale'
-  
-  const priceMatch = context.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/i)
-  const price = priceMatch ? parseFloat(priceMatch[1].replace(/\s/g, '')) : null
-  
-  const yearMatch = context.match(/\b(19|20)\d{2}\b/)
-  const year = yearMatch ? parseInt(yearMatch[0]) : null
-  
-  const mileageMatch = context.match(/(\d{1,3}(?:\s?\d{3})*)\s*km/i)
-  const mileage = mileageMatch ? parseFloat(mileageMatch[1].replace(/\s/g, '')) : null
-  
-  // Extraire l'ID depuis l'URL - LaCentrale utilise plusieurs formats
-  const adIdMatch = 
-    url.match(/\/auto-occasion-annonce-([^\/\.\?]+)/) ||
-    url.match(/\/annonce\/([^\/\?]+)/) ||
-    url.match(/\/annonce-([^\/\.\?]+)\.html/)
-  const adId = adIdMatch ? adIdMatch[1] : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  
-  return {
-    id: `lacentrale_${adId}`,
-    title,
-    price_eur: price,
-    year,
-    mileage_km: mileage,
-    url,
-    imageUrl: null,
-    source: 'LaCentrale',
-    city: null,
-    score_ia: 50,
-    score_final: 50,
-  }
+function cleanHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**
@@ -943,11 +352,9 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
   const searchParams = new URLSearchParams()
 
   // Construire le filtre makesModels - LaCentrale utilise le format "BRAND-MODEL"
-  // Normaliser la marque et le modèle (majuscules, enlever espaces)
   const brand = (query.brand || '').trim().toUpperCase().replace(/\s+/g, '-')
   const model = (query.model || '').trim().toUpperCase().replace(/\s+/g, '-')
   
-  // Si on a une marque, l'ajouter au makesModels
   if (brand) {
     const makesModels = model ? `${brand}-${model}` : brand
     searchParams.set('makesModels', makesModels)
@@ -962,15 +369,14 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
       searchParams.set('priceMin', String(query.minPrice))
     }
   } else if (pass === 'relaxed') {
-    const relaxedMax = Math.floor((query.maxPrice || 0) * 1.1)
+    const relaxedMax = Math.floor(query.maxPrice * 1.1)
     searchParams.set('priceMax', String(relaxedMax))
   } else {
     // opportunity
-    const opportunityMax = Math.floor((query.maxPrice || 0) * 1.2)
+    const opportunityMax = Math.floor(query.maxPrice * 1.2)
     searchParams.set('priceMax', String(opportunityMax))
   }
   
-  // Ajouter d'autres filtres si disponibles
   if (query.maxMileage) {
     searchParams.set('mileageMax', String(query.maxMileage))
   }
@@ -979,13 +385,11 @@ function buildLaCentraleURL(query: ScrapeQuery, pass: ScrapePass): string {
     searchParams.set('yearMin', String(query.minYear))
   }
 
-  const finalUrl = `${base}?${searchParams.toString()}`
-  log.info(`[LACENTRALE] 🔗 URL construite: ${finalUrl}`)
-  return finalUrl
+  return `${base}?${searchParams.toString()}`
 }
 
 /**
- * Mapper annonce LaCentrale depuis JSON vers format unifié
+ * Mapper annonce LaCentrale vers format unifié
  */
 function mapLaCentraleAdToUnified(ad: any): ListingResponse {
   // Extraire le titre
@@ -1035,7 +439,7 @@ function mapLaCentraleAdToUnified(ad: any): ListingResponse {
     mileage = typeof ad.mileageKm === 'number' ? ad.mileageKm : parseFloat(String(ad.mileageKm))
   }
   
-  // Extraire les images - chercher dans toutes les propriétés possibles (comme extractListingFromAutoparseItem)
+  // Extraire les images - chercher dans toutes les propriétés possibles
   let imageUrl: string | null = null
   
   const imageSources = [
@@ -1079,10 +483,7 @@ function mapLaCentraleAdToUnified(ad: any): ListingResponse {
   
   // Normaliser l'URL de l'image
   if (imageUrl) {
-    // Enlever les paramètres de requête inutiles
     imageUrl = imageUrl.split('?')[0].split('#')[0]
-    
-    // Ajouter le domaine si nécessaire
     if (!imageUrl.startsWith('http')) {
       if (imageUrl.startsWith('//')) {
         imageUrl = `https:${imageUrl}`
@@ -1111,50 +512,3 @@ function mapLaCentraleAdToUnified(ad: any): ListingResponse {
     score_final: 50,
   }
 }
-
-/**
- * Mapper JSON-LD vers format unifié
- */
-function mapJsonLdToUnified(jsonLd: any): ListingResponse | null {
-  try {
-    const name = jsonLd.name || jsonLd.title || 'Annonce LaCentrale'
-    const price = jsonLd.offers?.price || jsonLd.price || null
-    const url = jsonLd.url || jsonLd.id || null
-    const image = jsonLd.image || jsonLd.thumbnailUrl || null
-    
-    if (!url) return null
-    
-    return {
-      id: `lacentrale_jsonld_${Date.now()}`,
-      title: String(name),
-      price_eur: typeof price === 'number' ? price : (typeof price === 'string' ? parseFloat(price) : null),
-      year: null,
-      mileage_km: null,
-      url: url.startsWith('http') ? url : `https://www.lacentrale.fr${url}`,
-      imageUrl: image,
-      source: 'LaCentrale',
-      city: null,
-      score_ia: 50,
-      score_final: 50,
-    }
-  } catch {
-    return null
-  }
-}
-
-/**
- * Nettoyer le HTML
- */
-function cleanHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
