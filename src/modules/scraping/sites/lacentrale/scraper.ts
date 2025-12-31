@@ -337,6 +337,96 @@ function extractListingFromAutoparseItem(item: any): ListingResponse | null {
 }
 
 /**
+ * STRATÉGIE 0 : Extraire depuis HTML brut SANS js_render (comme LeBonCoin)
+ * Teste d'abord sans JS rendering car c'est beaucoup plus rapide et peut fonctionner
+ */
+async function extractFromHTMLBrutSansJS(
+  url: string,
+  abortSignal?: AbortSignal
+): Promise<ListingResponse[]> {
+  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
+  
+  try {
+    const response = await scrapeWithZenRows(
+      url,
+      {
+        // PAS de js_render - comme LeBonCoin, on essaie d'abord sans JS
+        premium_proxy: 'true',
+        proxy_country: 'fr',
+        block_resources: 'image,media,font',
+      },
+      abortSignal
+    )
+
+    if (!response || response.length < 100) {
+      log.warn('[LACENTRALE] ❌ HTML brut sans JS trop court ou vide')
+      return []
+    }
+
+    const html = response
+    log.info(`[LACENTRALE] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
+
+    // Chercher JSON embedded dans le HTML brut (comme LeBonCoin avec __NEXT_DATA__)
+    // 1. __INITIAL_STATE__
+    const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/)
+    if (initialStateMatch) {
+      try {
+        const jsonStr = initialStateMatch[1]
+        const jsonData = JSON.parse(jsonStr)
+        
+        const ads = 
+          jsonData?.ads ||
+          jsonData?.listings ||
+          jsonData?.vehicles ||
+          jsonData?.data?.ads ||
+          []
+
+        if (ads && Array.isArray(ads) && ads.length > 0) {
+          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __INITIAL_STATE__ (HTML brut)`)
+          return ads.map(mapLaCentraleAdToUnified)
+        }
+      } catch (error) {
+        log.warn('[LACENTRALE] Erreur parsing __INITIAL_STATE__ (HTML brut)', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    // 2. __NEXT_DATA__
+    const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
+    if (nextDataMatch) {
+      try {
+        const jsonData = JSON.parse(nextDataMatch[1])
+        
+        const ads = 
+          jsonData?.props?.pageProps?.ads ||
+          jsonData?.props?.pageProps?.listings ||
+          jsonData?.props?.pageProps?.data?.ads ||
+          jsonData?.props?.initialState?.ads ||
+          []
+
+        if (ads && Array.isArray(ads) && ads.length > 0) {
+          log.info(`[LACENTRALE] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
+          return ads.map(mapLaCentraleAdToUnified)
+        }
+      } catch (error) {
+        log.warn('[LACENTRALE] Erreur parsing __NEXT_DATA__ (HTML brut)', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    // 3. Si pas de JSON, essayer parsing HTML classique
+    return extractFromHTMLAttributes(html)
+  } catch (error) {
+    log.warn('[LACENTRALE] ⚠️ Erreur HTML brut sans JS, passage à stratégie suivante', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return []
+  }
+}
+
+/**
  * STRATÉGIE 1 : Extraire depuis HTML brut avec JSON embedded
  * LaCentrale peut avoir des données dans __INITIAL_STATE__ ou autres structures JSON
  */
