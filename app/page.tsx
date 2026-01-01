@@ -56,9 +56,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e] text-white min-h-screen">
+    <div className="bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e] text-white min-h-screen pt-16 sm:pt-20">
       {/* Hero Section */}
-      <section className="relative pt-8 sm:pt-12 pb-12 sm:pb-20 px-4 sm:px-6 overflow-hidden">
+      <section className="relative pt-20 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6 overflow-hidden">
         {/* Enhanced Gradient Background Effects */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/4 w-[400px] sm:w-[800px] h-[400px] sm:h-[800px] bg-gradient-to-r from-blue-600/30 via-blue-500/20 to-transparent rounded-full blur-[140px] animate-pulse"></div>
