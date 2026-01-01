@@ -56,7 +56,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e] text-white min-h-screen">
+    <div className="bg-[#0a0a0a] text-white min-h-screen">
       {/* Hero Section */}
       <section className="relative pt-8 sm:pt-12 pb-12 sm:pb-20 px-4 sm:px-6 overflow-hidden">
         {/* Enhanced Gradient Background Effects */}
@@ -126,8 +126,6 @@ export default function HomePage() {
 
       {/* Services Section */}
       <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 relative">
-        {/* Background gradient for services section */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/10 to-transparent"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
@@ -203,8 +201,6 @@ export default function HomePage() {
 
       {/* Features Section */}
       <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 relative">
-        {/* Background gradient for features section */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-8 sm:mb-12 md:mb-16 px-4">
             <Badge variant="secondary" className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-blue-500/30 rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm">
@@ -293,8 +289,6 @@ export default function HomePage() {
 
       {/* Process Section */}
       <section id="process" className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 relative">
-        {/* Background gradient for process section */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/5 to-transparent"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-8 sm:mb-12 md:mb-16 px-4">
             <Badge variant="secondary" className="mb-3 sm:mb-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border-purple-500/30 rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm">
@@ -354,8 +348,6 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 border-t border-white/10 relative">
-        {/* Background gradient for stats section */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/5 to-transparent"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12 text-center">
             {[
