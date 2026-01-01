@@ -1843,6 +1843,27 @@ export async function POST(request: NextRequest) {
       }).catch(() => {
         // Ignore si le module ne peut pas être chargé
       })
+
+      // VÉRIFIER LES ALERTES pour chaque nouvelle annonce (en arrière-plan, non-bloquant)
+      if (user) {
+        import('@/lib/alerts-system').then(({ checkAlertsForListing, sendAlertNotification }) => {
+          // Vérifier les alertes pour chaque listing (en parallèle, non-bloquant)
+          Promise.allSettled(
+            responseListings.map(listing =>
+              checkAlertsForListing(listing).then(matches => {
+                // Envoyer une notification pour chaque match
+                return Promise.allSettled(
+                  matches.map(match => sendAlertNotification(user.id, match))
+                )
+              })
+            )
+          ).catch(err => {
+            log.warn('Erreur vérification alertes (non-bloquant)', { error: err })
+          })
+        }).catch(() => {
+          // Ignore si le module ne peut pas être chargé
+        })
+      }
     }
 
     return NextResponse.json(response as SearchResponse & { success?: boolean; query?: any; sites?: any; listings?: ListingResponse[]; pagination?: any; allItems?: ListingResponse[]; jobId?: string | null })

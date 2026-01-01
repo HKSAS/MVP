@@ -21,11 +21,15 @@ import {
   Shield,
   XCircle,
   Info,
-  BarChart3
+  BarChart3,
+  Download,
+  FileText,
+  Loader2
 } from "lucide-react";
 import type { AnalyzeListingResponse } from "@/lib/types";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useQuotaCheck } from "@/lib/auth/with-quota-check";
+import { toast } from "sonner";
 
 interface PriceAdjustment {
   factor: string;
@@ -108,6 +112,7 @@ export default function AnalyzePage() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [announcedPrice, setAnnouncedPrice] = useState<number | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   // Vérifier si on vient de l'historique
   useEffect(() => {
@@ -349,6 +354,72 @@ export default function AnalyzePage() {
     return analysisResult.knownIssues || (analysisResult.known_issues ? analysisResult.known_issues.map((item: string) => ({ category: 'Général', items: [item] })) : []);
   };
 
+  // Fonction pour télécharger le PDF
+  const handleDownloadPDF = async () => {
+    if (!analysisResult) return;
+
+    setDownloadingPDF(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch('/api/analyze-listing/pdf', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          analysisData: {
+            ...analysisResult,
+            extractedData,
+            announcedPrice,
+          },
+          format: 'pdf',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du PDF');
+      }
+
+      // Si c'est un PDF (Buffer), le télécharger
+      const contentType = response.headers.get('content-type');
+      if (contentType === 'application/pdf') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rapport-analyse-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Rapport PDF téléchargé avec succès');
+      } else {
+        // Sinon, c'est du HTML/JSON
+        const data = await response.json();
+        if (data.report) {
+          // Créer un blob HTML et l'ouvrir dans un nouvel onglet
+          const blob = new Blob([data.report], { type: 'text/html' });
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          toast.success('Rapport généré (ouvrez-le dans un nouvel onglet et utilisez "Imprimer > Enregistrer en PDF")');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur téléchargement PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   return (
     <div className="bg-[#0a0a0a] text-white min-h-screen pt-20">
       {/* Hero Section */}
@@ -514,9 +585,29 @@ export default function AnalyzePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="flex items-center gap-2 text-white mb-6">
-                <Sparkles className="size-6 text-blue-400" />
-                <h2 className="text-3xl font-medium">Résultat de l'analyse</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-white">
+                  <Sparkles className="size-6 text-blue-400" />
+                  <h2 className="text-3xl font-medium">Résultat de l'analyse</h2>
+                </div>
+                <Button
+                  onClick={handleDownloadPDF}
+                  disabled={downloadingPDF}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                  variant="default"
+                >
+                  {downloadingPDF ? (
+                    <>
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="size-4 mr-2" />
+                      Télécharger le rapport PDF
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Score Summary */}

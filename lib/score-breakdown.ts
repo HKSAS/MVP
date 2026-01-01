@@ -286,6 +286,82 @@ export function calculateScoreBreakdown(input: ScoreInput): ScoreBreakdownResult
     }
   }
 
+  // NOUVEAU: Analyse de rareté du modèle (modèles rares = plus de valeur)
+  if (input.brand && input.model) {
+    const rareModels = [
+      'golf gti', 'golf r', 'audi rs', 'bmw m3', 'bmw m5',
+      'mercedes amg', 'renault sport', 'peugeot gti',
+    ]
+    const isRare = rareModels.some(rare => 
+      `${input.brand} ${input.model}`.toLowerCase().includes(rare)
+    )
+    if (isRare) {
+      totalScore += 8
+      breakdown.push({
+        criterion: 'Modèle rare/édition spéciale',
+        points: 8,
+        details: 'Modèle rare ou édition spéciale, valeur de revente potentiellement plus élevée',
+      })
+    }
+  }
+
+  // NOUVEAU: Analyse de cohérence globale (prix/km/année)
+  if (input.price_eur && input.mileage && input.year) {
+    const currentYear = new Date().getFullYear()
+    const age = currentYear - input.year
+    const kmPerYear = input.mileage / Math.max(1, age)
+    const pricePerKm = input.price_eur / Math.max(1, input.mileage)
+    
+    // Vérifier cohérence globale
+    const isCoherent = 
+      kmPerYear >= 8000 && kmPerYear <= 25000 && // Usage normal
+      pricePerKm >= 0.05 && pricePerKm <= 0.5 && // Prix/km raisonnable
+      input.price_eur >= 5000 && input.price_eur <= 100000 // Prix dans une fourchette normale
+    
+    if (isCoherent) {
+      totalScore += 10
+      breakdown.push({
+        criterion: 'Cohérence globale prix/km/année',
+        points: 10,
+        details: 'Les données sont cohérentes entre elles, annonce crédible',
+      })
+    } else {
+      totalScore -= 15
+      breakdown.push({
+        criterion: 'Incohérence détectée',
+        points: -15,
+        details: 'Les données (prix/km/année) ne sont pas cohérentes. Vérification impérative.',
+      })
+    }
+  }
+
+  // NOUVEAU: Bonus pour véhicule récent (< 3 ans)
+  if (input.year) {
+    const currentYear = new Date().getFullYear()
+    const age = currentYear - input.year
+    if (age <= 3) {
+      totalScore += 8
+      breakdown.push({
+        criterion: 'Véhicule récent',
+        points: 8,
+        details: `Véhicule de ${age} an${age > 1 ? 's' : ''}, usure minimale attendue`,
+      })
+    }
+  }
+
+  // NOUVEAU: Bonus pour carburant écologique
+  if (input.fuel) {
+    const ecoFuels = ['electrique', 'hybride', 'hybride rechargeable']
+    if (ecoFuels.some(eco => input.fuel?.toLowerCase().includes(eco))) {
+      totalScore += 5
+      breakdown.push({
+        criterion: 'Carburant écologique',
+        points: 5,
+        details: 'Véhicule électrique ou hybride, avantages écologiques et économiques',
+      })
+    }
+  }
+
   // Normaliser le score entre 0 et 100
   let reliabilityScore = Math.max(0, Math.min(100, totalScore))
 

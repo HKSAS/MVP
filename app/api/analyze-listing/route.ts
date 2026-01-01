@@ -19,6 +19,9 @@ import { getRiskLevelFromScore } from '@/lib/red-flags'
 import { chooseBestMileage } from '@/lib/mileage-selector'
 import { logAiAnalysis } from '@/lib/tracking'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
+import { detectFraud, type FraudDetectionResult } from '@/lib/fraud-detection'
+import { calculateMarketPriceWithDatabase } from '@/lib/market-price-database'
+import { verifyListingImages, type ImageVerificationResult } from '@/lib/image-verification'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -592,21 +595,73 @@ Analyse cette annonce et remplis le JSON demandé.`
                   enrichedContent.toLowerCase().includes('médiocre') ? 'poor' : 'unknown'
     }
 
-    // Calcul prix marché (ARRONDI à l'euro)
-    const marketPrice = calculateMarketPrice(
-      {
-        brand: (input as any).brand,
-        model: (input as any).model,
-        year: yearValue || undefined,
-        mileage: mileageValue || undefined,
-        fuel: extractedData?.fuel || (input as any).fuel || input.fuel || undefined,
-        transmission,
-        hasHistory: hasHistory === true,
-        condition,
-        region: extractedData?.location || undefined,
-      },
-      announcedPrice || undefined
+    // Calcul prix marché avec base de données étendue (PRIORITAIRE)
+    let marketPrice
+    const dbPrice = calculateMarketPriceWithDatabase(
+      (input as any).brand,
+      (input as any).model,
+      yearValue || undefined,
+      mileageValue || undefined
     )
+    
+    if (dbPrice) {
+      // Utiliser la base de données si disponible
+      const position = announcedPrice
+        ? announcedPrice < dbPrice.min * 0.9
+          ? 'basse_fourchette'
+          : announcedPrice < dbPrice.min
+          ? 'basse_fourchette'
+          : announcedPrice <= dbPrice.max
+          ? announcedPrice <= (dbPrice.min + dbPrice.max) / 2
+            ? 'moyenne'
+            : 'haute_fourchette'
+          : announcedPrice <= dbPrice.max * 1.1
+          ? 'haute_fourchette'
+          : 'hors_fourchette'
+        : 'moyenne'
+      
+      const negotiationAdvice = announcedPrice
+        ? announcedPrice < dbPrice.min * 0.9
+          ? 'Prix très attractif, opportunité intéressante'
+          : announcedPrice < dbPrice.min
+          ? 'Prix attractif, bon rapport qualité-prix'
+          : announcedPrice <= (dbPrice.min + dbPrice.max) / 2
+          ? 'Prix cohérent, dans la fourchette basse'
+          : announcedPrice <= dbPrice.max
+          ? 'Prix dans la moyenne du marché'
+          : announcedPrice <= dbPrice.max * 1.1
+          ? `Négociation recommandée: ${Math.round((announcedPrice - dbPrice.max) * 0.5)}-${Math.round((announcedPrice - dbPrice.max) * 0.8)}€`
+          : `Négociation nécessaire: ${Math.round((announcedPrice - dbPrice.max) * 0.6)}-${Math.round(announcedPrice - dbPrice.max)}€`
+        : ''
+      
+      marketPrice = {
+        min: dbPrice.min,
+        max: dbPrice.max,
+        vehiclePrice: dbPrice.basePrice,
+        position,
+        negotiationAdvice,
+        explanation: [
+          { factor: 'Prix de base (base de données marché)', impact: dbPrice.basePrice },
+          { factor: 'Ajustement kilométrage', impact: mileageValue ? Math.round((150000 - mileageValue) * 0.01) : 0 },
+        ],
+      }
+    } else {
+      // Fallback vers l'ancien système
+      marketPrice = calculateMarketPrice(
+        {
+          brand: (input as any).brand,
+          model: (input as any).model,
+          year: yearValue || undefined,
+          mileage: mileageValue || undefined,
+          fuel: extractedData?.fuel || (input as any).fuel || input.fuel || undefined,
+          transmission,
+          hasHistory: hasHistory === true,
+          condition,
+          region: extractedData?.location || undefined,
+        },
+        announcedPrice || undefined
+      )
+    }
 
     // Calcul score breakdown (UTILISER UNIQUEMENT CHAMPS NORMALISÉS)
     const scoreResult = calculateScoreBreakdown({
@@ -628,8 +683,60 @@ Analyse cette annonce et remplis le JSON demandé.`
       hasCT: enrichedContent ? (enrichedContent.toLowerCase().includes('contrôle technique') || enrichedContent.toLowerCase().includes('ct')) : null,
     })
 
-    // Fusionner tous les red flags (kilométrage + scoring)
-    const allRedFlags = [...(mileageSelectionResult?.redFlags || []), ...scoreResult.redFlags]
+    // DÉTECTION DE FRAUDES AVANCÉE
+    const fraudDetection: FraudDetectionResult = detectFraud({
+      title: enrichedTitle,
+      description: enrichedContent,
+      price_eur: announcedPrice || undefined,
+      marketMin: marketPrice.min,
+      marketMax: marketPrice.max,
+      mileage_km: mileageValue || undefined,
+      year: yearValue || undefined,
+      location: extractedData?.location || undefined,
+      photos_count: extractedData?.photos_count || undefined,
+      url: input.url || undefined,
+      source: extractedData?.extraction_source || (input as any).source || undefined,
+      hasHistory: hasHistory === true,
+    })
+
+    // VÉRIFICATION D'IMAGES (détection photos volées/dupliquées)
+    let imageVerification: ImageVerificationResult | null = null
+    if (extractedData?.imageUrl || (input as any).imageUrl) {
+      const imageUrl = extractedData?.imageUrl || (input as any).imageUrl
+      try {
+        imageVerification = await verifyListingImages(
+          [imageUrl],
+          input.url || undefined,
+          enrichedTitle || undefined
+        )
+        
+        // Si images suspectes, ajouter aux red flags
+        if (imageVerification.overallRisk === 'high' || imageVerification.suspiciousCount > 0) {
+          allRedFlags.push({
+            type: 'photo_anomaly' as any,
+            severity: imageVerification.overallRisk === 'high' ? 'critical' : 'high',
+            message: 'Images suspectes détectées',
+            details: `Vérification images: ${imageVerification.results[0]?.reasons.join(', ') || 'Photos suspectes'}`,
+          })
+        }
+      } catch (imageError) {
+        log.warn('Erreur vérification images (non-bloquant)', {
+          error: imageError instanceof Error ? imageError.message : String(imageError),
+        })
+      }
+    }
+
+    // Fusionner tous les red flags (kilométrage + scoring + fraudes)
+    const allRedFlags = [
+      ...(mileageSelectionResult?.redFlags || []),
+      ...scoreResult.redFlags,
+      ...fraudDetection.redFlags.map(flag => ({
+        type: flag.type as any,
+        severity: flag.severity as 'high' | 'critical',
+        message: flag.title,
+        details: flag.description,
+      })),
+    ]
     
     // Ajouter les watchouts depuis red flags
     const watchoutsFromRedFlags = allRedFlags.map(flag => flag.details)
@@ -646,7 +753,13 @@ Analyse cette annonce et remplis le JSON demandé.`
     // Calculer le risk score depuis reliabilityScore
     let riskScore = 100 - scoreResult.reliabilityScore
     
-    // Ajuster risk score avec tous les red flags (kilométrage + scoring)
+    // Ajuster risk score avec tous les red flags (kilométrage + scoring + fraudes)
+    // Prendre en compte le fraud score
+    if (fraudDetection.fraudScore > 0) {
+      // Le fraud score contribue directement au risk score
+      riskScore = Math.max(riskScore, fraudDetection.fraudScore)
+    }
+    
     if (allRedFlags.length > 0) {
       const criticalFlags = allRedFlags.filter(f => f.severity === 'critical')
       const highFlags = allRedFlags.filter(f => f.severity === 'high')
@@ -747,10 +860,24 @@ Analyse cette annonce et remplis le JSON demandé.`
         explanation: marketPrice.explanation,
       },
       scoreBreakdown: scoreResult.breakdown,
-      redFlags: allRedFlags, // Tous les red flags (kilométrage + scoring)
+      redFlags: allRedFlags, // Tous les red flags (kilométrage + scoring + fraudes)
+      fraudDetection: {
+        riskLevel: fraudDetection.riskLevel,
+        fraudScore: fraudDetection.fraudScore,
+        suspiciousPatterns: fraudDetection.suspiciousPatterns,
+        recommendations: fraudDetection.recommendations,
+      },
+      imageVerification: imageVerification ? {
+        isSuspicious: imageVerification.overallRisk !== 'low',
+        confidence: imageVerification.overallRisk,
+        suspiciousCount: imageVerification.suspiciousCount,
+        totalCount: imageVerification.totalCount,
+        reasons: imageVerification.results[0]?.reasons || [],
+      } : undefined,
       positives: Array.isArray(analysisResult.positives) ? analysisResult.positives : [],
       watchouts: [
         ...watchoutsFromRedFlags,
+        ...fraudDetection.recommendations, // Ajouter les recommandations anti-fraude
         ...(Array.isArray(analysisResult.risks) ? analysisResult.risks : Array.isArray(analysisResult.warnings) ? analysisResult.warnings : [])
       ],
       knownIssues,
