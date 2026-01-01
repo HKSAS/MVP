@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ interface PackInfo {
   isSubscription: boolean;
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<CheckoutState>("form");
@@ -472,6 +472,18 @@ export default function CheckoutPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+        <Loader2 className="size-8 animate-spin text-blue-500" />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
 

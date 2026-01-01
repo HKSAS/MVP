@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/
 
 type ResultState = "loading" | "error" | "empty" | "success";
 
-export default function SearchResultsPage() {
+function SearchResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { saveSearch } = useSaveSearch();
@@ -1164,6 +1164,18 @@ export default function SearchResultsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+        <Loader2 className="size-8 animate-spin text-blue-500" />
+      </div>
+    }>
+      <SearchResultsContent />
+    </Suspense>
   );
 }
 

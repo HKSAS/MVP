@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,7 +13,7 @@ import { UserPlus, CheckCircle, Loader2, Sparkles, ArrowLeft } from "lucide-reac
 import { motion } from 'framer-motion';
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
@@ -779,5 +779,17 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-blue-500" />
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }
