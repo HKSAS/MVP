@@ -46,7 +46,7 @@ export async function scrapeLaCentrale(
   try {
     // ✅ STRATÉGIE 1 : ZenRows API HTTP (rapide)
     log.info('[LACENTRALE] 📡 Tentative avec ZenRows API HTTP...', { pass })
-    const listings = await extractFromJSRender(targetUrl, abortSignal)
+    const listings = await extractFromJSRender(targetUrl, query, abortSignal)
     
     if (listings.length > 0) {
       log.info(`[LACENTRALE] ✅ ${listings.length} annonces via ZenRows API HTTP`, { pass })
@@ -861,7 +861,7 @@ function extractFromHTMLAttributes(html: string, query?: ScrapeQuery): ListingRe
               !match[1].includes('logo') &&
               !match[1].includes('icon')) {
             imageUrl = match[1]
-            if (!imageUrl.startsWith('http')) {
+            if (imageUrl && !imageUrl.startsWith('http')) {
               imageUrl = imageUrl.startsWith('//') ? `https:${imageUrl}` : `https://www.lacentrale.fr${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`
             }
             break

@@ -74,6 +74,7 @@ export type ScrapePass = 'strict' | 'relaxed' | 'opportunity'
 export type ScrapingStrategy =
   | 'api-direct'
   | 'zenrows'
+  | 'zenrows-browser'
   | 'playwright-remote'
   | 'playwright-local'
   | 'http-html'

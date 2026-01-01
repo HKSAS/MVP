@@ -2,7 +2,7 @@ import type { ScrapeQuery, SiteResult, ListingResponse } from '@/lib/types'
 import { createRouteLogger } from '@/lib/logger'
 
 export type SearchPass = 'strict' | 'relaxed' | 'opportunity'
-export type ScrapingStrategy = 'json' | 'http-html' | 'headless' | 'ai-fallback' | 'xhr-json' | 'playwright-remote' | 'api-json'
+export type ScrapingStrategy = 'json' | 'http-html' | 'headless' | 'ai-fallback' | 'xhr-json' | 'playwright-remote' | 'api-json' | 'zenrows' | 'zenrows-browser' | 'api-direct' | 'playwright-local' | 'json-embedded'
 
 export interface PassAttempt {
   pass: SearchPass
