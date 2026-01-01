@@ -43,36 +43,8 @@ export async function scrapeLaCentrale(
   console.log('[LACENTRALE DEBUG] URL générée:', targetUrl)
 
   try {
-    // STRATÉGIE 1 : HTML BRUT SANS JS (comme LeBonCoin)
-    // LaCentrale retourne les annonces dans le HTML brut, pas besoin de JS rendering
-    log.info('[LACENTRALE] 📡 Tentative HTML brut (sans js_render)...', { pass })
-    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
-    
-    if (listingsFromHTML.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
-      
-      // 🔍 DEBUG : Log des premières annonces extraites
-      console.log('[LACENTRALE DEBUG] Premières annonces extraites:', {
-        count: listingsFromHTML.length,
-        sample: listingsFromHTML.slice(0, 3).map(l => ({
-          title: l.title,
-          price: l.price_eur,
-          url: l.url,
-          year: l.year,
-          mileage: l.mileage_km
-        }))
-      })
-      
-      return {
-        listings: listingsFromHTML,
-        strategy: 'zenrows',
-        ms: Date.now() - startTime,
-      }
-    }
-
-    log.warn('[LACENTRALE] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
-    
-    // STRATÉGIE 2 : Essayer d'extraire avec js_render (fallback si HTML brut échoue)
+    // ✅ STRATÉGIE DIRECTE : JS RENDERING (LaCentrale nécessite JS pour charger les annonces)
+    log.info('[LACENTRALE] 📡 Requête avec JS rendering activé...', { pass })
     const listings = await extractFromJSRender(targetUrl, abortSignal)
     
     if (listings.length > 0) {
@@ -270,22 +242,22 @@ async function extractFromHTMLBrut(
 }
 
 /**
- * STRATÉGIE 2 : Extraire depuis HTML avec js_render (fallback si HTML brut échoue)
+ * STRATÉGIE PRINCIPALE : Extraire depuis HTML avec js_render (LaCentrale nécessite JS)
  */
 async function extractFromJSRender(
   url: string,
   abortSignal?: AbortSignal
 ): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
+  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering activé...')
   
-  // Paramètres ZenRows premium avec JS rendering pour fallback
-  // Essayer avec JS rendering en dernier recours, mais avec timeout réduit
+  // Paramètres ZenRows premium avec JS rendering pour charger la page complète
   const zenrowsParams = {
     js_render: 'true',
     premium_proxy: 'true',
     proxy_country: 'fr',
-    wait: '3000', // Réduire à 3s pour plus de vitesse
+    wait: '5000', // ✅ 5s pour laisser le temps au JS de charger complètement
     block_resources: 'image,media,font',
+    custom_headers: 'true', // Headers personnalisés pour éviter la détection
   }
   
   const response = await scrapeWithZenRows(
