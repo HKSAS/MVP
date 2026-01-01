@@ -56,7 +56,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e] text-white min-h-screen pt-16 sm:pt-20">
+    <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
       {/* Hero Section */}
       <section className="relative pt-20 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6 overflow-hidden">
         {/* Enhanced Gradient Background Effects */}
