@@ -21,7 +21,7 @@ import { logAiAnalysis } from '@/lib/tracking'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { detectFraud, type FraudDetectionResult } from '@/lib/fraud-detection'
 import { calculateMarketPriceWithDatabase } from '@/lib/market-price-database'
-import { verifyListingImages, type ImageVerificationResult } from '@/lib/image-verification'
+import { verifyListingImages } from '@/lib/image-verification'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -699,33 +699,6 @@ Analyse cette annonce et remplis le JSON demandé.`
       hasHistory: hasHistory === true,
     })
 
-    // VÉRIFICATION D'IMAGES (détection photos volées/dupliquées)
-    let imageVerification: ImageVerificationResult | null = null
-    if (extractedData?.imageUrl || (input as any).imageUrl) {
-      const imageUrl = extractedData?.imageUrl || (input as any).imageUrl
-      try {
-        imageVerification = await verifyListingImages(
-          [imageUrl],
-          input.url || undefined,
-          enrichedTitle || undefined
-        )
-        
-        // Si images suspectes, ajouter aux red flags
-        if (imageVerification.overallRisk === 'high' || imageVerification.suspiciousCount > 0) {
-          allRedFlags.push({
-            type: 'photo_anomaly' as any,
-            severity: imageVerification.overallRisk === 'high' ? 'critical' : 'high',
-            message: 'Images suspectes détectées',
-            details: `Vérification images: ${imageVerification.results[0]?.reasons.join(', ') || 'Photos suspectes'}`,
-          })
-        }
-      } catch (imageError) {
-        log.warn('Erreur vérification images (non-bloquant)', {
-          error: imageError instanceof Error ? imageError.message : String(imageError),
-        })
-      }
-    }
-
     // Fusionner tous les red flags (kilométrage + scoring + fraudes)
     const allRedFlags = [
       ...(mileageSelectionResult?.redFlags || []),
@@ -737,6 +710,34 @@ Analyse cette annonce et remplis le JSON demandé.`
         details: flag.description,
       })),
     ]
+
+    // VÉRIFICATION D'IMAGES (détection photos volées/dupliquées)
+    let imageVerification: any = null
+    if ((extractedData as any)?.imageUrl || (input as any).imageUrl) {
+      const imageUrl = (extractedData as any)?.imageUrl || (input as any).imageUrl
+      try {
+        const imageVerificationResult = await verifyListingImages(
+          [imageUrl],
+          input.url || undefined,
+          enrichedTitle || undefined
+        )
+        imageVerification = imageVerificationResult
+        
+        // Si images suspectes, ajouter aux red flags
+        if (imageVerificationResult.overallRisk === 'high' || imageVerificationResult.suspiciousCount > 0) {
+          allRedFlags.push({
+            type: 'photo_anomaly' as any,
+            severity: imageVerificationResult.overallRisk === 'high' ? 'critical' : 'high',
+            message: 'Images suspectes détectées',
+            details: `Vérification images: ${imageVerificationResult.results[0]?.reasons.join(', ') || 'Photos suspectes'}`,
+          })
+        }
+      } catch (imageError) {
+        log.warn('Erreur vérification images (non-bloquant)', {
+          error: imageError instanceof Error ? imageError.message : String(imageError),
+        })
+      }
+    }
     
     // Ajouter les watchouts depuis red flags
     const watchoutsFromRedFlags = allRedFlags.map(flag => flag.details)

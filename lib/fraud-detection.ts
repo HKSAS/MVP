@@ -393,7 +393,7 @@ export function detectDuplicateListings(
 
   // Chercher des annonces similaires (même titre, prix différent)
   const similar = otherListings.filter(other => {
-    if (!other.title || !other.price_eur) return false
+    if (!other.title || !other.price_eur || !listing.title || !listing.price_eur) return false
     const titleSimilarity = calculateStringSimilarity(listing.title.toLowerCase(), other.title.toLowerCase())
     return titleSimilarity > 0.8 && Math.abs(listing.price_eur - other.price_eur) > 1000
   })

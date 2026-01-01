@@ -43,7 +43,9 @@ export async function POST(request: NextRequest) {
 
     // Si c'est un Buffer (PDF), retourner comme fichier
     if (Buffer.isBuffer(report)) {
-      return new NextResponse(report, {
+      // Convertir Buffer en Uint8Array pour NextResponse
+      const uint8Array = new Uint8Array(report)
+      return new NextResponse(uint8Array, {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="rapport-analyse-${Date.now()}.pdf"`,

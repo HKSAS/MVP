@@ -46,6 +46,10 @@ function generateReportHTML(
   analysisData: AnalyzeListingResponse['data'],
   options: PDFReportOptions
 ): string {
+  if (!analysisData) {
+    return '<html><body><h1>Erreur: Données d\'analyse manquantes</h1></body></html>'
+  }
+
   const date = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
     month: 'long',
@@ -297,7 +301,7 @@ function generateReportHTML(
     </div>
   ` : ''}
 
-  ${analysisData.scoreBreakdown && analysisData.scoreBreakdown.length > 0 ? `
+  ${analysisData.scoreBreakdown && Array.isArray(analysisData.scoreBreakdown) && analysisData.scoreBreakdown.length > 0 ? `
     <div class="section">
       <div class="section-title">📈 Détail du score</div>
       ${analysisData.scoreBreakdown.map(item => `
@@ -396,15 +400,22 @@ async function convertHTMLToPDF(html: string): Promise<Buffer> {
  * Génère un rapport simplifié en texte (fallback)
  */
 export function generateTextReport(analysisData: AnalyzeListingResponse['data']): string {
+  if (!analysisData) {
+    return 'Erreur: Données d\'analyse manquantes'
+  }
   const lines: string[] = []
   
   lines.push('='.repeat(60))
   lines.push('RAPPORT D\'ANALYSE D\'ANNONCE')
   lines.push('='.repeat(60))
   lines.push('')
-  lines.push(`Score de fiabilité: ${analysisData.reliabilityScore}/100`)
-  lines.push(`Niveau de risque: ${analysisData.riskLevel}`)
-  lines.push(`Recommandation: ${analysisData.recommendation}`)
+  const reliabilityScore = analysisData.reliabilityScore ?? analysisData.score ?? 'N/A'
+  const riskLevel = analysisData.riskLevel ?? 'N/A'
+  const recommendation = analysisData.recommendation ?? analysisData.final_recommendation ?? 'N/A'
+  
+  lines.push(`Score de fiabilité: ${reliabilityScore}/100`)
+  lines.push(`Niveau de risque: ${riskLevel}`)
+  lines.push(`Recommandation: ${recommendation}`)
   lines.push('')
   
   if (analysisData.redFlags && analysisData.redFlags.length > 0) {

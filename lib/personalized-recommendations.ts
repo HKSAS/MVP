@@ -193,22 +193,24 @@ export function generatePersonalizedRecommendations(
 ): PersonalizedRecommendation[] {
   // Convertir ListingResponse en ListingCache pour le scoring
   const listingCaches: ListingCache[] = listings.map(listing => ({
-    listing_id: listing.id,
+    id: listing.id,
+    listing_id: listing.id.split(':').pop() || listing.id,
     source: listing.source,
-    title: listing.title,
+    listing_url: listing.url,
+    title: listing.title || null,
     price: listing.price_eur || null,
     mileage: listing.mileage_km || null,
     year: listing.year || null,
-    fuel: undefined, // À extraire depuis title si possible
-    transmission: undefined,
+    fuel: null, // À extraire depuis title si possible
+    transmission: null,
+    city: listing.city || null,
     score: listing.score_final || listing.score_ia || null,
     risk_score: null, // Non disponible dans ListingResponse
-    url: listing.url,
-    imageUrl: listing.imageUrl || null,
     extracted_features: {
       brand: extractBrandFromTitle(listing.title),
       model: extractModelFromTitle(listing.title),
     },
+    created_at: new Date().toISOString(),
   }))
 
   // Scorer chaque annonce

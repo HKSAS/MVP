@@ -4,11 +4,11 @@ import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse } from '@/lib/errors'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import {
-  buildUserPreferenceProfile,
   buildPreferenceProfileFromHistory,
   mergePreferenceProfiles,
   generatePersonalizedRecommendations,
 } from '@/lib/personalized-recommendations'
+import { buildUserPreferenceProfile } from '@/lib/recommendations/engine'
 import type { ListingResponse } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
