@@ -78,7 +78,7 @@ export default function TopNav() {
 
   return (
     <motion.nav 
-      className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-white/5"
+      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e] backdrop-blur-md border-b border-white/5"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}

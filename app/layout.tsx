@@ -20,14 +20,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-[#0a0a0a]`}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#1a0a2e]`}>
         {/* Calendly embed script */}
         <Script
           src="https://assets.calendly.com/assets/external/widget.js"
           strategy="afterInteractive"
         />
         <TopNav />
-        <main className="flex-1 pt-20">
+        <main className="flex-1">
           {children}
         </main>
         <Footer />
