@@ -17,6 +17,7 @@ import { parseLeParkingHtml, convertLeParkingToListingResponse } from './leparki
 import { parseProCarLeaseHtml, convertProCarLeaseToListingResponse } from './procarlease-parser'
 import { parseLaCentraleHtml, convertLaCentraleToListingResponse } from './lacentrale-parser'
 import { scrapeLaCentrale as scrapeLaCentraleNew } from '@/src/modules/scraping/sites/lacentrale/scraper'
+import { scrapeTransakAuto } from '@/src/modules/scraping/sites/transakauto/scraper'
 import { scrapeAramisauto, parseAramisautoHtml, convertAramisautoToListingResponse } from './aramisauto-parser'
 import { scrapeKyump, parseKyumpHtml, convertKyumpToListingResponse } from './kyump-parser'
 import { scrapeWithParallelStrategies } from './parallel-scraper'
@@ -247,6 +248,24 @@ async function scrapeOtherSite(
       return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
     }
   }
+  
+  if (siteName === 'TransakAuto') {
+    try {
+      log.info(`[${siteName}] Utilisation scraper complet`, { pass })
+      const result = await scrapeTransakAuto(query, pass, abortSignal)
+      return {
+        listings: result.listings,
+        strategy: result.strategy,
+        ms: result.ms,
+      }
+    } catch (error) {
+      log.error(`[${siteName}] Erreur scraping`, {
+        pass,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { listings: [], strategy: 'ai-fallback', ms: Date.now() - startTime }
+    }
+  }
 
   // Construire l'URL selon le site (pour les sites qui utilisent scraping + parsing séparés)
   let searchUrl = ''
@@ -276,6 +295,14 @@ async function scrapeOtherSite(
         prix_max: query.maxPrice.toString(),
       })
       searchUrl = `https://procarlease.com/fr/vehicules?${params.toString()}`
+      break
+    case 'TransakAuto':
+      const transakParams = new URLSearchParams({
+        marque: query.brand,
+        modele: query.model || '',
+        prix_max: query.maxPrice.toString(),
+      })
+      searchUrl = `https://annonces.transakauto.com/?${transakParams.toString()}`
       break
     default:
       throw new Error(`Site non supporté: ${siteName}`)

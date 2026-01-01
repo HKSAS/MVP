@@ -25,6 +25,7 @@ import {
   Search,
   Filter,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
@@ -134,6 +135,7 @@ export default function SearchResultsPage() {
     const model = searchParams.get("model") || "";
     const maxPrice = searchParams.get("max_price") || "";
     const fuelType = searchParams.get("fuelType") || "";
+    const excludedSitesParam = searchParams.get("excludedSites") || "";
 
     // Vérifier si on vient de l'historique
     const fromHistory = searchParams.get('fromHistory') === 'true';
@@ -200,7 +202,7 @@ export default function SearchResultsPage() {
     debounceTimerRef.current = setTimeout(() => {
       // Vérification finale avant de lancer la recherche
       if (!inFlightRef.current) {
-        performSearch(brand, model, maxPrice, fuelType);
+        performSearch(brand, model, maxPrice, fuelType, excludedSitesParam);
       }
     }, 500);
     
@@ -222,7 +224,8 @@ export default function SearchResultsPage() {
     brand: string,
     model: string,
     maxPrice: string,
-    fuelType: string
+    fuelType: string,
+    excludedSites?: string
   ) => {
     // Garde-fou : ignorer si une requête est déjà en cours
     if (inFlightRef.current) {
@@ -255,6 +258,7 @@ export default function SearchResultsPage() {
           model,
           max_price: maxPrice ? Number(maxPrice) : undefined,
           fuelType: fuelType && fuelType !== "all" ? fuelType : undefined,
+          excludedSites: excludedSites ? excludedSites.split(',').map((s: string) => s.trim()) : undefined,
           page: 1,
           limit: 50,
         }),
@@ -417,11 +421,75 @@ export default function SearchResultsPage() {
   };
 
 
-  // Trier les résultats
+  // Fonction pour calculer la pertinence d'une annonce avec les critères de recherche
+  const calculateRelevance = (listing: ListingResponse, searchBrand: string, searchModel: string): number => {
+    let relevance = 0
+    const title = (listing.title || '').toLowerCase()
+    const brandLower = searchBrand.toLowerCase()
+    const modelLower = (searchModel || '').toLowerCase()
+    
+    // Vérifier si le titre est générique (comme "Annonce LaCentrale" sans marque/modèle)
+    const isGenericTitle = title.includes('annonce') && 
+                          (title.includes('lacentrale') || title.includes('leboncoin') || 
+                           title.includes('transakauto') || title.includes('autoscout')) &&
+                          !title.includes(brandLower)
+    
+    if (isGenericTitle) {
+      // Titre générique sans marque = pertinence 0 (exclusion totale)
+      return 0
+    }
+    
+    // Vérifier la correspondance de la marque (critère essentiel)
+    if (title.includes(brandLower)) {
+      relevance += 50 // 50 points pour la marque
+      
+      // Vérifier la correspondance du modèle (critère important)
+      if (modelLower && title.includes(modelLower)) {
+        relevance += 40 // 40 points supplémentaires pour le modèle
+      } else if (modelLower) {
+        // Modèle non trouvé, pénalité
+        relevance -= 20
+      }
+    } else {
+      // Marque non trouvée, pertinence 0 (exclusion totale)
+      return 0
+    }
+    
+    // Bonus si le titre contient exactement la marque et le modèle
+    if (title.includes(brandLower) && modelLower && title.includes(modelLower)) {
+      // Vérifier si c'est une correspondance exacte ou proche
+      const brandIndex = title.indexOf(brandLower)
+      const modelIndex = title.indexOf(modelLower)
+      if (Math.abs(brandIndex - modelIndex) < 20) {
+        relevance += 10 // Bonus pour correspondance proche
+      }
+    }
+    
+    return Math.max(0, Math.min(100, relevance)) // Clamp entre 0 et 100
+  }
+  
+  // Trier les résultats avec pertinence + score
+  const brand = searchParams.get("brand") || ""
+  const model = searchParams.get("model") || ""
+  
   const sortedResults = [...results].sort((a, b) => {
     switch (sortBy) {
       case "score":
-        return (b.score_final ?? b.score_ia ?? 0) - (a.score_final ?? a.score_ia ?? 0);
+        // Calculer un score combiné : pertinence (60%) + score IA (40%)
+        const relevanceA = calculateRelevance(a, brand, model)
+        const relevanceB = calculateRelevance(b, brand, model)
+        const scoreA = a.score_final ?? a.score_ia ?? 0
+        const scoreB = b.score_final ?? b.score_ia ?? 0
+        
+        // Score combiné : pertinence * 0.6 + score IA * 0.4
+        const combinedScoreA = relevanceA * 0.6 + scoreA * 0.4
+        const combinedScoreB = relevanceB * 0.6 + scoreB * 0.4
+        
+        // Si la pertinence est très faible (< 30), pénaliser fortement
+        if (relevanceA < 30 && relevanceB >= 30) return 1
+        if (relevanceB < 30 && relevanceA >= 30) return -1
+        
+        return combinedScoreB - combinedScoreA
       case "price-asc":
         return (a.price_eur ?? 0) - (b.price_eur ?? 0);
       case "price-desc":
@@ -434,6 +502,18 @@ export default function SearchResultsPage() {
         return 0;
     }
   });
+  
+  // Filtrer les résultats non pertinents (pertinence = 0) avant de prendre le top 3
+  // Une annonce avec pertinence 0 ne doit JAMAIS être dans le top 3
+  const relevantResults = sortedResults.filter(r => {
+    const relevance = calculateRelevance(r, brand, model)
+    return relevance > 0 // Exclure strictement les annonces avec pertinence 0
+  })
+  
+  // Si on a moins de 3 résultats pertinents, on prend ce qu'on a (mais jamais les non-pertinents)
+  const top3Results = relevantResults.length > 0 ? relevantResults.slice(0, 3) : []
+  // Les autres résultats sont ceux qui sont pertinents mais pas dans le top 3
+  const otherResults = relevantResults.slice(3)
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-400 bg-green-600/10 border-green-500/30";
@@ -460,6 +540,7 @@ export default function SearchResultsPage() {
           brand: searchParams.get("brand") || undefined,
           model: searchParams.get("model") || undefined,
         }}
+        excludedSites={searchParams.get("excludedSites")?.split(',').map(s => s.trim()) || []}
         realSiteResults={siteResults.map(sr => {
           // Convertir SiteResult de src/core/types vers lib/search-types
           // Dans src/core/types, items est un number, mais dans lib/search-types c'est Listing[]
@@ -496,7 +577,8 @@ export default function SearchResultsPage() {
                 const model = searchParams.get("model") || "";
                 const maxPrice = searchParams.get("max_price") || "";
                 const fuelType = searchParams.get("fuelType") || "";
-                performSearch(brand, model, maxPrice, fuelType);
+                const excludedSites = searchParams.get("excludedSites") || "";
+                performSearch(brand, model, maxPrice, fuelType, excludedSites);
               }}
             >
               Réessayer
@@ -543,28 +625,34 @@ export default function SearchResultsPage() {
       </div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
-        {/* En-tête de page */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs sm:text-sm">
+        {/* En-tête de page - Design amélioré */}
+        <div className="mb-8 sm:mb-12">
+          <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
+            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs sm:text-sm backdrop-blur-sm">
               {searchCriteria.resultsCount} annonces
             </Badge>
-            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30 text-xs sm:text-sm">
+            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30 text-xs sm:text-sm backdrop-blur-sm">
               {searchCriteria.platformsCount} plateformes
             </Badge>
-            <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs sm:text-sm">
+            <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs sm:text-sm backdrop-blur-sm">
               {searchCriteria.brand} {searchCriteria.model}
             </Badge>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl text-white mb-2">Résultats de la recherche IA</h1>
-          <p className="text-sm sm:text-base text-gray-400 max-w-2xl">
-            L'IA a analysé les annonces et calculé un score de fiabilité pour chaque véhicule.
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-medium text-white mb-3 sm:mb-4">
+            Résultats de la recherche
+            <br />
+            <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+              propulsée par l&apos;IA
+            </span>
+          </h1>
+          <p className="text-base sm:text-lg text-gray-400 max-w-2xl">
+            Notre IA a analysé des milliers d&apos;annonces et calculé un score de fiabilité pour chaque véhicule.
           </p>
         </div>
 
-        {/* Barre d'actions */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8">
+        {/* Barre d'actions - Design amélioré */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center flex-1 w-full sm:w-auto">
               <div className="flex items-center gap-2">
@@ -656,10 +744,11 @@ export default function SearchResultsPage() {
                           const model = searchParams.get("model") || "";
                           const maxPrice = searchParams.get("max_price") || "";
                           const fuelType = searchParams.get("fuelType") || "";
+                          const excludedSites = searchParams.get("excludedSites") || "";
                           
                           // Pour l'instant, on relance toute la recherche
                           // TODO: Implémenter un endpoint pour réessayer un site spécifique
-                          await performSearch(brand, model, maxPrice, fuelType);
+                          await performSearch(brand, model, maxPrice, fuelType, excludedSites);
                           toast.info(`Réessai de ${siteResult.site}...`);
                         }}
                       >
@@ -674,9 +763,202 @@ export default function SearchResultsPage() {
           </div>
         )}
 
-        {/* Liste des résultats */}
+        {/* Top 3 meilleures annonces - Mise en avant */}
+        {top3Results.length > 0 && (
+          <div className="mb-8 sm:mb-12">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/25">
+                <Sparkles className="size-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">Top 3 - Meilleures opportunités</h2>
+                <p className="text-sm text-gray-400">Les annonces les plus pertinentes selon notre IA</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+              {top3Results.map((result, index) => {
+                const score = result.score_final ?? result.score_ia ?? 0;
+                const rank = index + 1;
+                return (
+                  <Card 
+                    key={result.id} 
+                    className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border-2 border-yellow-500/30 overflow-hidden hover:bg-white/15 hover:border-yellow-500/50 transition-all cursor-pointer shadow-xl shadow-yellow-500/10 relative"
+                    onClick={() => {
+                      let urlToOpen = result.url;
+                      if (!urlToOpen) return;
+                      if (urlToOpen.startsWith('/')) {
+                        const domainMap: Record<string, string> = {
+                          'LeBonCoin': 'https://www.leboncoin.fr',
+                          'LaCentrale': 'https://www.lacentrale.fr',
+                          'ParuVendu': 'https://www.paruvendu.fr',
+                          'AutoScout24': 'https://www.autoscout24.fr',
+                          'LeParking': 'https://www.leparking.fr',
+                          'ProCarLease': 'https://procarlease.com',
+                        };
+                        const baseDomain = domainMap[result.source] || 'https://';
+                        urlToOpen = baseDomain + urlToOpen;
+                      } else if (!urlToOpen.startsWith('http://') && !urlToOpen.startsWith('https://')) {
+                        urlToOpen = 'https://' + urlToOpen;
+                      }
+                      window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+                    }}
+                  >
+                    {/* Badge de rang */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center">
+                        {rank}
+                      </Badge>
+                    </div>
+                    <div className="relative">
+                      <ImageWithFallback
+                        src={result.imageUrl || FALLBACK_IMAGE}
+                        alt={result.title}
+                        className="w-full h-56 object-cover"
+                      />
+                      <div className="absolute top-3 right-3 flex gap-2 items-center">
+                        <Badge className={`${getScoreBadgeColor(score)} text-white border shadow-lg backdrop-blur-sm`}>
+                          Score IA : {score}/100
+                        </Badge>
+                        <div 
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-full p-1.5 shadow-lg hover:shadow-xl hover:bg-white/20 transition-all"
+                        >
+                          <FavoriteButton 
+                            listing={result} 
+                            variant="ghost" 
+                            size="sm"
+                            className="hover:bg-transparent text-white hover:text-red-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <CardContent className="p-6 space-y-4">
+                      <div>
+                        <h3 className="text-white font-semibold mb-1 text-lg">{result.title}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          {result.year && (
+                            <>
+                              <Calendar className="size-4" />
+                              <span>{result.year}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-white text-xl font-bold">
+                        {result.price_eur
+                          ? new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                              maximumFractionDigits: 0,
+                            }).format(result.price_eur)
+                          : "Prix non disponible"}
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        {result.mileage_km && (
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Gauge className="size-4" />
+                            <span>
+                              {new Intl.NumberFormat("fr-FR").format(result.mileage_km)} km
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-white/10">
+                        <span className="text-xs text-gray-400">Source : {result.source}</span>
+                      </div>
+
+                      <div className={`p-3 rounded-lg border backdrop-blur-xl ${getScoreColor(score)}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Brain className="size-4" />
+                          <span className="text-sm font-medium">Analyse IA</span>
+                        </div>
+                        <p className="text-xs opacity-90">
+                          {score >= 80
+                            ? "Excellente opportunité détectée"
+                            : score >= 60
+                            ? "Bonne offre, vérifications recommandées"
+                            : "Points de vigilance détectés"}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            let urlToOpen = result.url;
+                            if (!urlToOpen || !urlToOpen.trim()) {
+                              toast.error('URL invalide');
+                              return;
+                            }
+                            urlToOpen = urlToOpen.trim();
+                            if (urlToOpen.startsWith('/')) {
+                              const domainMap: Record<string, string> = {
+                                'LeBonCoin': 'https://www.leboncoin.fr',
+                                'LaCentrale': 'https://www.lacentrale.fr',
+                                'ParuVendu': 'https://www.paruvendu.fr',
+                                'Autoscout24': 'https://www.autoscout24.fr',
+                                'LeParking': 'https://www.leparking.fr',
+                                'ProCarLease': 'https://procarlease.com',
+                              };
+                              const baseDomain = domainMap[result.source] || 'https://';
+                              urlToOpen = baseDomain + urlToOpen;
+                            } else if (!urlToOpen.startsWith('http://') && !urlToOpen.startsWith('https://')) {
+                              urlToOpen = 'https://' + urlToOpen;
+                            }
+                            try {
+                              new URL(urlToOpen);
+                            } catch (e) {
+                              toast.error('URL invalide pour cette annonce');
+                              return;
+                            }
+                            window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <Eye className="size-4 mr-2" />
+                          Voir les détails
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(result.url).then(() => {
+                              toast.success('Lien copié dans le presse-papier');
+                            }).catch(() => {
+                              const textArea = document.createElement('textarea');
+                              textArea.value = result.url;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand('copy');
+                              document.body.removeChild(textArea);
+                              toast.success('Lien copié');
+                            });
+                          }}
+                          title="Copier le lien"
+                        >
+                          <ExternalLink className="size-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Autres résultats */}
+        {otherResults.length > 0 && (
+          <div>
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">Toutes les annonces</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedResults.map((result) => {
+              {otherResults.map((result) => {
             const score = result.score_final ?? result.score_ia ?? 0;
             return (
               <Card key={result.id} className="bg-white/5 backdrop-blur-xl border-white/10 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer" onClick={() => {
@@ -878,6 +1160,8 @@ export default function SearchResultsPage() {
             );
           })}
         </div>
+          </div>
+        )}
       </div>
     </div>
   );

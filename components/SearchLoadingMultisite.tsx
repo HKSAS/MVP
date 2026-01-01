@@ -39,6 +39,8 @@ interface SearchLoadingMultisiteProps {
   }
   /** Données réelles des sites (quand disponibles) */
   realSiteResults?: SiteResult[]
+  /** Liste des sites exclus (ne seront pas affichés) */
+  excludedSites?: string[]
 }
 
 // Étapes du processus (une seule active à la fois)
@@ -73,7 +75,8 @@ export function SearchLoadingMultisite({
   jobId, 
   onCancel, 
   searchCriteria,
-  realSiteResults = []
+  realSiteResults = [],
+  excludedSites = []
 }: SearchLoadingMultisiteProps) {
   const [progress, setProgress] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -84,23 +87,35 @@ export function SearchLoadingMultisite({
   const [isCancelling, setIsCancelling] = useState(false)
   const [completedSourcesCount, setCompletedSourcesCount] = useState(0)
 
-  // Compter les sources réellement terminées
+  // Compter les sources réellement terminées (en excluant les sites exclus)
   useEffect(() => {
-    const completed = realSiteResults.filter(r => r.ok).length
+    const filteredResults = realSiteResults.filter(r => {
+      const normalizedSite = r.site.toLowerCase().replace(/\s+/g, '')
+      const normalizedExcluded = excludedSites.map(s => s.toLowerCase().replace(/\s+/g, ''))
+      return !normalizedExcluded.includes(normalizedSite)
+    })
+    const completed = filteredResults.filter(r => r.ok).length
     setCompletedSourcesCount(completed)
-  }, [realSiteResults])
+  }, [realSiteResults, excludedSites])
 
   // Progression basée sur les sources réellement terminées
   // RÈGLE STRICTE : La progression ne peut pas dépasser 90% tant que toutes les sources ne sont pas terminées
   useEffect(() => {
-    const totalSources = 7 // Nombre total de sources
-    const baseProgressPerSource = 75 / totalSources // 75% max pour les sources (≈10.7% par source)
+    const totalSources = Math.max(1, 7 - excludedSites.length) // Nombre total de sources (moins les exclus, minimum 1)
+    const baseProgressPerSource = 75 / totalSources // 75% max pour les sources
     const finalizationProgress = 15 // 15% pour la finalisation
     
     if (realSiteResults.length > 0) {
+      // Filtrer les résultats pour exclure les sites exclus
+      const filteredResults = realSiteResults.filter(r => {
+        const normalizedSite = r.site.toLowerCase().replace(/\s+/g, '')
+        const normalizedExcluded = excludedSites.map(s => s.toLowerCase().replace(/\s+/g, ''))
+        return !normalizedExcluded.includes(normalizedSite)
+      })
+      
       // Utiliser les données réelles - progression basée sur les sources réellement terminées
-      const completed = realSiteResults.filter(r => r.ok).length
-      const errorCount = realSiteResults.filter(r => !r.ok).length
+      const completed = filteredResults.filter(r => r.ok).length
+      const errorCount = filteredResults.filter(r => !r.ok).length
       const totalProcessed = completed + errorCount
       
       // Progression = (sources terminées * progression par source) + finalisation si tout est fait
@@ -152,7 +167,7 @@ export function SearchLoadingMultisite({
         }
       }
     }
-  }, [realSiteResults])
+  }, [realSiteResults, excludedSites])
 
   // Mise à jour des étapes selon la progression
   useEffect(() => {
@@ -297,6 +312,7 @@ export function SearchLoadingMultisite({
             <ScrapingSourcesGrid
               realSiteResults={realSiteResults}
               elapsedSeconds={elapsedTime}
+              excludedSites={excludedSites}
             />
               <p className="text-sm text-gray-400 mt-6 text-center">
                 Chaque plateforme est analysée indépendamment. Les résultats s&apos;affichent dès que toutes les sources sont consolidées.

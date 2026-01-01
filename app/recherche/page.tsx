@@ -39,6 +39,22 @@ export default function SearchPage() {
   const [fuel, setFuel] = useState("");
   const [error, setError] = useState<string | null>(null);
   
+  // Sites disponibles pour le scraping
+  const availableSites = [
+    { id: 'LeBonCoin', name: 'LeBonCoin', icon: '🏷️' },
+    { id: 'LaCentrale', name: 'LaCentrale', icon: '🚗' },
+    { id: 'AutoScout24', name: 'AutoScout24', icon: '🌍' },
+    { id: 'LeParking', name: 'LeParking', icon: '🅿️' },
+    { id: 'ProCarLease', name: 'ProCarLease', icon: '💼' },
+    { id: 'Kyump', name: 'Kyump', icon: '🔍' },
+    { id: 'TransakAuto', name: 'TransakAuto', icon: '🚙' },
+  ];
+  
+  // État pour les sites sélectionnés (par défaut tous activés)
+  const [selectedSites, setSelectedSites] = useState<Set<string>>(
+    new Set(availableSites.map(s => s.id))
+  );
+  
   // État pour le modal de contact
   const [contactOpen, setContactOpen] = useState(false);
   const [contactSending, setContactSending] = useState(false);
@@ -69,6 +85,12 @@ export default function SearchPage() {
       setError("Veuillez remplir au moins la marque et le modèle");
       return;
     }
+    
+    // Vérifier qu'au moins un site est sélectionné
+    if (selectedSites.size === 0) {
+      setError("Veuillez sélectionner au moins un site à rechercher");
+      return;
+    }
 
     // Nettoyer le timer de debounce précédent
     if (debounceTimerRef.current) {
@@ -96,6 +118,15 @@ export default function SearchPage() {
 
           if (fuel && fuel !== "all") {
             params.set("fuelType", fuel);
+          }
+          
+          // Ajouter les sites exclus (sites non sélectionnés)
+          const excludedSites = availableSites
+            .filter(site => !selectedSites.has(site.id))
+            .map(site => site.id);
+          
+          if (excludedSites.length > 0) {
+            params.set("excludedSites", excludedSites.join(','));
           }
 
           // Rediriger vers la page de résultats
@@ -278,6 +309,55 @@ ${contactForm.message || ''}`,
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Site Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm sm:text-base text-white">Sites à rechercher</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {availableSites.map((site) => (
+                        <div
+                          key={site.id}
+                          className="flex items-center space-x-2 p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                          onClick={() => {
+                            setSelectedSites(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(site.id)) {
+                                newSet.delete(site.id);
+                              } else {
+                                newSet.add(site.id);
+                              }
+                              return newSet;
+                            });
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSites.has(site.id)}
+                            onChange={() => {
+                              setSelectedSites(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(site.id)) {
+                                  newSet.delete(site.id);
+                                } else {
+                                  newSet.add(site.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                            disabled={searching}
+                          />
+                          <span className="text-sm text-white flex items-center gap-1.5">
+                            <span>{site.icon}</span>
+                            <span>{site.name}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedSites.size === 0 && (
+                      <p className="text-xs text-red-400">Veuillez sélectionner au moins un site</p>
+                    )}
                   </div>
 
                   {/* Search Button */}

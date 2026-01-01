@@ -1510,12 +1510,23 @@ export async function POST(request: NextRequest) {
       } as SearchResponse & { success?: boolean; query?: any; sites?: any; listings?: ListingResponse[]; pagination?: any })
     }
 
-    // Filtrer les sites actifs selon la nouvelle configuration
+    // Récupérer les sites exclus depuis le body
+    const excludedSitesParam = body.excludedSites || body.excluded_sites
+    const excludedSites: string[] = excludedSitesParam
+      ? (Array.isArray(excludedSitesParam) ? excludedSitesParam : excludedSitesParam.split(',').map((s: string) => s.trim()))
+      : []
+    
+    log.info('Sites exclus', { excludedSites, count: excludedSites.length })
+    
+    // Filtrer les sites actifs selon la nouvelle configuration et les sites exclus
     const activeSites = SITE_CONFIGS.filter(site => {
       // Vérifier d'abord si le site est activé dans la nouvelle configuration
       const enabledInConfig = isSiteEnabled(site.name)
       // Ensuite vérifier si le site est actif dans l'ancienne config (pour compatibilité)
-      return enabledInConfig && site.active
+      const isActive = enabledInConfig && site.active
+      // Exclure les sites dans la liste excludedSites
+      const isExcluded = excludedSites.includes(site.name)
+      return isActive && !isExcluded
     })
     
     if (activeSites.length === 0) {

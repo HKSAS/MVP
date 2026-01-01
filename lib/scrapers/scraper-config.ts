@@ -21,11 +21,11 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
     skipIfNoResults: false, // LeBonCoin a toujours des résultats
   },
   'LaCentrale': {
-    enabled: true, // ✅ RÉACTIVÉ
-    timeout: 20000,
+    enabled: true, // ✅ RÉACTIVÉ avec Scraping Browser (fallback automatique)
+    timeout: 45000, // Augmenté pour Scraping Browser (plus lent mais plus fiable)
     priority: 2,
     strategy: 'html-first',
-    skipIfNoResults: false, // Important, on veut les 3 passes
+    skipIfNoResults: false,
   },
   'ProCarLease': {
     enabled: true,
@@ -71,11 +71,11 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
     reason: 'Parser ne trouve pas les annonces (HTML reçu mais 0 résultats)',
   },
   'TransakAuto': {
-    enabled: false, // ❌ Ne fonctionne pas
-    timeout: 5000,
-    priority: 9,
+    enabled: true, // ✅ Activé
+    timeout: 15000,
+    priority: 7,
+    strategy: 'html-first',
     skipIfNoResults: true,
-    reason: 'Retourne 0 résultats',
   },
 }
 

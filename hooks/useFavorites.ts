@@ -13,6 +13,17 @@ interface UseFavoritesOptions {
   userId?: string // Optionnel, sera récupéré depuis la session si non fourni
 }
 
+// Cache global pour éviter les appels répétés
+let globalFavoritesCache: {
+  favorites: Favorite[]
+  favoriteIds: Set<string>
+  timestamp: number
+  loading: boolean
+} | null = null
+
+const CACHE_DURATION = 5000 // 5 secondes
+let loadingPromise: Promise<void> | null = null
+
 export function useFavorites({ userId: providedUserId }: UseFavoritesOptions = {}) {
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set()) // Set pour lookup rapide
@@ -26,56 +37,129 @@ export function useFavorites({ userId: providedUserId }: UseFavoritesOptions = {
   }, []) // Dépendances vides = exécuté une seule fois au montage
 
   const loadFavorites = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+    // Utiliser le cache si disponible et récent
+    const now = Date.now()
+    if (globalFavoritesCache && (now - globalFavoritesCache.timestamp) < CACHE_DURATION && !globalFavoritesCache.loading) {
+      setFavorites(globalFavoritesCache.favorites)
+      setFavoriteIds(globalFavoritesCache.favoriteIds)
+      setLoading(false)
+      return
+    }
 
-      const supabase = getSupabaseBrowserClient()
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError || !session?.user) {
-        setFavorites([])
-        setFavoriteIds(new Set())
-        return
+    // Si un chargement est déjà en cours, attendre qu'il se termine
+    if (loadingPromise) {
+      try {
+        await loadingPromise
+        if (globalFavoritesCache) {
+          setFavorites(globalFavoritesCache.favorites)
+          setFavoriteIds(globalFavoritesCache.favoriteIds)
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Erreur lors de l\'attente du chargement:', err)
+        setLoading(false)
       }
+      return
+    }
 
-      const userId = providedUserId || session.user.id
-      const token = session.access_token
+    // Créer une nouvelle promesse de chargement
+    loadingPromise = (async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-      const response = await fetch('/api/favorites', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+        // Marquer le cache comme en chargement
+        if (globalFavoritesCache) {
+          globalFavoritesCache.loading = true
+        }
 
-      if (!response.ok) {
-        if (response.status === 401) {
+        const supabase = getSupabaseBrowserClient()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError || !session?.user) {
+          const emptyCache = {
+            favorites: [],
+            favoriteIds: new Set<string>(),
+            timestamp: Date.now(),
+            loading: false
+          }
+          globalFavoritesCache = emptyCache
           setFavorites([])
           setFavoriteIds(new Set())
           return
         }
-        throw new Error(`Erreur ${response.status}`)
-      }
 
-      const data = await response.json()
+        const userId = providedUserId || session.user.id
+        const token = session.access_token
 
-      if (data.success && data.data) {
-        setFavorites(data.data)
-        // Créer un Set pour lookup rapide : "source:listing_id"
-        const ids = new Set<string>(data.data.map((fav: Favorite) => `${fav.source}:${fav.listing_id}`))
-        setFavoriteIds(ids)
-      } else {
+        const response = await fetch('/api/favorites', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            const emptyCache = {
+              favorites: [],
+              favoriteIds: new Set<string>(),
+              timestamp: Date.now(),
+              loading: false
+            }
+            globalFavoritesCache = emptyCache
+            setFavorites([])
+            setFavoriteIds(new Set())
+            return
+          }
+          throw new Error(`Erreur ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          // Créer un Set pour lookup rapide : "source:listing_id"
+          const ids = new Set<string>(data.data.map((fav: Favorite) => `${fav.source}:${fav.listing_id}`))
+          
+          // Mettre à jour le cache global
+          globalFavoritesCache = {
+            favorites: data.data,
+            favoriteIds: ids,
+            timestamp: Date.now(),
+            loading: false
+          }
+          
+          setFavorites(data.data)
+          setFavoriteIds(ids)
+        } else {
+          const emptyCache = {
+            favorites: [],
+            favoriteIds: new Set<string>(),
+            timestamp: Date.now(),
+            loading: false
+          }
+          globalFavoritesCache = emptyCache
+          setFavorites([])
+          setFavoriteIds(new Set())
+        }
+      } catch (err) {
+        console.error('Erreur chargement favoris:', err)
+        setError('Erreur lors du chargement des favoris')
+        const emptyCache = {
+          favorites: [],
+          favoriteIds: new Set<string>(),
+          timestamp: Date.now(),
+          loading: false
+        }
+        globalFavoritesCache = emptyCache
         setFavorites([])
         setFavoriteIds(new Set())
+      } finally {
+        setLoading(false)
+        loadingPromise = null
       }
-    } catch (err) {
-      console.error('Erreur chargement favoris:', err)
-      setError('Erreur lors du chargement des favoris')
-      setFavorites([])
-      setFavoriteIds(new Set())
-    } finally {
-      setLoading(false)
-    }
+    })()
+    
+    await loadingPromise
   }, [providedUserId])
 
   const addFavorite = useCallback(async (listing: ListingResponse): Promise<boolean> => {
@@ -189,8 +273,30 @@ export function useFavorites({ userId: providedUserId }: UseFavoritesOptions = {
       }
 
       if (data.success) {
+        // Invalider le cache pour forcer un rechargement
+        globalFavoritesCache = null
+        loadingPromise = null
+        
         if (data.data) {
           setFavorites(prev => [...prev, data.data])
+        }
+        // Recharger les favoris pour synchroniser avec le serveur (sans utiliser le cache)
+        // Appeler directement la logique de chargement sans passer par le cache
+        const supabase2 = getSupabaseBrowserClient()
+        const { data: { session: session2 } } = await supabase2.auth.getSession()
+        if (session2?.access_token) {
+          const response2 = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${session2.access_token}` },
+          })
+          if (response2.ok) {
+            const data2 = await response2.json()
+            if (data2.success && data2.data) {
+              const ids2 = new Set<string>(data2.data.map((fav: Favorite) => `${fav.source}:${fav.listing_id}`))
+              globalFavoritesCache = { favorites: data2.data, favoriteIds: ids2, timestamp: Date.now(), loading: false }
+              setFavorites(data2.data)
+              setFavoriteIds(ids2)
+            }
+          }
         }
         toast.success('Annonce ajoutée aux favoris')
         return true
@@ -305,9 +411,31 @@ export function useFavorites({ userId: providedUserId }: UseFavoritesOptions = {
       }
 
       if (data.success) {
+        // Invalider le cache pour forcer un rechargement
+        globalFavoritesCache = null
+        loadingPromise = null
+        
         setFavorites(prev => prev.filter(fav => 
           !(fav.source === listing.source && fav.listing_id === listing.id)
         ))
+        // Recharger les favoris pour synchroniser avec le serveur (sans utiliser le cache)
+        // Appeler directement la logique de chargement sans passer par le cache
+        const supabase2 = getSupabaseBrowserClient()
+        const { data: { session: session2 } } = await supabase2.auth.getSession()
+        if (session2?.access_token) {
+          const response2 = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${session2.access_token}` },
+          })
+          if (response2.ok) {
+            const data2 = await response2.json()
+            if (data2.success && data2.data) {
+              const ids2 = new Set<string>(data2.data.map((fav: Favorite) => `${fav.source}:${fav.listing_id}`))
+              globalFavoritesCache = { favorites: data2.data, favoriteIds: ids2, timestamp: Date.now(), loading: false }
+              setFavorites(data2.data)
+              setFavoriteIds(ids2)
+            }
+          }
+        }
         toast.success('Annonce retirée des favoris')
         return true
       } else {

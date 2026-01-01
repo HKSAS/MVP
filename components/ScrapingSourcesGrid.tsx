@@ -31,6 +31,8 @@ interface ScrapingSourcesGridProps {
   elapsedSeconds?: number
   /** Callback quand une source change de statut */
   onSourceStatusChange?: (source: string, status: ScrapingSource['status']) => void
+  /** Liste des sites exclus (ne seront pas affichés) */
+  excludedSites?: string[]
 }
 
 // Liste des plateformes dans l'ordre d'analyse
@@ -42,6 +44,7 @@ const PLATFORMS = [
   'LeParking',
   'ProCarLease',
   'TransakAuto',
+  'Kyump',
 ]
 
 // Mapping des noms de sources (normalisation)
@@ -53,8 +56,9 @@ const normalizeSourceName = (name: string): string => {
     'paruvendu': 'ParuVendu',
     'autoscout24': 'AutoScout24',
     'leparking': 'LeParking',
-    'procarlease': 'ProCarLease',
-    'transakauto': 'TransakAuto',
+  'procarlease': 'ProCarLease',
+  'transakauto': 'TransakAuto',
+  'kyump': 'Kyump',
   }
   return mapping[normalized] || name
 }
@@ -63,9 +67,16 @@ export function ScrapingSourcesGrid({
   realSiteResults = [],
   elapsedSeconds = 0,
   onSourceStatusChange,
+  excludedSites = [],
 }: ScrapingSourcesGridProps) {
+  // Filtrer les plateformes selon les sites exclus
+  const availablePlatforms = PLATFORMS.filter(platform => {
+    const normalizedExcluded = excludedSites.map(s => normalizeSourceName(s))
+    return !normalizedExcluded.includes(normalizeSourceName(platform))
+  })
+  
   const [sources, setSources] = useState<ScrapingSource[]>(
-    PLATFORMS.map(name => ({ name, status: 'pending' }))
+    availablePlatforms.map(name => ({ name, status: 'pending' }))
   )
   const previousStatusesRef = useRef<Map<string, ScrapingSource['status']>>(new Map())
 
