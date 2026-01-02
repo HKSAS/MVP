@@ -37,15 +37,37 @@ function ResetPasswordForm() {
       );
 
       if (resetError) {
-        // Messages d'erreur utilisateur-friendly
+        // Logs détaillés pour diagnostic
+        console.error('❌ Erreur Supabase resetPasswordForEmail:', {
+          message: resetError.message,
+          status: resetError.status,
+          name: resetError.name,
+        });
+
+        // Messages d'erreur utilisateur-friendly avec détails SMTP
         let errorMessage = resetError.message;
         
-        if (resetError.message.includes('Invalid email')) {
+        if (resetError.message.includes('Invalid email') || resetError.message.includes('invalid email')) {
           errorMessage = 'Adresse email invalide.';
-        } else if (resetError.message.includes('rate limit')) {
+        } else if (resetError.message.includes('rate limit') || resetError.message.includes('too many')) {
           errorMessage = 'Trop de tentatives. Veuillez réessayer dans quelques minutes.';
         } else if (resetError.message.includes('fetch') || resetError.message.includes('NetworkError')) {
           errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
+        } else if (resetError.message.includes('smtp') || resetError.message.includes('SMTP') || 
+                   resetError.message.includes('email') || resetError.message.includes('mail') ||
+                   resetError.message.includes('sending') || resetError.message.includes('recovery')) {
+          // Erreurs liées à l'envoi d'email
+          errorMessage = `Erreur lors de l'envoi de l'email de réinitialisation.\n\n` +
+            `Vérifiez vos paramètres SMTP dans Supabase :\n` +
+            `• Host SMTP (ex: smtp.ionos.fr)\n` +
+            `• Port (587 pour TLS/STARTTLS ou 465 pour SSL - évitez 585)\n` +
+            `• Identifiants (email et mot de passe)\n` +
+            `• Vérifiez que le protocole SMTP personnalisé est activé\n\n` +
+            `Erreur technique: ${resetError.message}`;
+        } else if (resetError.status === 500 || resetError.status === 503) {
+          errorMessage = `Erreur serveur. Le service d'envoi d'email est temporairement indisponible.\n\n` +
+            `Vérifiez vos paramètres SMTP dans le dashboard Supabase.\n` +
+            `Erreur: ${resetError.message}`;
         }
 
         throw new Error(errorMessage);
@@ -54,8 +76,14 @@ function ResetPasswordForm() {
       // Succès
       setSuccess(true);
     } catch (err: any) {
-      console.error('❌ Erreur réinitialisation:', err);
-      const errorMessage = err.message || 'Une erreur est survenue. Veuillez réessayer.';
+      console.error('❌ Erreur réinitialisation complète:', {
+        message: err.message,
+        stack: err.stack,
+        error: err,
+      });
+      
+      // Si le message d'erreur n'a pas été personnalisé, utiliser un message générique
+      const errorMessage = err.message || 'Une erreur est survenue lors de l\'envoi de l\'email. Veuillez vérifier vos paramètres SMTP dans Supabase et réessayer.';
       setError(errorMessage);
     } finally {
       setLoading(false);
