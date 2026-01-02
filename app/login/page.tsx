@@ -28,6 +28,8 @@ function LoginForm() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('message') === 'email-confirmation-required') {
         setInfoMessage('Un email de confirmation a été envoyé. Veuillez vérifier votre boîte mail et confirmer votre email avant de vous connecter.');
+      } else if (params.get('message') === 'password-reset-success') {
+        setInfoMessage('Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.');
       }
     }
   }, []);
@@ -212,9 +214,9 @@ function LoginForm() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-white">Mot de passe</Label>
-                      <a href="#" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                      <Link href="/reset-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                     Mot de passe oublié ?
-                  </a>
+                  </Link>
                 </div>
                 <Input
                   id="password"
