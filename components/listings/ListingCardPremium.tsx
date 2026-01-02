@@ -14,7 +14,8 @@ import {
   ExternalLink
 } from 'lucide-react'
 import type { ListingResponse } from '@/lib/types'
-import type { PremiumScore, Badge as BadgeType } from '@/lib/scoring/premium-scorer'
+import type { PremiumScore } from '@/lib/scoring/premium-scorer'
+import { Badge as BadgeType } from '@/lib/scoring/premium-scorer'
 import { FavoriteButton } from '@/components/favorites/FavoriteButton'
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback'
 
@@ -77,7 +78,6 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
           <ImageWithFallback
             src={listing.imageUrl || FALLBACK_IMAGE}
             alt={listing.title}
-            fallbackSrc={FALLBACK_IMAGE}
             className="w-full h-full object-cover"
           />
         </div>
