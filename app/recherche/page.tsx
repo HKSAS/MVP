@@ -408,7 +408,7 @@ export default function SearchPage() {
                   <motion.button
                     type="button"
                     onClick={() => setShowSites(!showSites)}
-                    className="border-2 border-blue-500 rounded-lg py-3 px-4 flex items-center justify-between text-blue-500 hover:bg-blue-500/10 transition-colors w-full"
+                    className="border-2 border-blue-500 rounded-lg py-3 px-4 flex items-center justify-between text-blue-500 hover:bg-blue-500/10 transition-colors w-full mb-4"
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
@@ -416,12 +416,12 @@ export default function SearchPage() {
                     aria-label="Afficher ou masquer la sélection des sites"
                   >
                     <div className="flex items-center gap-2">
-                      <Search className="size-4 text-blue-500" />
+                      <Search className="w-5 h-5 text-blue-500" />
                       <span className="text-sm font-medium text-blue-500">
                         {showSites ? 'Masquer les sites' : 'Afficher les sites de recherche'}
                       </span>
                     </div>
-                    <ChevronDown className={`size-4 text-blue-500 transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`w-5 h-5 text-blue-500 transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
                   </motion.button>
 
                   {/* Sélection des Sites */}
