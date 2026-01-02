@@ -134,7 +134,17 @@ function SearchResultsContent() {
     const brand = searchParams.get("brand") || "";
     const model = searchParams.get("model") || "";
     const maxPrice = searchParams.get("max_price") || "";
+    const minPrice = searchParams.get("min_price") || "";
     const fuelType = searchParams.get("fuelType") || "";
+    const yearMin = searchParams.get("yearMin") || "";
+    const yearMax = searchParams.get("yearMax") || "";
+    const mileageMax = searchParams.get("mileageMax") || "";
+    const location = searchParams.get("location") || "";
+    const transmission = searchParams.get("transmission") || "";
+    const bodyType = searchParams.get("bodyType") || "";
+    const doors = searchParams.get("doors") || "";
+    const seats = searchParams.get("seats") || "";
+    const color = searchParams.get("color") || "";
     const excludedSitesParam = searchParams.get("excludedSites") || "";
 
     // Vérifier si on vient de l'historique
@@ -202,7 +212,7 @@ function SearchResultsContent() {
     debounceTimerRef.current = setTimeout(() => {
       // Vérification finale avant de lancer la recherche
       if (!inFlightRef.current) {
-        performSearch(brand, model, maxPrice, fuelType, excludedSitesParam);
+        performSearch(brand, model, maxPrice, minPrice, fuelType, yearMin, yearMax, mileageMax, location, transmission, bodyType, doors, seats, color, excludedSitesParam);
       }
     }, 500);
     
@@ -224,7 +234,17 @@ function SearchResultsContent() {
     brand: string,
     model: string,
     maxPrice: string,
+    minPrice: string,
     fuelType: string,
+    yearMin: string,
+    yearMax: string,
+    mileageMax: string,
+    location: string,
+    transmission: string,
+    bodyType: string,
+    doors: string,
+    seats: string,
+    color: string,
     excludedSites?: string
   ) => {
     // Garde-fou : ignorer si une requête est déjà en cours
@@ -257,7 +277,17 @@ function SearchResultsContent() {
           brand,
           model,
           max_price: maxPrice ? Number(maxPrice) : undefined,
+          min_price: minPrice ? Number(minPrice) : undefined,
           fuelType: fuelType && fuelType !== "all" ? fuelType : undefined,
+          year_min: yearMin ? Number(yearMin) : undefined,
+          year_max: yearMax ? Number(yearMax) : undefined,
+          mileage_max: mileageMax ? Number(mileageMax) : undefined,
+          location: location || undefined,
+          transmission: transmission && transmission !== "all" ? transmission : undefined,
+          bodyType: bodyType && bodyType !== "all" ? bodyType : undefined,
+          doors: doors && doors !== "all" ? doors : undefined,
+          seats: seats && seats !== "all" ? seats : undefined,
+          color: color && color !== "all" ? color : undefined,
           excludedSites: excludedSites ? excludedSites.split(',').map((s: string) => s.trim()) : undefined,
           page: 1,
           limit: 50,

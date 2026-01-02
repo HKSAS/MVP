@@ -1365,12 +1365,17 @@ export async function POST(request: NextRequest) {
       brand: body.brand,
       model: body.model,
       max_price: body.max_price,
+      min_price: body.min_price,
       fuelType: body.fuelType || body.fuel_type,
       fuel_type: body.fuel_type || body.fuelType,
-      year_min: body.year_min,
-      year_max: body.year_max,
-      mileage_max: body.mileage_max,
+      year_min: body.year_min || body.yearMin,
+      year_max: body.year_max || body.yearMax,
+      mileage_max: body.mileage_max || body.mileageMax,
       transmission: body.transmission,
+      bodyType: body.bodyType,
+      doors: body.doors,
+      seats: body.seats,
+      color: body.color,
       power_min: body.power_min,
       critair: body.critair,
       specific_requirements: body.specific_requirements,
@@ -1391,19 +1396,25 @@ export async function POST(request: NextRequest) {
       throw new ValidationError('Données de recherche invalides', validationResult.error.errors)
     }
 
-    const { brand, model, max_price, fuelType, page, limit, ...otherCriteria } = validationResult.data
+    const { brand, model, max_price, min_price, fuelType, page, limit, ...otherCriteria } = validationResult.data
     
     const maxPriceForSearch = max_price || 100000
+    const minPriceForSearch = min_price || undefined
     
     const allCriteria = {
       brand,
       model,
       max_price: maxPriceForSearch,
+      min_price: minPriceForSearch,
       fuel_type: fuelType || otherCriteria.fuel_type,
       year_min: otherCriteria.year_min,
       year_max: otherCriteria.year_max,
       mileage_max: otherCriteria.mileage_max,
       transmission: otherCriteria.transmission,
+      bodyType: otherCriteria.bodyType,
+      doors: otherCriteria.doors,
+      seats: otherCriteria.seats,
+      color: otherCriteria.color,
       power_min: otherCriteria.power_min,
       critair: otherCriteria.critair,
       specific_requirements: otherCriteria.specific_requirements,
@@ -1538,14 +1549,19 @@ export async function POST(request: NextRequest) {
       brand,
       model,
       maxPrice: maxPriceForSearch,
-      // minPrice n'existe pas dans le schéma, on ne l'utilise pas
+      minPrice: minPriceForSearch,
       fuelType: fuelType || otherCriteria.fuel_type,
       minYear: otherCriteria.year_min,
       maxYear: otherCriteria.year_max,
       maxMileage: otherCriteria.mileage_max,
       zipCode: otherCriteria.location,
       radiusKm: otherCriteria.radius_km,
-      ...otherCriteria,
+      transmission: otherCriteria.transmission,
+      bodyType: otherCriteria.bodyType,
+      doors: otherCriteria.doors,
+      seats: otherCriteria.seats,
+      color: otherCriteria.color,
+      location: otherCriteria.location,
     }
 
     // Exécution parallèle avec Promise.allSettled (nouveau système 3 passes)

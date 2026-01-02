@@ -9,11 +9,16 @@ export const searchSchema = z.object({
   brand: z.string().min(1, 'La marque est requise').max(50),
   model: z.string().min(1, 'Le modèle est requis').max(50),
   max_price: z.number().int().positive('Le prix maximum doit être positif').optional(),
+  min_price: z.number().int().positive('Le prix minimum doit être positif').optional(),
   year_min: z.number().int().min(1990).max(new Date().getFullYear()).optional(),
   year_max: z.number().int().min(1990).max(new Date().getFullYear()).optional(),
   mileage_max: z.number().int().positive().optional(),
-  fuel_type: z.enum(['essence', 'diesel', 'hybride', 'electrique', 'gpl']).optional(),
-  transmission: z.enum(['manuelle', 'automatique']).optional(),
+  fuel_type: z.enum(['essence', 'diesel', 'hybride', 'electrique', 'gpl', 'hybride_rechargeable', 'e85']).optional(),
+  transmission: z.enum(['manuelle', 'automatique', 'semi_automatique']).optional(),
+  bodyType: z.string().max(50).optional(),
+  doors: z.string().max(10).optional(),
+  seats: z.string().max(10).optional(),
+  color: z.string().max(50).optional(),
   power_min: z.number().int().positive().optional(),
   // Critères "must have"
   critair: z.enum(['0', '1', '2', '3', '4', '5']).optional(),
@@ -34,7 +39,7 @@ export const searchSchema = z.object({
   page: z.number().int().positive().optional().default(1),
   limit: z.number().int().positive().max(100).optional().default(30),
   // Compatibilité avec l'ancien format
-  fuelType: z.enum(['essence', 'diesel', 'hybride', 'electrique']).optional(),
+  fuelType: z.enum(['essence', 'diesel', 'hybride', 'electrique', 'gpl', 'hybride_rechargeable', 'e85']).optional(),
 }).refine(
   (data) => {
     // Si year_min et year_max sont fournis, year_min <= year_max
@@ -46,6 +51,18 @@ export const searchSchema = z.object({
   {
     message: "L'année minimum doit être inférieure ou égale à l'année maximum",
     path: ['year_min'],
+  }
+).refine(
+  (data) => {
+    // Si min_price et max_price sont fournis, min_price <= max_price
+    if (data.min_price && data.max_price) {
+      return data.min_price <= data.max_price;
+    }
+    return true;
+  },
+  {
+    message: "Le prix minimum doit être inférieur ou égal au prix maximum",
+    path: ['min_price'],
   }
 ).transform((data) => {
   // Normaliser fuelType vers fuel_type pour compatibilité

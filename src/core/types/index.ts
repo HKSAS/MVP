@@ -96,6 +96,12 @@ export interface ScrapeQuery {
   maxMileage?: number
   zipCode?: string
   radiusKm?: number
+  transmission?: string // 'manuelle' | 'automatique' | 'semi_automatique'
+  bodyType?: string // 'berline' | 'break' | 'suv' | etc.
+  doors?: string // '3' | '5'
+  seats?: string // '2' | '4' | '5' | '7'
+  color?: string
+  location?: string // Ville ou région
 }
 
 /**

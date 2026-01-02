@@ -5,17 +5,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Sparkles, Loader2, HelpCircle, Send } from "lucide-react";
-import { motion } from 'framer-motion';
+import { Search, Sparkles, Loader2, ChevronUp, ChevronDown, Filter } from "lucide-react";
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from "sonner";
 import { useQuotaCheck } from "@/lib/auth/with-quota-check";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-
 
 export default function SearchPage() {
   const router = useRouter();
@@ -32,12 +29,27 @@ export default function SearchPage() {
     };
     checkAuth();
   }, [router]);
+
+  // États de base
   const [searching, setSearching] = useState(false);
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [budget, setBudget] = useState("");
   const [fuel, setFuel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  
+  // États filtres avancés
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [yearMin, setYearMin] = useState("");
+  const [yearMax, setYearMax] = useState("");
+  const [mileageMax, setMileageMax] = useState("");
+  const [location, setLocation] = useState("");
+  const [transmission, setTransmission] = useState("");
+  const [bodyType, setBodyType] = useState("");
+  const [doors, setDoors] = useState("");
+  const [seats, setSeats] = useState("");
+  const [color, setColor] = useState("");
+  const [minPrice, setMinPrice] = useState("");
   
   // Sites disponibles pour le scraping
   const availableSites = [
@@ -55,22 +67,32 @@ export default function SearchPage() {
     new Set(availableSites.map(s => s.id))
   );
   
-  // État pour le modal de contact
-  const [contactOpen, setContactOpen] = useState(false);
-  const [contactSending, setContactSending] = useState(false);
-  const [contactForm, setContactForm] = useState({
-    name: "",
-    email: "",
-    budget: "",
-    usage: "",
-    priority: "",
-    message: "",
-  });
-  
   // Garde-fou pour empêcher les appels simultanés
   const inFlightRef = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Auto-complétion marques populaires
+  const popularBrands = [
+    'Audi', 'BMW', 'Citroën', 'Dacia', 'Fiat', 'Ford', 'Mercedes', 
+    'Opel', 'Peugeot', 'Renault', 'Seat', 'Skoda', 'Toyota', 'Volkswagen'
+  ];
+
+  // Auto-complétion modèles selon marque
+  const getModelsByBrand = (brandName: string): string[] => {
+    const models: Record<string, string[]> = {
+      'renault': ['Clio', 'Megane', 'Captur', 'Kadjar', 'Scenic', 'Talisman', 'Koleos'],
+      'peugeot': ['208', '308', '3008', '5008', '2008', '508', 'Partner'],
+      'citroën': ['C3', 'C4', 'C5', 'Berlingo', 'Cactus', 'C4 Picasso'],
+      'volkswagen': ['Polo', 'Golf', 'Passat', 'Tiguan', 'Touareg', 'T-Cross'],
+      'audi': ['A3', 'A4', 'A5', 'A6', 'Q3', 'Q5', 'Q7'],
+      'bmw': ['Série 1', 'Série 3', 'Série 5', 'X1', 'X3', 'X5'],
+      'mercedes': ['Classe A', 'Classe C', 'Classe E', 'GLA', 'GLC', 'GLE'],
+      'ford': ['Fiesta', 'Focus', 'Mondeo', 'Kuga', 'Edge', 'Mustang'],
+      'opel': ['Corsa', 'Astra', 'Insignia', 'Crossland', 'Grandland'],
+      'toyota': ['Yaris', 'Corolla', 'C-HR', 'RAV4', 'Prius', 'Auris'],
+    };
+    return models[brandName.toLowerCase()] || [];
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,12 +105,28 @@ export default function SearchPage() {
     // Validation basique
     if (!brand.trim() || !model.trim()) {
       setError("Veuillez remplir au moins la marque et le modèle");
+      toast.error("Marque et modèle requis");
       return;
     }
     
     // Vérifier qu'au moins un site est sélectionné
     if (selectedSites.size === 0) {
       setError("Veuillez sélectionner au moins un site à rechercher");
+      toast.error("Sélectionnez au moins un site");
+      return;
+    }
+
+    // Validation année
+    if (yearMin && yearMax && parseInt(yearMin) > parseInt(yearMax)) {
+      setError("L'année minimum doit être inférieure à l'année maximum");
+      toast.error("Vérifiez les années");
+      return;
+    }
+
+    // Validation prix
+    if (minPrice && budget && parseInt(minPrice) > parseInt(budget)) {
+      setError("Le prix minimum doit être inférieur au prix maximum");
+      toast.error("Vérifiez les prix");
       return;
     }
 
@@ -116,8 +154,48 @@ export default function SearchPage() {
             params.set("max_price", budget.trim());
           }
 
+          if (minPrice.trim()) {
+            params.set("min_price", minPrice.trim());
+          }
+
           if (fuel && fuel !== "all") {
             params.set("fuelType", fuel);
+          }
+
+          if (yearMin.trim()) {
+            params.set("yearMin", yearMin.trim());
+          }
+
+          if (yearMax.trim()) {
+            params.set("yearMax", yearMax.trim());
+          }
+
+          if (mileageMax.trim()) {
+            params.set("mileageMax", mileageMax.trim());
+          }
+
+          if (location.trim()) {
+            params.set("location", location.trim());
+          }
+
+          if (transmission && transmission !== "all") {
+            params.set("transmission", transmission);
+          }
+
+          if (bodyType && bodyType !== "all") {
+            params.set("bodyType", bodyType);
+          }
+
+          if (doors && doors !== "all") {
+            params.set("doors", doors);
+          }
+
+          if (seats && seats !== "all") {
+            params.set("seats", seats);
+          }
+
+          if (color && color !== "all") {
+            params.set("color", color);
           }
           
           // Ajouter les sites exclus (sites non sélectionnés)
@@ -137,7 +215,10 @@ export default function SearchPage() {
           brand: brand.trim(),
           model: model.trim(),
           budget: budget.trim(),
-          fuel: fuel
+          fuel: fuel,
+          yearMin: yearMin.trim(),
+          yearMax: yearMax.trim(),
+          mileageMax: mileageMax.trim(),
         }
       );
 
@@ -155,147 +236,145 @@ export default function SearchPage() {
     }, 400);
   };
 
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setContactSending(true);
-    
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: contactForm.name,
-          email: contactForm.email,
-          subject: `Aide recherche - Budget: ${contactForm.budget || 'Non spécifié'}`,
-          message: `Bonjour,
-
-Je recherche de l'aide pour trouver le modèle idéal.
-
-Budget: ${contactForm.budget || 'Non spécifié'}
-Usage: ${contactForm.usage || 'Non spécifié'}
-Priorité: ${contactForm.priority || 'Non spécifié'}
-
-${contactForm.message || ''}`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'envoi');
-      }
-
-      toast.success("Message envoyé avec succès !", {
-        description: "Nous vous répondrons dans les plus brefs délais.",
-      });
-      
-      setContactForm({
-        name: "",
-        email: "",
-        budget: "",
-        usage: "",
-        priority: "",
-        message: "",
-      });
-      setContactOpen(false);
-    } catch (error) {
-      toast.error("Erreur lors de l'envoi", {
-        description: "Veuillez réessayer plus tard.",
-      });
-    } finally {
-      setContactSending(false);
-    }
+  // Formatage automatique du budget
+  const formatBudget = (value: string) => {
+    const num = value.replace(/\D/g, '');
+    if (!num) return '';
+    return parseInt(num).toLocaleString('fr-FR');
   };
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setBudget(value);
+  };
+
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setMinPrice(value);
+  };
+
+  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setMileageMax(value);
+  };
+
+  // Modèles suggérés selon marque
+  const suggestedModels = brand ? getModelsByBrand(brand) : [];
 
   return (
     <div className="bg-[#0a0a0a] text-white min-h-screen pt-16 sm:pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* Hero Section */}
-      <section className="relative pt-16 sm:pt-20 md:pt-24 pb-12 sm:pb-16 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto relative z-10">
+      {/* Main Content */}
+      <section className="relative pt-8 sm:pt-12 pb-12 sm:pb-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Title */}
           <motion.div
-            className="text-center mb-8 sm:mb-10 md:mb-12"
+            className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 mb-4 sm:mb-6 text-xs sm:text-sm">
-              <Sparkles className="size-3 sm:size-4 mr-2 inline" />
-              Recherche propulsée par l&apos;IA
-            </Badge>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white mb-3 sm:mb-4 px-2">
-              Rechercher une voiture
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                avec l&apos;IA
-              </span>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-2">
+              Offres
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Notre IA analyse des milliers d&apos;annonces pour vous proposer les meilleures offres
+            <p className="text-sm sm:text-base text-gray-400">
+              Trouvez la voiture idéale avec notre IA
             </p>
           </motion.div>
 
-          {/* Search Form */}
+          {/* Search Form Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="max-w-5xl mx-auto bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
-              <CardContent className="p-4 sm:p-6 md:p-8">
+            <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl">
+              <CardContent className="p-6 sm:p-8">
                 {error && (
-                  <div className="mb-3 sm:mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-2 sm:p-3 text-xs sm:text-sm text-red-400">
+                  <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
                     {error}
                   </div>
                 )}
-                <form onSubmit={handleSearch} className="space-y-4 sm:space-y-6">
-                  {/* Main Search Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
+                <form onSubmit={handleSearch} className="space-y-6">
+                  {/* Filtres de base */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Marque */}
                     <div className="space-y-2">
-                      <Label htmlFor="brand" className="text-sm sm:text-base text-white">Marque</Label>
-                      <Input
-                        id="brand"
-                        placeholder="Ex: Audi, Renault..."
-                        value={brand}
-                        onChange={(e) => setBrand(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
-                        disabled={searching}
-                      />
+                      <Label htmlFor="brand" className="text-sm font-medium text-white">
+                        Marque
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="brand"
+                          placeholder="Ex: Audi, Renault..."
+                          value={brand}
+                          onChange={(e) => setBrand(e.target.value)}
+                          className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                          disabled={searching}
+                          list="brands-list"
+                        />
+                        <datalist id="brands-list">
+                          {popularBrands.map((b) => (
+                            <option key={b} value={b} />
+                          ))}
+                        </datalist>
+                      </div>
                     </div>
+
+                    {/* Modèle */}
                     <div className="space-y-2">
-                      <Label htmlFor="model" className="text-sm sm:text-base text-white">Modèle</Label>
-                      <Input
-                        id="model"
-                        placeholder="Ex: A3, Clio..."
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
-                        disabled={searching}
-                      />
+                      <Label htmlFor="model" className="text-sm font-medium text-white">
+                        Modèle
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="model"
+                          placeholder="Ex: A3, Clio..."
+                          value={model}
+                          onChange={(e) => setModel(e.target.value)}
+                          className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                          disabled={searching}
+                          list="models-list"
+                        />
+                        <datalist id="models-list">
+                          {suggestedModels.map((m) => (
+                            <option key={m} value={m} />
+                          ))}
+                        </datalist>
+                      </div>
                     </div>
+
+                    {/* Budget maximum */}
                     <div className="space-y-2">
-                      <Label htmlFor="budget" className="text-sm sm:text-base text-white">Budget maximum (€)</Label>
+                      <Label htmlFor="budget" className="text-sm font-medium text-white">
+                        Budget maximum (€)
+                      </Label>
                       <Input
                         id="budget"
-                        type="number"
+                        type="text"
                         placeholder="Ex: 25000"
-                        value={budget}
-                        onChange={(e) => setBudget(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
+                        value={budget ? parseInt(budget).toLocaleString('fr-FR') : ''}
+                        onChange={handleBudgetChange}
+                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
                         disabled={searching}
                       />
                     </div>
+
+                    {/* Type de carburant */}
                     <div className="space-y-2">
-                      <Label htmlFor="fuel" className="text-sm sm:text-base text-white">Type de carburant</Label>
+                      <Label htmlFor="fuel" className="text-sm font-medium text-white">
+                        Type de carburant
+                      </Label>
                       <Select value={fuel} onValueChange={setFuel} disabled={searching}>
                         <SelectTrigger 
                           id="fuel"
-                          className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 text-sm sm:text-base h-10 sm:h-11"
+                          className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
                         >
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
@@ -305,128 +384,296 @@ ${contactForm.message || ''}`,
                           <SelectItem value="diesel">Diesel</SelectItem>
                           <SelectItem value="electrique">Électrique</SelectItem>
                           <SelectItem value="hybride">Hybride</SelectItem>
+                          <SelectItem value="hybride_rechargeable">Hybride rechargeable</SelectItem>
                           <SelectItem value="gpl">GPL</SelectItem>
+                          <SelectItem value="e85">E85</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  {/* Site Selection */}
-                  <div className="space-y-3">
-                    <Label className="text-sm sm:text-base text-white">Sites à rechercher</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {availableSites.map((site) => (
-                        <div
-                          key={site.id}
-                          className="flex items-center space-x-2 p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
-                          onClick={() => {
-                            setSelectedSites(prev => {
-                              const newSet = new Set(prev);
-                              if (newSet.has(site.id)) {
-                                newSet.delete(site.id);
-                              } else {
-                                newSet.add(site.id);
-                              }
-                              return newSet;
-                            });
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedSites.has(site.id)}
-                            onChange={() => {
-                              setSelectedSites(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(site.id)) {
-                                  newSet.delete(site.id);
-                                } else {
-                                  newSet.add(site.id);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                            disabled={searching}
-                          />
-                          <span className="text-sm text-white flex items-center gap-1.5">
-                            <span>{site.icon}</span>
-                            <span>{site.name}</span>
-                          </span>
-                        </div>
-                      ))}
+                  {/* Toggle Filtres Avancés */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all"
+                  >
+                    <div className="flex items-center gap-2 text-white">
+                      <Filter className="size-4" />
+                      <span className="text-sm font-medium">
+                        {showAdvanced ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
+                      </span>
                     </div>
-                    {selectedSites.size === 0 && (
-                      <p className="text-xs text-red-400">Veuillez sélectionner au moins un site</p>
+                    {showAdvanced ? (
+                      <ChevronUp className="size-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="size-4 text-gray-400" />
                     )}
-                  </div>
+                  </button>
 
-                  {/* Search Button */}
+                  {/* Filtres Avancés */}
+                  <AnimatePresence>
+                    {showAdvanced && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4 border-t border-white/10">
+                          {/* Prix minimum */}
+                          <div className="space-y-2">
+                            <Label htmlFor="minPrice" className="text-sm font-medium text-white">
+                              Prix minimum (€)
+                            </Label>
+                            <Input
+                              id="minPrice"
+                              type="text"
+                              placeholder="Ex: 5000"
+                              value={minPrice ? parseInt(minPrice).toLocaleString('fr-FR') : ''}
+                              onChange={handleMinPriceChange}
+                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              disabled={searching}
+                            />
+                          </div>
+
+                          {/* Année min */}
+                          <div className="space-y-2">
+                            <Label htmlFor="yearMin" className="text-sm font-medium text-white">
+                              Année min
+                            </Label>
+                            <Input
+                              id="yearMin"
+                              type="number"
+                              placeholder="Ex: 2015"
+                              value={yearMin}
+                              onChange={(e) => setYearMin(e.target.value)}
+                              min="1900"
+                              max={new Date().getFullYear()}
+                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              disabled={searching}
+                            />
+                          </div>
+
+                          {/* Année max */}
+                          <div className="space-y-2">
+                            <Label htmlFor="yearMax" className="text-sm font-medium text-white">
+                              Année max
+                            </Label>
+                            <Input
+                              id="yearMax"
+                              type="number"
+                              placeholder="Ex: 2024"
+                              value={yearMax}
+                              onChange={(e) => setYearMax(e.target.value)}
+                              min="1900"
+                              max={new Date().getFullYear() + 1}
+                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              disabled={searching}
+                            />
+                          </div>
+
+                          {/* Kilométrage max */}
+                          <div className="space-y-2">
+                            <Label htmlFor="mileageMax" className="text-sm font-medium text-white">
+                              Kilométrage max
+                            </Label>
+                            <Input
+                              id="mileageMax"
+                              type="text"
+                              placeholder="Ex: 100000"
+                              value={mileageMax ? parseInt(mileageMax).toLocaleString('fr-FR') : ''}
+                              onChange={handleMileageChange}
+                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              disabled={searching}
+                            />
+                          </div>
+
+                          {/* Localisation */}
+                          <div className="space-y-2">
+                            <Label htmlFor="location" className="text-sm font-medium text-white">
+                              Localisation
+                            </Label>
+                            <Input
+                              id="location"
+                              placeholder="Ville ou région"
+                              value={location}
+                              onChange={(e) => setLocation(e.target.value)}
+                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              disabled={searching}
+                            />
+                          </div>
+
+                          {/* Transmission (Boîte) */}
+                          <div className="space-y-2">
+                            <Label htmlFor="transmission" className="text-sm font-medium text-white">
+                              Boîte de vitesses
+                            </Label>
+                            <Select value={transmission} onValueChange={setTransmission} disabled={searching}>
+                              <SelectTrigger 
+                                id="transmission"
+                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="manuelle">Manuelle</SelectItem>
+                                <SelectItem value="automatique">Automatique</SelectItem>
+                                <SelectItem value="semi_automatique">Semi-automatique</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Type de carrosserie */}
+                          <div className="space-y-2">
+                            <Label htmlFor="bodyType" className="text-sm font-medium text-white">
+                              Type de carrosserie
+                            </Label>
+                            <Select value={bodyType} onValueChange={setBodyType} disabled={searching}>
+                              <SelectTrigger 
+                                id="bodyType"
+                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="berline">Berline</SelectItem>
+                                <SelectItem value="break">Break</SelectItem>
+                                <SelectItem value="suv">SUV</SelectItem>
+                                <SelectItem value="monospace">Monospace</SelectItem>
+                                <SelectItem value="coupe">Coupé</SelectItem>
+                                <SelectItem value="cabriolet">Cabriolet</SelectItem>
+                                <SelectItem value="citadine">Citadine</SelectItem>
+                                <SelectItem value="utilitaire">Utilitaire</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Nombre de portes */}
+                          <div className="space-y-2">
+                            <Label htmlFor="doors" className="text-sm font-medium text-white">
+                              Nombre de portes
+                            </Label>
+                            <Select value={doors} onValueChange={setDoors} disabled={searching}>
+                              <SelectTrigger 
+                                id="doors"
+                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="3">3 portes</SelectItem>
+                                <SelectItem value="5">5 portes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Nombre de places */}
+                          <div className="space-y-2">
+                            <Label htmlFor="seats" className="text-sm font-medium text-white">
+                              Nombre de places
+                            </Label>
+                            <Select value={seats} onValueChange={setSeats} disabled={searching}>
+                              <SelectTrigger 
+                                id="seats"
+                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="2">2 places</SelectItem>
+                                <SelectItem value="4">4 places</SelectItem>
+                                <SelectItem value="5">5 places</SelectItem>
+                                <SelectItem value="7">7 places</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Couleur */}
+                          <div className="space-y-2">
+                            <Label htmlFor="color" className="text-sm font-medium text-white">
+                              Couleur
+                            </Label>
+                            <Select value={color} onValueChange={setColor} disabled={searching}>
+                              <SelectTrigger 
+                                id="color"
+                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="noir">Noir</SelectItem>
+                                <SelectItem value="blanc">Blanc</SelectItem>
+                                <SelectItem value="gris">Gris</SelectItem>
+                                <SelectItem value="argent">Argent</SelectItem>
+                                <SelectItem value="bleu">Bleu</SelectItem>
+                                <SelectItem value="rouge">Rouge</SelectItem>
+                                <SelectItem value="vert">Vert</SelectItem>
+                                <SelectItem value="beige">Beige</SelectItem>
+                                <SelectItem value="marron">Marron</SelectItem>
+                                <SelectItem value="jaune">Jaune</SelectItem>
+                                <SelectItem value="orange">Orange</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Bouton Recherche */}
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 transition-all h-11 sm:h-12 text-sm sm:text-base"
+                    className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 transition-all h-12 text-base font-medium"
                     disabled={searching}
                   >
                     {searching ? (
                       <>
-                        <Loader2 className="size-4 sm:size-5 mr-2 animate-spin" />
+                        <Loader2 className="size-5 mr-2 animate-spin" />
                         <span>Analyse en cours...</span>
                       </>
                     ) : (
                       <>
-                        <Search className="size-4 sm:size-5 mr-2" />
+                        <Search className="size-5 mr-2" />
                         <span>Lancer la recherche IA</span>
                       </>
                     )}
                   </Button>
                 </form>
 
-                {/* Quick Stats */}
-                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10">
-                  <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                {/* Statistiques */}
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-2xl sm:text-3xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         50K+
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">Annonces analysées</div>
+                      <div className="text-xs sm:text-sm text-gray-400 mt-1">Annonces analysées</div>
                     </div>
                     <div>
-                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-2xl sm:text-3xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         98%
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">Précision IA</div>
+                      <div className="text-xs sm:text-sm text-gray-400 mt-1">Précision IA</div>
                     </div>
                     <div>
-                      <div className="text-xl sm:text-2xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      <div className="text-2xl sm:text-3xl font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         24/7
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">Mise à jour</div>
+                      <div className="text-xs sm:text-sm text-gray-400 mt-1">Mise à jour</div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-
-          {/* Bouton Contact */}
-          <div className="mt-6 sm:mt-8 text-center px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <Button
-                variant="ghost"
-                className="text-gray-400 hover:text-white text-sm sm:text-base"
-                onClick={() => router.push('/contact')}
-                size="lg"
-              >
-                <HelpCircle className="size-3 sm:size-4 mr-2" />
-                <span className="hidden sm:inline">Pas sûr du modèle idéal ? Contactez-nous</span>
-                <span className="sm:hidden">Besoin d&apos;aide ?</span>
-              </Button>
-            </motion.div>
-          </div>
         </div>
       </section>
 
