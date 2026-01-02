@@ -467,18 +467,19 @@
 /* Tablettes en mode portrait (max-width: 768px) */
 @media (max-width: 768px) {
   .chatWindow {
-    width: 90vw;
-    max-width: 500px;
-    height: 75vh;
-    max-height: 75vh;
-    bottom: 80px !important;
-    right: 5vw !important;
+    width: 85vw;
+    max-width: 450px;
+    height: 65vh;
+    max-height: 65vh;
+    bottom: 90px !important;
+    right: 7.5vw !important;
     left: auto !important;
+    border-radius: 16px;
   }
 
   .chatWindow.bottom-left {
     right: auto !important;
-    left: 5vw !important;
+    left: 7.5vw !important;
   }
 
   .chatButton {
@@ -542,20 +543,23 @@
 /* Téléphones (max-width: 480px) */
 @media (max-width: 480px) {
   .chatWindow {
-    width: 100vw;
-    width: 100dvw; /* Support pour les navigateurs modernes */
-    height: 100vh;
-    height: 100dvh; /* Support pour les navigateurs modernes */
-    max-height: 100vh;
-    max-height: 100dvh;
-    bottom: 0 !important;
-    right: 0 !important;
-    left: 0 !important;
-    border-radius: 0;
-    box-shadow: none;
+    width: 90vw;
+    max-width: 380px;
+    height: 70vh;
+    max-height: 70vh;
+    min-height: 400px;
+    bottom: 90px !important;
+    right: 5vw !important;
+    left: auto !important;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     /* Support pour les safe areas iOS (notch, barre d'accueil) */
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-top: env(safe-area-inset-top);
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  .chatWindow.bottom-left {
+    right: auto !important;
+    left: 5vw !important;
   }
 
   .chatButton {
@@ -568,7 +572,7 @@
 
   .chatHeader {
     padding: 12px 16px;
-    border-radius: 0;
+    border-radius: 16px 16px 0 0;
   }
 
   .headerAvatar {
@@ -597,7 +601,6 @@
 
   .chatBody {
     padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     gap: 12px;
     /* Éviter le scroll horizontal */
     overflow-x: hidden;
@@ -654,9 +657,9 @@
 
   .chatInput {
     padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     gap: 10px;
     border-top: 1px solid #E5E7EB;
+    border-radius: 0 0 16px 16px;
     /* Éviter que le clavier mobile ne cache l'input */
     position: sticky;
     bottom: 0;
@@ -690,6 +693,13 @@
 
 /* Petits téléphones (max-width: 360px) */
 @media (max-width: 360px) {
+  .chatWindow {
+    width: 92vw;
+    max-width: 340px;
+    height: 65vh;
+    min-height: 380px;
+  }
+
   .chatButton {
     width: 52px;
     height: 52px;
@@ -763,9 +773,11 @@
 /* Mode paysage sur téléphone */
 @media (max-width: 768px) and (orientation: landscape) {
   .chatWindow {
-    height: 90vh;
-    max-height: 90vh;
-    bottom: 10vh !important;
+    width: 85vw;
+    max-width: 500px;
+    height: 75vh;
+    max-height: 75vh;
+    bottom: 80px !important;
   }
 
   .chatBody {
