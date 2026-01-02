@@ -580,10 +580,10 @@ export async function runSiteSearch(
       strategy: pass1Result.strategy,
     })
     
-    // ✅ SI RÉSULTATS TROUVÉS → ARRÊTER ICI (on a assez de résultats)
-    if (pass1Result.listings.length > 0) {
-      log.info(`[${siteName}] ✅ SUCCÈS avec pass=strict: ${pass1Result.listings.length} annonces en ${pass1Ms}ms - skip passes suivantes`)
-      // On continue quand même pour avoir plus de résultats (on garde le comportement actuel)
+    // ✅ SI RÉSULTATS TROUVÉS → ARRÊTER ICI (on a assez de résultats pour éviter les attentes)
+    if (pass1Result.listings.length >= 10) {
+      log.info(`[${siteName}] ✅ SUCCÈS avec pass=strict: ${pass1Result.listings.length} annonces en ${pass1Ms}ms - skip passes suivantes (assez de résultats)`)
+      // On a assez de résultats, on skip les passes suivantes pour gagner du temps
     }
     
     // ✅ SI 0 RÉSULTATS ET skipIfNoResults ACTIVÉ → SKIP LES PASSES SUIVANTES
@@ -613,8 +613,10 @@ export async function runSiteSearch(
   // PASS 2 : RELAXED (si pass 1 a peu ou 0 résultats ET pas de skip)
   const siteConfig = getSiteConfig(siteName)
   const shouldSkipRelaxed = siteConfig?.skipIfNoResults && allSiteListings.length === 0
+  // Skip aussi si on a déjà assez de résultats (≥10) pour éviter les attentes inutiles
+  const hasEnoughResults = allSiteListings.length >= 10
   
-  if (!shouldSkipRelaxed && allSiteListings.length < 10) {
+  if (!shouldSkipRelaxed && !hasEnoughResults && allSiteListings.length < 10) {
     try {
       const pass2Start = Date.now()
       const pass2Query = buildRelaxedQuery(originalQuery, 'relaxed')
@@ -681,8 +683,11 @@ export async function runSiteSearch(
   }
   
   // PASS 3 : OPPORTUNITY (si encore peu de résultats, surtout pour LeBonCoin ET pas de skip)
+  // Skip si on a déjà assez de résultats pour éviter les attentes
   const shouldSkipOpportunity = siteConfig?.skipIfNoResults && allSiteListings.length === 0
-  if (!shouldSkipOpportunity && allSiteListings.length < 5 && siteName === 'LeBonCoin') {
+  const hasEnoughResultsForPass3 = allSiteListings.length >= 10
+  // Pass 3 seulement si vraiment peu de résultats (< 5) ET LeBonCoin ET pas assez de résultats
+  if (!shouldSkipOpportunity && !hasEnoughResultsForPass3 && allSiteListings.length < 5 && siteName === 'LeBonCoin') {
     try {
       const pass3Start = Date.now()
       const pass3Query = buildRelaxedQuery(originalQuery, 'opportunity')

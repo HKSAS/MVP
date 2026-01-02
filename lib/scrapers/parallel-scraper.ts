@@ -43,7 +43,7 @@ export async function scrapeWithParallelStrategies(
       url,
       {
         js_render: 'true', // JS rendering
-        wait: '3000',
+        wait: '2000', // ✅ Réduit de 3s à 2s pour être plus rapide
         premium_proxy: 'true',
         proxy_country: 'fr',
         block_resources: 'image,media,font',

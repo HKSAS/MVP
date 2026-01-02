@@ -44,17 +44,17 @@ export async function scrapeLaCentrale(
   console.log('[LACENTRALE DEBUG] URL générée:', targetUrl)
 
   try {
-    // ✅ STRATÉGIE 1 : ZenRows API HTTP (rapide)
-    log.info('[LACENTRALE] 📡 Tentative avec ZenRows API HTTP...', { pass })
-    const listings = await extractFromJSRender(targetUrl, query, abortSignal)
+    // ✅ STRATÉGIE 1 : HTML BRUT SANS JS (comme LeBonCoin - RAPIDE)
+    log.info('[LACENTRALE] 📡 Tentative HTML brut (sans js_render)...', { pass })
+    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, abortSignal)
     
-    if (listings.length > 0) {
-      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via ZenRows API HTTP`, { pass })
+    if (listingsFromHTML.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
       
       // 🔍 DEBUG : Log des premières annonces extraites
-      console.log('[LACENTRALE DEBUG] Premières annonces extraites:', {
-        count: listings.length,
-        sample: listings.slice(0, 3).map(l => ({
+      console.log('[LACENTRALE DEBUG] Premières annonces extraites (HTML brut):', {
+        count: listingsFromHTML.length,
+        sample: listingsFromHTML.slice(0, 3).map(l => ({
           title: l.title,
           price: l.price_eur,
           url: l.url,
@@ -62,6 +62,22 @@ export async function scrapeLaCentrale(
           mileage: l.mileage_km
         }))
       })
+      
+      return {
+        listings: listingsFromHTML,
+        strategy: 'zenrows',
+        ms: Date.now() - startTime,
+      }
+    }
+
+    log.warn('[LACENTRALE] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
+    
+    // ✅ STRATÉGIE 2 : ZenRows API HTTP avec JS rendering (fallback)
+    log.info('[LACENTRALE] 📡 Tentative avec ZenRows API HTTP (JS rendering)...', { pass })
+    const listings = await extractFromJSRender(targetUrl, query, abortSignal)
+    
+    if (listings.length > 0) {
+      log.info(`[LACENTRALE] ✅ ${listings.length} annonces via ZenRows API HTTP (JS)`, { pass })
       
       return {
         listings,
@@ -128,23 +144,23 @@ export async function scrapeLaCentrale(
 }
 
 /**
- * STRATÉGIE 1 : Extraire depuis HTML brut (SANS js_render)
- * LaCentrale bloque avec js_render mais retourne les données dans le HTML brut
+ * STRATÉGIE 1 : Extraire depuis HTML brut (SANS js_render) - RAPIDE comme LeBonCoin
+ * LaCentrale peut retourner les données dans le HTML brut, on essaie d'abord ça
  */
 async function extractFromHTMLBrut(
   url: string,
   abortSignal?: AbortSignal
 ): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render)...')
+  log.info('[LACENTRALE] 📡 Requête ZenRows HTML brut (sans js_render - RAPIDE)...')
   
   // Paramètres ZenRows premium pour éviter le blocage 422
-  // ⚠️ IMPORTANT : Ne PAS utiliser js_render pour LaCentrale (bloque)
-  // Les paramètres par défaut dans zenrows.ts ont js_render: 'true', on doit l'écraser
+  // ✅ OPTIMISATION : Essayer HTML brut d'abord (comme LeBonCoin) - beaucoup plus rapide
   const zenrowsParams = {
-    js_render: 'false', // ❌ PAS de JS rendering - LaCentrale bloque avec
+    js_render: 'false', // ✅ PAS de JS rendering - beaucoup plus rapide
     premium_proxy: 'true',
     proxy_country: 'fr',
     block_resources: 'image,media,font',
+    wait: '3000', // ✅ Wait réduit pour HTML brut (3s au lieu de 8s)
   }
   
   const response = await scrapeWithZenRows(
@@ -152,9 +168,9 @@ async function extractFromHTMLBrut(
     zenrowsParams,
     abortSignal,
     {
-      maxAttempts: 2, // Retry si 422
-      retryableStatuses: [422, 403, 429],
-      backoffMs: 2000,
+      maxAttempts: 1, // ✅ Pas de retry pour HTML brut (on passe directement à JS si ça échoue)
+      retryableStatuses: [],
+      backoffMs: 0,
     }
   )
 
@@ -343,22 +359,22 @@ async function extractFromHTMLBrut(
 }
 
 /**
- * STRATÉGIE PRINCIPALE : Extraire depuis HTML avec js_render (LaCentrale nécessite JS)
+ * STRATÉGIE 2 : Extraire depuis HTML avec js_render (fallback si HTML brut échoue)
  */
 async function extractFromJSRender(
   url: string,
   query?: ScrapeQuery,
   abortSignal?: AbortSignal
 ): Promise<ListingResponse[]> {
-  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering activé...')
+  log.info('[LACENTRALE] 📡 Requête ZenRows avec JS rendering (fallback)...')
   
   // Paramètres ZenRows premium avec JS rendering pour charger la page complète
-  // Comme LeBonCoin mais avec JS render pour LaCentrale
+  // ✅ OPTIMISATION : Wait réduit de 8s à 5s pour être plus rapide
   const zenrowsParams = {
     js_render: 'true',
     premium_proxy: 'true',
     proxy_country: 'fr',
-    wait: '8000', // ✅ 8s pour laisser le temps au JS de charger complètement (augmenté)
+    wait: '5000', // ✅ Réduit de 8s à 5s pour être plus rapide
     block_resources: 'image,media,font',
     custom_headers: 'true', // Headers personnalisés pour éviter la détection
   }

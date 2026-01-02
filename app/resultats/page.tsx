@@ -434,15 +434,38 @@ function SearchResultsContent() {
       }
     } catch (err: any) {
       // Ignorer les erreurs d'annulation
-      if (err.name === 'AbortError') {
+      if (err.name === 'AbortError' || err.message?.includes('aborted')) {
         console.log('[SEARCH] Requête annulée');
+        setState("empty");
         return;
       }
       
       console.error("Erreur recherche:", err);
-      setError(err.message || "Une erreur est survenue");
+      
+      // Messages d'erreur plus clairs et utiles
+      let errorMessage = "Une erreur est survenue lors de la recherche";
+      
+      if (err.message) {
+        if (err.message.includes('timeout') || err.message.includes('Timeout')) {
+          errorMessage = "La recherche a pris trop de temps. Veuillez réessayer avec moins de sites ou des critères moins restrictifs.";
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+        } else if (err.message.includes('quota') || err.message.includes('Quota')) {
+          errorMessage = "Votre quota de recherches est épuisé. Veuillez mettre à jour votre abonnement.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
       setState("error");
       setResults([]);
+      setSiteResults([]);
+      
+      // Afficher un toast pour informer l'utilisateur
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
     } finally {
       // Réinitialiser le flag
       inFlightRef.current = false;

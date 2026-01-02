@@ -38,24 +38,30 @@ export async function scrapeTransakAuto(
   log.info(`[TRANSAKAUTO] 🎯 Scraping: ${targetUrl}`, { pass })
 
   try {
-    // Construire l'URL de recherche TransakAuto
-    // TransakAuto utilise annonces.transakauto.com
-    const searchTerm = `${query.brand} ${query.model || ''}`.trim()
-    const params = new URLSearchParams({
-      marque: query.brand,
-      modele: query.model || '',
-      prix_max: query.maxPrice.toString(),
-    })
-    const searchUrl = `https://annonces.transakauto.com/?${params.toString()}`
+    // ✅ STRATÉGIE 1 : HTML BRUT SANS JS (comme LeBonCoin - RAPIDE)
+    log.info('[TRANSAKAUTO] 📡 Tentative HTML brut (sans js_render)...', { pass })
+    const listingsFromHTML = await extractFromHTMLBrut(targetUrl, query, abortSignal)
     
-    log.info('[TRANSAKAUTO] 📡 Tentative avec ZenRows...', { pass, url: searchUrl })
+    if (listingsFromHTML.length > 0) {
+      log.info(`[TRANSAKAUTO] ✅ ${listingsFromHTML.length} annonces via HTML brut`, { pass })
+      return {
+        listings: listingsFromHTML,
+        strategy: 'zenrows',
+        ms: Date.now() - startTime,
+      }
+    }
+
+    log.warn('[TRANSAKAUTO] ⚠️ HTML brut vide, essai avec JS rendering...', { pass })
     
-    // Utiliser ZenRows pour scraper
+    // ✅ STRATÉGIE 2 : JS rendering (fallback)
+    log.info('[TRANSAKAUTO] 📡 Tentative avec ZenRows (JS rendering)...', { pass, url: targetUrl })
+    
+    // Utiliser ZenRows pour scraper avec JS rendering
     const html = await scrapeWithZenRows(
-      searchUrl,
+      targetUrl,
       {
         js_render: 'true',
-        wait: '3000',
+        wait: '3000', // ✅ Conservé à 3s (déjà optimisé)
         premium_proxy: 'true',
         proxy_country: 'fr',
       },
@@ -121,6 +127,69 @@ function buildTransakAutoURL(query: ScrapeQuery, pass: ScrapePass): string {
   })
   
   return `https://annonces.transakauto.com/?${params.toString()}`
+}
+
+/**
+ * STRATÉGIE 1 : Extraire depuis HTML brut (SANS js_render) - RAPIDE comme LeBonCoin
+ */
+async function extractFromHTMLBrut(
+  url: string,
+  query: ScrapeQuery,
+  abortSignal?: AbortSignal
+): Promise<ListingResponse[]> {
+  log.info('[TRANSAKAUTO] 📡 Requête ZenRows HTML brut (sans js_render - RAPIDE)...')
+  
+  // ✅ OPTIMISATION : Essayer HTML brut d'abord (comme LeBonCoin) - beaucoup plus rapide
+  const zenrowsParams = {
+    js_render: 'false', // ✅ PAS de JS rendering - beaucoup plus rapide
+    premium_proxy: 'true',
+    proxy_country: 'fr',
+    block_resources: 'image,media,font',
+    wait: '2000', // ✅ Wait réduit pour HTML brut (2s)
+  }
+  
+  const response = await scrapeWithZenRows(
+    url,
+    zenrowsParams,
+    abortSignal
+  )
+
+  if (!response || response.length < 100) {
+    log.warn('[TRANSAKAUTO] ❌ ZenRows HTML trop court ou vide')
+    return []
+  }
+
+  const html = response
+  log.info(`[TRANSAKAUTO] 📊 HTML brut reçu: ${(html.length / 1024).toFixed(2)} KB`)
+
+  // Chercher d'abord __NEXT_DATA__ dans le HTML brut (il peut être présent)
+  const jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
+  
+  if (jsonMatch) {
+    try {
+      const jsonData = JSON.parse(jsonMatch[1])
+      
+      const ads = 
+        jsonData?.props?.pageProps?.searchData?.ads ||
+        jsonData?.props?.pageProps?.ads ||
+        jsonData?.props?.pageProps?.data?.ads ||
+        jsonData?.props?.initialState?.ads ||
+        []
+
+      if (ads && Array.isArray(ads) && ads.length > 0) {
+        log.info(`[TRANSAKAUTO] ✅ ${ads.length} annonces dans __NEXT_DATA__ (HTML brut)`)
+        // Extraire depuis __NEXT_DATA__ avec la fonction existante
+        return extractFromNextData({ props: { pageProps: { ads } } }, query)
+      }
+    } catch (error) {
+      log.warn('[TRANSAKAUTO] Erreur parsing __NEXT_DATA__:', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  // Si pas de __NEXT_DATA__, parser les attributs HTML
+  return extractFromHTMLAttributes(html, query)
 }
 
 /**

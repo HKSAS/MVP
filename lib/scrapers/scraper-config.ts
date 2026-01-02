@@ -3,6 +3,8 @@
  * Permet de désactiver les sites trop lents ou non fonctionnels
  */
 
+import { getTimeoutForSite } from '@/src/core/config/constants'
+
 export interface SiteConfig {
   enabled: boolean
   timeout: number
@@ -15,42 +17,42 @@ export interface SiteConfig {
 export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
   'LeBonCoin': {
     enabled: true,
-    timeout: 15000,
+    timeout: getTimeoutForSite('LeBonCoin'), // 45s depuis constants.ts
     priority: 1,
     strategy: 'html-first',
     skipIfNoResults: false, // LeBonCoin a toujours des résultats
   },
   'LaCentrale': {
     enabled: true, // ✅ RÉACTIVÉ avec Scraping Browser (fallback automatique)
-    timeout: 45000, // Augmenté pour Scraping Browser (plus lent mais plus fiable)
+    timeout: getTimeoutForSite('LaCentrale'), // 40s depuis constants.ts
     priority: 2,
     strategy: 'html-first',
     skipIfNoResults: false,
   },
   'ProCarLease': {
     enabled: true,
-    timeout: 15000,
+    timeout: getTimeoutForSite('ProCarLease'), // 30s depuis constants.ts
     priority: 3,
     strategy: 'html-first',
     skipIfNoResults: true, // ✅ Skip si 0 résultats
   },
   'Kyump': {
     enabled: true,
-    timeout: 15000,
+    timeout: getTimeoutForSite('Kyump'), // 30s depuis constants.ts
     priority: 4,
     strategy: 'js-render',
     skipIfNoResults: true, // ✅ Skip si 0 résultats
   },
   'AutoScout24': {
     enabled: true, // ✅ Réactivé avec parallélisation
-    timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
+    timeout: getTimeoutForSite('AutoScout24'), // 30s depuis constants.ts
     priority: 5,
     strategy: 'parallel',
     skipIfNoResults: true, // ✅ Skip si 0 résultats
   },
   'LeParking': {
     enabled: true, // ✅ Réactivé avec parallélisation
-    timeout: 12000, // ⚡ Timeout réduit (20s → 12s)
+    timeout: getTimeoutForSite('LeParking'), // 30s depuis constants.ts
     priority: 6,
     strategy: 'parallel',
     skipIfNoResults: true, // ✅ Skip si 0 résultats
@@ -72,7 +74,7 @@ export const SCRAPER_CONFIG: Record<string, SiteConfig> = {
   },
   'TransakAuto': {
     enabled: true, // ✅ Activé
-    timeout: 15000,
+    timeout: getTimeoutForSite('TransakAuto'), // 30s depuis constants.ts
     priority: 7,
     strategy: 'html-first',
     skipIfNoResults: true,
@@ -88,9 +90,10 @@ export function isSiteEnabled(siteName: string): boolean {
 
 /**
  * Récupère le timeout pour un site
+ * Utilise la config du site ou le timeout par défaut depuis constants.ts
  */
 export function getSiteTimeout(siteName: string): number {
-  return SCRAPER_CONFIG[siteName]?.timeout ?? 20000 // 20s par défaut
+  return SCRAPER_CONFIG[siteName]?.timeout ?? getTimeoutForSite(siteName)
 }
 
 /**

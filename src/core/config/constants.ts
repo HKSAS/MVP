@@ -5,10 +5,10 @@
 
 export const SCRAPING_CONSTANTS = {
   timeouts: {
-    defaultMs: 240000, // 4 minutes pour les sites standards
-    leboncoinMs: 360000, // 6 minutes pour LeBonCoin (prioritaire)
-    perPassMs: 60000, // 60s max par passe
-    globalSiteMs: 25000, // 25s max par site (avant abort)
+    defaultMs: 30000, // 30 secondes pour les sites standards (optimisé pour rapidité)
+    leboncoinMs: 45000, // 45 secondes pour LeBonCoin (rapide et efficace)
+    perPassMs: 20000, // 20s max par passe (réduit pour rapidité)
+    globalSiteMs: 15000, // 15s max par site (avant abort - optimisé)
   },
   limits: {
     maxResultsPerPass: 50,
@@ -49,13 +49,13 @@ export const ZENROWS_CONFIG = {
   default: {
     js_render: 'true',
     premium_proxy: 'true',
-    wait: '20000',
+    wait: '8000', // Réduit à 8s pour rapidité (était 20s)
     block_resources: 'image,media,font', // STRING, pas boolean
   },
   leboncoin: {
     js_render: 'true',
     premium_proxy: 'true',
-    wait: '20000',
+    wait: '10000', // Réduit à 10s pour LeBonCoin rapide (était 20s)
     block_resources: 'image,media,font',
   },
   lacentrale: {
@@ -63,7 +63,7 @@ export const ZENROWS_CONFIG = {
     premium_proxy: 'true',
     proxy_country: 'fr',
     block_resources: 'image,media,font', // STRING corrigée
-    wait: '5000', // Augmenté pour meilleure stabilité
+    wait: '5000', // Conservé à 5s (déjà optimisé)
     // Headers personnalisés pour éviter RESP001
     custom_headers: true,
   },
@@ -74,13 +74,13 @@ export const ZENROWS_CONFIG = {
  */
 export function getTimeoutForSite(siteName: string): number {
   if (siteName === 'LeBonCoin') {
-    return SCRAPING_CONSTANTS.timeouts.leboncoinMs
+    return SCRAPING_CONSTANTS.timeouts.leboncoinMs // 45s
   }
-  // LaCentrale nécessite plus de temps car JS rendering + proxy_country
+  // LaCentrale nécessite un peu plus de temps car JS rendering + proxy_country
   if (siteName === 'LaCentrale') {
-    return 300000 // 5 minutes pour LaCentrale (au lieu de 4 minutes)
+    return 40000 // 40 secondes pour LaCentrale (optimisé)
   }
-  return SCRAPING_CONSTANTS.timeouts.defaultMs
+  return SCRAPING_CONSTANTS.timeouts.defaultMs // 30s
 }
 
 /**
