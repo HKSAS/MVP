@@ -78,7 +78,7 @@ export default function Footer() {
                 </li>
               <li>
                 <a 
-                  href="https://calendly.com/kamelhadri94/30min" 
+                  href="https://calendly.com/autoval/call" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:text-blue-400 transition-colors flex items-center gap-1"
