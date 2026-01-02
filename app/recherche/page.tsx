@@ -48,9 +48,6 @@ export default function SearchPage() {
   const [transmission, setTransmission] = useState("");
   const [bodyType, setBodyType] = useState("");
   const [doors, setDoors] = useState("");
-  const [seats, setSeats] = useState("");
-  const [color, setColor] = useState("");
-  const [minPrice, setMinPrice] = useState("");
   
   // Sites disponibles pour le scraping
   const availableSites = [
@@ -124,13 +121,6 @@ export default function SearchPage() {
       return;
     }
 
-    // Validation prix
-    if (minPrice && budget && parseInt(minPrice) > parseInt(budget)) {
-      setError("Le prix minimum doit être inférieur au prix maximum");
-      toast.error("Vérifiez les prix");
-      return;
-    }
-
     // Nettoyer le timer de debounce précédent
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -153,10 +143,6 @@ export default function SearchPage() {
 
           if (budget.trim()) {
             params.set("max_price", budget.trim());
-          }
-
-          if (minPrice.trim()) {
-            params.set("min_price", minPrice.trim());
           }
 
           if (fuel && fuel !== "all") {
@@ -189,14 +175,6 @@ export default function SearchPage() {
 
           if (doors && doors !== "all") {
             params.set("doors", doors);
-          }
-
-          if (seats && seats !== "all") {
-            params.set("seats", seats);
-          }
-
-          if (color && color !== "all") {
-            params.set("color", color);
           }
           
           // Ajouter les sites exclus (sites non sélectionnés)
@@ -247,11 +225,6 @@ export default function SearchPage() {
   const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
     setBudget(value);
-  };
-
-  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    setMinPrice(value);
   };
 
   const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
