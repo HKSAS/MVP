@@ -404,124 +404,8 @@ export default function SearchPage() {
                     </div>
                   </div>
 
-                  {/* Toggle Sites */}
-                  <motion.button
-                    type="button"
-                    onClick={() => setShowSites(!showSites)}
-                    className="border-2 border-blue-500 rounded-lg py-3 px-4 flex items-center justify-between text-blue-500 hover:bg-blue-500/10 transition-colors w-full mb-4"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.2 }}
-                    aria-expanded={showSites}
-                    aria-label="Afficher ou masquer la sélection des sites"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Search className="w-5 h-5 text-blue-500" />
-                      <span className="text-sm font-medium text-blue-500">
-                        {showSites ? 'Masquer les sites' : 'Afficher les sites de recherche'}
-                      </span>
-                    </div>
-                    <ChevronDown className={`w-5 h-5 text-blue-500 transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
-                  </motion.button>
-
-                  {/* Sélection des Sites */}
-                  <AnimatePresence>
-                    {showSites && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pt-4 border-t border-blue-500/20">
-                          <Label className="text-sm font-medium text-blue-300 mb-3 block">
-                            Sites à rechercher
-                          </Label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {availableSites.map((site) => (
-                              <motion.button
-                                key={site.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSites(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(site.id)) {
-                                      newSet.delete(site.id);
-                                    } else {
-                                      newSet.add(site.id);
-                                    }
-                                    return newSet;
-                                  });
-                                }}
-                                className={`flex items-center gap-2 p-3 rounded-xl border backdrop-blur-sm transition-all ${
-                                  selectedSites.has(site.id)
-                                    ? 'bg-blue-500/10 border-blue-500/40 text-blue-300 shadow-lg shadow-blue-500/10'
-                                    : 'bg-white/5 border-blue-500/20 text-gray-300 hover:bg-blue-500/5 hover:border-blue-500/30'
-                                }`}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedSites.has(site.id)}
-                                  onChange={() => {}}
-                                  className="w-4 h-4 rounded border-blue-500/30 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                                  disabled={searching}
-                                />
-                                <span className="text-sm flex items-center gap-1.5">
-                                  <span>{site.icon}</span>
-                                  <span>{site.name}</span>
-                                </span>
-                              </motion.button>
-                            ))}
-                          </div>
-                          {selectedSites.size === 0 && (
-                            <p className="text-xs text-red-400 mt-2">Veuillez sélectionner au moins un site</p>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Toggle Filtres Avancés */}
-                  <motion.button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 backdrop-blur-xl border border-blue-500/20 rounded-xl text-blue-300 shadow-lg shadow-blue-500/10 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-300 w-full"
-                    whileHover={{ 
-                      scale: 1.03, 
-                      borderColor: "rgba(59, 130, 246, 0.4)", 
-                      boxShadow: "0 0 20px rgba(59, 130, 246, 0.2)" 
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    aria-expanded={showAdvanced}
-                    aria-label="Afficher ou masquer les filtres avancés"
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="font-medium">
-                      {showAdvanced ? "Masquer" : "Afficher"} les filtres avancés
-                    </span>
-                    <ChevronDown 
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        showAdvanced ? "rotate-180" : "rotate-0"
-                      }`} 
-                    />
-                  </motion.button>
-
-                  {/* Filtres Avancés */}
-                  <AnimatePresence>
-                    {showAdvanced && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4 border-t border-white/10">
+                  {/* Filtres Avancés - Toujours visibles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4 border-t border-white/10">
                           {/* Prix minimum */}
                           <div className="space-y-2">
                             <Label htmlFor="minPrice" className="text-sm font-medium text-blue-300">
@@ -723,9 +607,6 @@ export default function SearchPage() {
                             </Select>
                           </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   {/* Bouton Recherche */}
                   <motion.button
