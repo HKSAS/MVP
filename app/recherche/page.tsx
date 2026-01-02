@@ -408,20 +408,20 @@ export default function SearchPage() {
                   <motion.button
                     type="button"
                     onClick={() => setShowSites(!showSites)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-900 text-[#3B82F6] hover:bg-slate-800 transition-colors duration-200 rounded-lg"
-                    whileHover={{ opacity: 0.9 }}
+                    className="border-2 border-blue-500 rounded-lg py-3 px-4 flex items-center justify-between text-blue-500 hover:bg-blue-500/10 transition-colors w-full"
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
                     aria-expanded={showSites}
                     aria-label="Afficher ou masquer la sélection des sites"
                   >
                     <div className="flex items-center gap-2">
-                      <Search className="size-4 text-[#3B82F6]" />
-                      <span className="text-sm font-medium text-[#3B82F6]">
+                      <Search className="size-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-500">
                         {showSites ? 'Masquer les sites' : 'Afficher les sites de recherche'}
                       </span>
                     </div>
-                    <ChevronDown className={`size-4 text-[#3B82F6] transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`size-4 text-blue-500 transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
                   </motion.button>
 
                   {/* Sélection des Sites */}
@@ -489,7 +489,7 @@ export default function SearchPage() {
                   <motion.button
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-transparent border-0 text-[#3B82F6] hover:opacity-80 transition-opacity duration-200 rounded-lg focus:outline-none focus:ring-0"
+                    className="flex items-center justify-between text-blue-500 hover:opacity-80 transition-opacity w-full py-2 px-2 bg-transparent"
                     whileHover={{ opacity: 0.8 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
@@ -497,12 +497,12 @@ export default function SearchPage() {
                     aria-label="Afficher ou masquer les filtres avancés"
                   >
                     <div className="flex items-center gap-2">
-                      <Filter className="size-4 text-[#3B82F6]" />
-                      <span className="text-sm font-medium text-[#3B82F6]">
+                      <Filter className="size-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-500">
                         {showAdvanced ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
                       </span>
                     </div>
-                    <ChevronDown className={`size-4 text-[#3B82F6] transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`size-4 text-blue-500 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
                   </motion.button>
 
                   {/* Filtres Avancés */}
