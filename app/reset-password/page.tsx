@@ -28,13 +28,27 @@ function ResetPasswordForm() {
     try {
       const supabase = getSupabaseBrowserClient();
 
-      // Envoyer l'email de réinitialisation
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      // Créer une promesse avec timeout pour éviter le chargement infini
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('TIMEOUT'));
+        }, 30000); // 30 secondes de timeout
+      });
+
+      // Envoyer l'email de réinitialisation avec timeout
+      const resetPromise = supabase.auth.resetPasswordForEmail(
         email.trim(),
         {
           redirectTo: `${window.location.origin}/reset-password/confirm`,
         }
       );
+
+      const result = await Promise.race([
+        resetPromise,
+        timeoutPromise,
+      ]);
+
+      const { error: resetError } = result;
 
       if (resetError) {
         // Logs détaillés pour diagnostic
@@ -51,6 +65,14 @@ function ResetPasswordForm() {
           errorMessage = 'Adresse email invalide.';
         } else if (resetError.message.includes('rate limit') || resetError.message.includes('too many')) {
           errorMessage = 'Trop de tentatives. Veuillez réessayer dans quelques minutes.';
+        } else if (resetError.message === 'TIMEOUT' || resetError.message.includes('timeout') || resetError.message.includes('TIMEOUT')) {
+          errorMessage = `La requête a pris trop de temps (timeout après 30 secondes).\n\n` +
+            `Cela indique généralement un problème avec la configuration SMTP :\n` +
+            `• Vérifiez que le host SMTP est correct (smtp.ionos.fr)\n` +
+            `• Vérifiez que le port est correct (587 ou 465)\n` +
+            `• Vérifiez que les identifiants sont corrects\n` +
+            `• Testez la connexion SMTP dans Supabase\n\n` +
+            `Si le problème persiste, contactez le support Supabase.`;
         } else if (resetError.message.includes('fetch') || resetError.message.includes('NetworkError')) {
           errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
         } else if (resetError.message.includes('smtp') || resetError.message.includes('SMTP') || 
@@ -82,9 +104,20 @@ function ResetPasswordForm() {
         error: err,
       });
       
-      // Si le message d'erreur n'a pas été personnalisé, utiliser un message générique
-      const errorMessage = err.message || 'Une erreur est survenue lors de l\'envoi de l\'email. Veuillez vérifier vos paramètres SMTP dans Supabase et réessayer.';
-      setError(errorMessage);
+      // Gestion spécifique du timeout
+      if (err.message === 'TIMEOUT' || err.message?.includes('TIMEOUT')) {
+        setError(`La requête a pris trop de temps (timeout après 30 secondes).\n\n` +
+          `Cela indique généralement un problème avec la configuration SMTP :\n` +
+          `• Vérifiez que le host SMTP est correct (smtp.ionos.fr)\n` +
+          `• Vérifiez que le port est correct (587 ou 465)\n` +
+          `• Vérifiez que les identifiants sont corrects\n` +
+          `• Testez la connexion SMTP dans Supabase\n\n` +
+          `Si le problème persiste, contactez le support Supabase.`);
+      } else {
+        // Si le message d'erreur n'a pas été personnalisé, utiliser un message générique
+        const errorMessage = err.message || 'Une erreur est survenue lors de l\'envoi de l\'email. Veuillez vérifier vos paramètres SMTP dans Supabase et réessayer.';
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
