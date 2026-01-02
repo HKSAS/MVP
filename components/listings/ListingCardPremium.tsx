@@ -161,7 +161,7 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
           href={listing.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors text-center text-sm font-medium flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-purple-500/25 py-2 rounded transition-colors text-center text-sm font-medium flex items-center justify-center gap-2"
         >
           Voir l'annonce
           <ExternalLink className="w-4 h-4" />
