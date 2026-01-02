@@ -312,6 +312,7 @@ export default function SearchPage() {
                 <form onSubmit={handleSearch} className="space-y-6">
                   {/* Filtres de base */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Colonne gauche */}
                     {/* Marque */}
                     <div className="space-y-2">
                       <Label htmlFor="brand" className="text-sm font-medium text-blue-300">
@@ -335,6 +336,7 @@ export default function SearchPage() {
                       </div>
                     </div>
 
+                    {/* Colonne droite */}
                     {/* Modèle */}
                     <div className="space-y-2">
                       <Label htmlFor="model" className="text-sm font-medium text-blue-300">
@@ -358,6 +360,7 @@ export default function SearchPage() {
                       </div>
                     </div>
 
+                    {/* Colonne gauche - Ligne 2 */}
                     {/* Budget maximum */}
                     <div className="space-y-2">
                       <Label htmlFor="budget" className="text-sm font-medium text-blue-300">
@@ -369,11 +372,12 @@ export default function SearchPage() {
                         placeholder="Ex: 25000"
                         value={budget ? parseInt(budget).toLocaleString('fr-FR') : ''}
                         onChange={handleBudgetChange}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                        className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                         disabled={searching}
                       />
                     </div>
 
+                    {/* Colonne droite - Ligne 2 */}
                     {/* Type de carburant */}
                     <div className="space-y-2">
                       <Label htmlFor="fuel" className="text-sm font-medium text-blue-300">
