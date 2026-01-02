@@ -851,8 +851,31 @@ function SearchResultsContent() {
             </div>
             <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
               {top3Results.map((result, index) => {
-                const score = result.score_final ?? result.score_ia ?? 0;
                 const rank = index + 1;
+                const hasPremiumScore = !!(result as any).premiumScore;
+                
+                // ✅ Utiliser le composant premium si disponible
+                if (hasPremiumScore) {
+                  return (
+                    <div key={result.id} className="relative">
+                      {/* Badge de rang pour Top 3 */}
+                      <div className="absolute top-3 left-3 z-20">
+                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg text-sm font-bold w-10 h-10 rounded-full flex items-center justify-center">
+                          {rank}
+                        </Badge>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-lg border-2 border-yellow-500/30 shadow-xl shadow-yellow-500/10">
+                        <ListingCardPremium 
+                          listing={result as any}
+                          showComparison={true}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Fallback sur l'ancien format si pas de premiumScore
+                const score = result.score_final ?? result.score_ia ?? 0;
                 return (
                   <Card 
                     key={result.id} 
