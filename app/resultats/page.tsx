@@ -606,9 +606,19 @@ function SearchResultsContent() {
                 const brand = searchParams.get("brand") || "";
                 const model = searchParams.get("model") || "";
                 const maxPrice = searchParams.get("max_price") || "";
+                const minPrice = searchParams.get("min_price") || "";
                 const fuelType = searchParams.get("fuelType") || "";
+                const yearMin = searchParams.get("yearMin") || "";
+                const yearMax = searchParams.get("yearMax") || "";
+                const mileageMax = searchParams.get("mileageMax") || "";
+                const location = searchParams.get("location") || "";
+                const transmission = searchParams.get("transmission") || "";
+                const bodyType = searchParams.get("bodyType") || "";
+                const doors = searchParams.get("doors") || "";
+                const seats = searchParams.get("seats") || "";
+                const color = searchParams.get("color") || "";
                 const excludedSites = searchParams.get("excludedSites") || "";
-                performSearch(brand, model, maxPrice, fuelType, excludedSites);
+                performSearch(brand, model, maxPrice, minPrice, fuelType, yearMin, yearMax, mileageMax, location, transmission, bodyType, doors, seats, color, excludedSites);
               }}
             >
               Réessayer
@@ -773,12 +783,22 @@ function SearchResultsContent() {
                           const brand = searchParams.get("brand") || "";
                           const model = searchParams.get("model") || "";
                           const maxPrice = searchParams.get("max_price") || "";
+                          const minPrice = searchParams.get("min_price") || "";
                           const fuelType = searchParams.get("fuelType") || "";
+                          const yearMin = searchParams.get("yearMin") || "";
+                          const yearMax = searchParams.get("yearMax") || "";
+                          const mileageMax = searchParams.get("mileageMax") || "";
+                          const location = searchParams.get("location") || "";
+                          const transmission = searchParams.get("transmission") || "";
+                          const bodyType = searchParams.get("bodyType") || "";
+                          const doors = searchParams.get("doors") || "";
+                          const seats = searchParams.get("seats") || "";
+                          const color = searchParams.get("color") || "";
                           const excludedSites = searchParams.get("excludedSites") || "";
                           
                           // Pour l'instant, on relance toute la recherche
                           // TODO: Implémenter un endpoint pour réessayer un site spécifique
-                          await performSearch(brand, model, maxPrice, fuelType, excludedSites);
+                          await performSearch(brand, model, maxPrice, minPrice, fuelType, yearMin, yearMax, mileageMax, location, transmission, bodyType, doors, seats, color, excludedSites);
                           toast.info(`Réessai de ${siteResult.site}...`);
                         }}
                       >
