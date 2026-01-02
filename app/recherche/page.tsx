@@ -269,21 +269,28 @@ export default function SearchPage() {
         <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* Main Content */}
-      <section className="relative pt-8 sm:pt-12 pb-12 sm:pb-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto relative z-10">
-          {/* Title */}
+      {/* Hero Section */}
+      <section className="relative pt-16 sm:pt-20 md:pt-24 pb-12 sm:pb-16 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
-            className="text-center mb-6 sm:mb-8"
+            className="text-center mb-8 sm:mb-10 md:mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-2">
-              Offres
+            <Badge variant="secondary" className="bg-white/10 text-white border-white/20 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 mb-4 sm:mb-6 text-xs sm:text-sm">
+              <Sparkles className="size-3 sm:size-4 mr-2 inline" />
+              Recherche propulsée par l&apos;IA
+            </Badge>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-white mb-3 sm:mb-4 px-2">
+              Rechercher une voiture
+              <br />
+              <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                avec l&apos;IA
+              </span>
             </h1>
-            <p className="text-sm sm:text-base text-gray-400">
-              Trouvez la voiture idéale avec notre IA
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-4">
+              Notre IA analyse des milliers d&apos;annonces pour vous proposer les meilleures offres
             </p>
           </motion.div>
 
@@ -398,16 +405,16 @@ export default function SearchPage() {
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className="w-full flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all"
                   >
-                    <div className="flex items-center gap-2 text-white">
+                    <div className="flex items-center gap-2 text-blue-400">
                       <Filter className="size-4" />
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-blue-400">
                         {showAdvanced ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
                       </span>
                     </div>
                     {showAdvanced ? (
-                      <ChevronUp className="size-4 text-gray-400" />
+                      <ChevronUp className="size-4 text-blue-400" />
                     ) : (
-                      <ChevronDown className="size-4 text-gray-400" />
+                      <ChevronDown className="size-4 text-blue-400" />
                     )}
                   </button>
 
