@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { CheckCircle2, XCircle, RefreshCw, Clock } from "lucide-react";
 import { useSaveSearch } from "@/hooks/useSearchHistory";
 import { SearchLoadingMultisite } from "@/components/SearchLoadingMultisite";
+import { ListingCardPremium } from "@/components/listings/ListingCardPremium";
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%231f2937" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-family="Arial" font-size="18"%3EImage non disponible%3C/text%3E%3C/svg%3E'
 
@@ -1033,6 +1034,21 @@ function SearchResultsContent() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {otherResults.map((result) => {
             const score = result.score_final ?? result.score_ia ?? 0;
+            const hasPremiumScore = !!(result as any).premiumScore;
+            
+            // ✅ Utiliser le composant premium si disponible
+            if (hasPremiumScore) {
+              return (
+                <div key={result.id} className="bg-white/5 backdrop-blur-xl rounded-lg border border-white/10 p-4">
+                  <ListingCardPremium 
+                    listing={result as any}
+                    showComparison={true}
+                  />
+                </div>
+              );
+            }
+            
+            // Sinon, utiliser l'ancien composant (compatibilité)
             return (
               <Card key={result.id} className="bg-white/5 backdrop-blur-xl border-white/10 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer" onClick={() => {
                 // Normaliser et valider l'URL avant ouverture

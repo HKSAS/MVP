@@ -9,6 +9,8 @@ import type { ListingResponse, SearchResponse, ScrapeQuery } from '@/lib/types'
 import { runSiteSearch } from '@/lib/scrapers/run-site-search'
 import { deduplicateListings as dedupeListings } from '@/lib/dedupe'
 import { scoreAllListings } from '@/lib/scoring'
+import { scoreAllListingsPremium } from '@/lib/scoring/premium-scorer'
+import marketService from '@/lib/services/market-service'
 import { createRouteLogger } from '@/lib/logger'
 import { createErrorResponse, ValidationError, ExternalServiceError, InternalServerError } from '@/lib/errors'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
@@ -1663,19 +1665,56 @@ export async function POST(request: NextRequest) {
       after: allItemsDeduped.length,
     })
 
-    // Scoring avec le nouveau système professionnel
-    const listingsWithScores = scoreAllListings(allItemsDeduped, scrapeQuery)
+    // Scoring avec le système existant (compatibilité)
+    let listingsWithScores = scoreAllListings(allItemsDeduped, scrapeQuery)
 
-    // Tri par score décroissant (déjà fait dans scoreAllListings, mais on s'assure)
+    // ✅ NOUVEAU: Scoring Premium (enrichissement supplémentaire)
+    try {
+      // Récupérer les données marché pour améliorer le scoring
+      const marketData = await marketService.getMarketData(
+        scrapeQuery.brand,
+        scrapeQuery.model || '',
+        scrapeQuery.year_min || undefined,
+        listingsWithScores // Passer les listings pour calcul rapide
+      )
+
+      // Appliquer le scoring premium (enrichit les listings avec premiumScore)
+      if (marketData && listingsWithScores.length > 0) {
+        listingsWithScores = await scoreAllListingsPremium(
+          listingsWithScores,
+          scrapeQuery,
+          marketData
+        )
+        
+        log.info('Scoring premium appliqué', {
+          total: listingsWithScores.length,
+          marketData: {
+            avgPrice: marketData.averagePrice,
+            totalListings: marketData.totalListings
+          }
+        })
+      }
+    } catch (premiumScoringError) {
+      // Ne pas bloquer si le scoring premium échoue
+      log.warn('Erreur scoring premium (non-bloquant)', {
+        error: premiumScoringError instanceof Error ? premiumScoringError.message : String(premiumScoringError)
+      })
+    }
+
+    // Tri par score décroissant (priorité au premiumScore si disponible)
     listingsWithScores.sort((a, b) => {
-      const scoreA = a.score_final ?? a.score_ia ?? 0
-      const scoreB = b.score_final ?? b.score_ia ?? 0
+      // Utiliser premiumScore.overall si disponible, sinon score_final/score_ia
+      const scoreA = (a as any).premiumScore?.overall ?? a.score_final ?? a.score_ia ?? 0
+      const scoreB = (b as any).premiumScore?.overall ?? b.score_final ?? b.score_ia ?? 0
       return scoreB - scoreA
     })
 
     log.info('Scores calculés', {
       total: listingsWithScores.length,
-      top3: listingsWithScores.slice(0, 3).map(l => l.score_final),
+      top3: listingsWithScores.slice(0, 3).map(l => ({
+        score: (l as any).premiumScore?.overall ?? l.score_final ?? l.score_ia,
+        dealType: (l as any).premiumScore?.dealType
+      })),
     })
 
     // Enregistrement dans Supabase (si user authentifié)
