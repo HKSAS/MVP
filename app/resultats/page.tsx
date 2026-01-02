@@ -849,7 +849,7 @@ function SearchResultsContent() {
                 <p className="text-sm text-gray-400">Les annonces les plus pertinentes selon notre IA</p>
               </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6 items-stretch">
               {top3Results.map((result, index) => {
                 const rank = index + 1;
                 const hasPremiumScore = !!(result as any).premiumScore;
@@ -1054,7 +1054,7 @@ function SearchResultsContent() {
         {otherResults.length > 0 && (
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">Toutes les annonces</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
               {otherResults.map((result) => {
             const score = result.score_final ?? result.score_ia ?? 0;
             const hasPremiumScore = !!(result as any).premiumScore;

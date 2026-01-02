@@ -36,9 +36,9 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
   const dealType = premiumScore?.dealType
   
   return (
-    <Card className="p-4 hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+    <Card className="p-4 hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 h-full flex flex-col">
       {/* Badges Deal Type */}
-      <div className="flex justify-between items-start mb-3">
+      <div className="flex justify-between items-start mb-3 flex-shrink-0">
         <div className="flex gap-2 flex-wrap">
           {dealType === 'EXCELLENT' && (
             <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
@@ -73,8 +73,8 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
       </div>
       
       {/* Image et infos principales */}
-      <div className="flex gap-4 mb-3">
-        <div className="w-32 h-24 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+      <div className="flex gap-4 mb-3 flex-shrink-0">
+        <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
           <ImageWithFallback
             src={listing.imageUrl || FALLBACK_IMAGE}
             alt={listing.title}
@@ -82,18 +82,20 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
           />
         </div>
         
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg mb-1 line-clamp-2">{listing.title}</h3>
-          <div className="flex gap-4 text-sm text-gray-600 mb-2">
-            {listing.year && <span>{listing.year}</span>}
-            {listing.mileage_km && (
-              <>
-                <span>•</span>
-                <span>{listing.mileage_km.toLocaleString()} km</span>
-              </>
-            )}
+        <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div>
+            <h3 className="font-semibold text-lg mb-1 line-clamp-2">{listing.title}</h3>
+            <div className="flex gap-4 text-sm text-gray-600 mb-2">
+              {listing.year && <span>{listing.year}</span>}
+              {listing.mileage_km && (
+                <>
+                  <span>•</span>
+                  <span>{listing.mileage_km.toLocaleString()} km</span>
+                </>
+              )}
+            </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-auto">
             <span className="text-2xl font-bold text-blue-600">
               {listing.price_eur?.toLocaleString()} €
             </span>
@@ -106,57 +108,60 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
         </div>
       </div>
       
-      {/* Scores détaillés (si premium score disponible) */}
-      {hasPremiumScore && (
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <ScoreBar label="Prix" score={premiumScore.priceScore} />
-          <ScoreBar label="Kilométrage" score={premiumScore.kmScore} />
-          <ScoreBar label="Âge" score={premiumScore.ageScore} />
-          <ScoreBar label="Qualité" score={premiumScore.qualityScore} />
-        </div>
-      )}
-      
-      {/* Insights */}
-      {premiumScore && premiumScore.insights.length > 0 && (
-        <div className="mb-3 space-y-1.5">
-          {premiumScore.insights.slice(0, 2).map((insight, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm text-green-700">
-              <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{insight}</span>
+      {/* Contenu scrollable au milieu */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Scores détaillés (si premium score disponible) */}
+        {hasPremiumScore && (
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <ScoreBar label="Prix" score={premiumScore.priceScore} />
+            <ScoreBar label="Kilométrage" score={premiumScore.kmScore} />
+            <ScoreBar label="Âge" score={premiumScore.ageScore} />
+            <ScoreBar label="Qualité" score={premiumScore.qualityScore} />
+          </div>
+        )}
+        
+        {/* Insights */}
+        {premiumScore && premiumScore.insights.length > 0 && (
+          <div className="mb-3 space-y-1.5">
+            {premiumScore.insights.slice(0, 2).map((insight, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-green-700">
+                <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{insight}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Warnings */}
+        {premiumScore && premiumScore.warnings.length > 0 && (
+          <div className="mb-3 space-y-1.5">
+            {premiumScore.warnings.slice(0, 2).map((warning, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-orange-600">
+                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{warning}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Marge de négociation */}
+        {premiumScore && premiumScore.negotiationMargin > 0 && (
+          <div className="bg-blue-50 p-3 rounded mb-3">
+            <div className="text-sm font-medium text-blue-900 mb-1">
+              Marge de négociation estimée
             </div>
-          ))}
-        </div>
-      )}
-      
-      {/* Warnings */}
-      {premiumScore && premiumScore.warnings.length > 0 && (
-        <div className="mb-3 space-y-1.5">
-          {premiumScore.warnings.slice(0, 2).map((warning, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm text-orange-600">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{warning}</span>
+            <div className="text-lg font-bold text-blue-600">
+              - {premiumScore.negotiationMargin.toLocaleString()} €
             </div>
-          ))}
-        </div>
-      )}
+            <div className="text-xs text-blue-700">
+              Prix cible : {(listing.price_eur || 0) - premiumScore.negotiationMargin} €
+            </div>
+          </div>
+        )}
+      </div>
       
-      {/* Marge de négociation */}
-      {premiumScore && premiumScore.negotiationMargin > 0 && (
-        <div className="bg-blue-50 p-3 rounded mb-3">
-          <div className="text-sm font-medium text-blue-900 mb-1">
-            Marge de négociation estimée
-          </div>
-          <div className="text-lg font-bold text-blue-600">
-            - {premiumScore.negotiationMargin.toLocaleString()} €
-          </div>
-          <div className="text-xs text-blue-700">
-            Prix cible : {(listing.price_eur || 0) - premiumScore.negotiationMargin} €
-          </div>
-        </div>
-      )}
-      
-      {/* Actions */}
-      <div className="flex gap-2">
+      {/* Actions - Toujours en bas */}
+      <div className="flex gap-2 mt-auto flex-shrink-0">
         <a
           href={listing.url}
           target="_blank"
@@ -179,7 +184,7 @@ export function ListingCardPremium({ listing, onCompare, showComparison }: Props
       </div>
       
       {/* Source */}
-      <div className="mt-3 pt-3 border-t border-gray-100">
+      <div className="mt-3 pt-3 border-t border-gray-100 flex-shrink-0">
         <span className="text-xs text-gray-500">
           Source: {listing.source}
         </span>
