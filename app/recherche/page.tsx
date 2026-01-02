@@ -48,6 +48,9 @@ export default function SearchPage() {
   const [transmission, setTransmission] = useState("");
   const [bodyType, setBodyType] = useState("");
   const [doors, setDoors] = useState("");
+  const [seats, setSeats] = useState("");
+  const [color, setColor] = useState("");
+  const [minPrice, setMinPrice] = useState("");
   
   // Sites disponibles pour le scraping
   const availableSites = [
@@ -121,6 +124,13 @@ export default function SearchPage() {
       return;
     }
 
+    // Validation prix
+    if (minPrice && budget && parseInt(minPrice) > parseInt(budget)) {
+      setError("Le prix minimum doit être inférieur au prix maximum");
+      toast.error("Vérifiez les prix");
+      return;
+    }
+
     // Nettoyer le timer de debounce précédent
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -143,6 +153,10 @@ export default function SearchPage() {
 
           if (budget.trim()) {
             params.set("max_price", budget.trim());
+          }
+
+          if (minPrice.trim()) {
+            params.set("min_price", minPrice.trim());
           }
 
           if (fuel && fuel !== "all") {
@@ -175,6 +189,14 @@ export default function SearchPage() {
 
           if (doors && doors !== "all") {
             params.set("doors", doors);
+          }
+
+          if (seats && seats !== "all") {
+            params.set("seats", seats);
+          }
+
+          if (color && color !== "all") {
+            params.set("color", color);
           }
           
           // Ajouter les sites exclus (sites non sélectionnés)
@@ -225,6 +247,11 @@ export default function SearchPage() {
   const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
     setBudget(value);
+  };
+
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setMinPrice(value);
   };
 
   const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,13 +319,13 @@ export default function SearchPage() {
                         Marque
                       </Label>
                       <div className="relative">
-                        <Input
-                          id="brand"
-                          placeholder="Ex: Audi, Renault..."
-                          value={brand}
-                          onChange={(e) => setBrand(e.target.value)}
+                      <Input
+                        id="brand"
+                        placeholder="Ex: Audi, Renault..."
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
                           className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
-                          disabled={searching}
+                        disabled={searching}
                           list="brands-list"
                         />
                         <datalist id="brands-list">
@@ -316,13 +343,13 @@ export default function SearchPage() {
                         Modèle
                       </Label>
                       <div className="relative">
-                        <Input
-                          id="model"
-                          placeholder="Ex: A3, Clio..."
-                          value={model}
-                          onChange={(e) => setModel(e.target.value)}
+                      <Input
+                        id="model"
+                        placeholder="Ex: A3, Clio..."
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
                           className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
-                          disabled={searching}
+                        disabled={searching}
                           list="models-list"
                         />
                         <datalist id="models-list">
@@ -411,22 +438,22 @@ export default function SearchPage() {
                           <Label className="text-sm font-medium text-blue-300 mb-3 block">
                             Sites à rechercher
                           </Label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {availableSites.map((site) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {availableSites.map((site) => (
                               <motion.button
-                                key={site.id}
+                          key={site.id}
                                 type="button"
-                                onClick={() => {
-                                  setSelectedSites(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(site.id)) {
-                                      newSet.delete(site.id);
-                                    } else {
-                                      newSet.add(site.id);
-                                    }
-                                    return newSet;
-                                  });
-                                }}
+                          onClick={() => {
+                            setSelectedSites(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(site.id)) {
+                                newSet.delete(site.id);
+                              } else {
+                                newSet.add(site.id);
+                              }
+                              return newSet;
+                            });
+                          }}
                                 className={`flex items-center gap-2 p-3 rounded-xl border backdrop-blur-sm transition-all ${
                                   selectedSites.has(site.id)
                                     ? 'bg-blue-500/10 border-blue-500/40 text-blue-300 shadow-lg shadow-blue-500/10'
@@ -435,24 +462,24 @@ export default function SearchPage() {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedSites.has(site.id)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSites.has(site.id)}
                                   onChange={() => {}}
                                   className="w-4 h-4 rounded border-blue-500/30 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                                  disabled={searching}
-                                />
+                            disabled={searching}
+                          />
                                 <span className="text-sm flex items-center gap-1.5">
-                                  <span>{site.icon}</span>
-                                  <span>{site.name}</span>
-                                </span>
+                            <span>{site.icon}</span>
+                            <span>{site.name}</span>
+                          </span>
                               </motion.button>
-                            ))}
-                          </div>
-                          {selectedSites.size === 0 && (
+                      ))}
+                    </div>
+                    {selectedSites.size === 0 && (
                             <p className="text-xs text-red-400 mt-2">Veuillez sélectionner au moins un site</p>
-                          )}
+                    )}
                         </div>
                       </motion.div>
                     )}
@@ -495,6 +522,22 @@ export default function SearchPage() {
                         className="overflow-hidden"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4 border-t border-white/10">
+                          {/* Prix minimum */}
+                          <div className="space-y-2">
+                            <Label htmlFor="minPrice" className="text-sm font-medium text-blue-300">
+                              Prix minimum (€)
+                            </Label>
+                            <Input
+                              id="minPrice"
+                              type="text"
+                              placeholder="Ex: 5000"
+                              value={minPrice ? parseInt(minPrice).toLocaleString('fr-FR') : ''}
+                              onChange={handleMinPriceChange}
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
+                              disabled={searching}
+                            />
+                          </div>
+
                           {/* Année min */}
                           <div className="space-y-2">
                             <Label htmlFor="yearMin" className="text-sm font-medium text-blue-300">
@@ -629,6 +672,56 @@ export default function SearchPage() {
                             </Select>
                           </div>
 
+                          {/* Nombre de places */}
+                          <div className="space-y-2">
+                            <Label htmlFor="seats" className="text-sm font-medium text-blue-300">
+                              Nombre de places
+                            </Label>
+                            <Select value={seats} onValueChange={setSeats} disabled={searching}>
+                              <SelectTrigger 
+                                id="seats"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="2">2 places</SelectItem>
+                                <SelectItem value="4">4 places</SelectItem>
+                                <SelectItem value="5">5 places</SelectItem>
+                                <SelectItem value="7">7 places</SelectItem>
+                              </SelectContent>
+                            </Select>
+                  </div>
+
+                          {/* Couleur */}
+                          <div className="space-y-2">
+                            <Label htmlFor="color" className="text-sm font-medium text-blue-300">
+                              Couleur
+                            </Label>
+                            <Select value={color} onValueChange={setColor} disabled={searching}>
+                              <SelectTrigger 
+                                id="color"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
+                              >
+                                <SelectValue placeholder="Tous" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1a1a] border-white/20">
+                                <SelectItem value="all">Tous</SelectItem>
+                                <SelectItem value="noir">Noir</SelectItem>
+                                <SelectItem value="blanc">Blanc</SelectItem>
+                                <SelectItem value="gris">Gris</SelectItem>
+                                <SelectItem value="argent">Argent</SelectItem>
+                                <SelectItem value="bleu">Bleu</SelectItem>
+                                <SelectItem value="rouge">Rouge</SelectItem>
+                                <SelectItem value="vert">Vert</SelectItem>
+                                <SelectItem value="beige">Beige</SelectItem>
+                                <SelectItem value="marron">Marron</SelectItem>
+                                <SelectItem value="jaune">Jaune</SelectItem>
+                                <SelectItem value="orange">Orange</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </motion.div>
                     )}

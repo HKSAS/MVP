@@ -5,6 +5,7 @@ import './globals.css'
 import TopNav from '@/components/layout/TopNav'
 import Footer from '@/components/Footer'
 import { Toaster } from '@/components/ui/sonner'
+import ChatBotWrapper from '@/components/ChatBot/ChatBotWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,8 @@ export default function RootLayout({
         </main>
         <Footer />
         <Toaster />
+        {/* Chatbot accessible sur toutes les pages (uniquement pour utilisateurs connectés) */}
+        <ChatBotWrapper />
       </body>
     </html>
   )

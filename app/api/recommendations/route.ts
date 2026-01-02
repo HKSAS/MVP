@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         message: 'Aucune annonce disponible pour le moment.',
       })
     }
-
+    
     // Convertir en ListingResponse
     const listings: ListingResponse[] = cachedListings.map((cache: any) => ({
       id: `${cache.source}:${cache.listing_id}`,

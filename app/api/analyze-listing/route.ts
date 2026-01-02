@@ -648,19 +648,19 @@ Analyse cette annonce et remplis le JSON demandé.`
     } else {
       // Fallback vers l'ancien système
       marketPrice = calculateMarketPrice(
-        {
-          brand: (input as any).brand,
-          model: (input as any).model,
-          year: yearValue || undefined,
-          mileage: mileageValue || undefined,
-          fuel: extractedData?.fuel || (input as any).fuel || input.fuel || undefined,
-          transmission,
-          hasHistory: hasHistory === true,
-          condition,
-          region: extractedData?.location || undefined,
-        },
-        announcedPrice || undefined
-      )
+      {
+        brand: (input as any).brand,
+        model: (input as any).model,
+        year: yearValue || undefined,
+        mileage: mileageValue || undefined,
+        fuel: extractedData?.fuel || (input as any).fuel || input.fuel || undefined,
+        transmission,
+        hasHistory: hasHistory === true,
+        condition,
+        region: extractedData?.location || undefined,
+      },
+      announcedPrice || undefined
+    )
     }
 
     // Calcul score breakdown (UTILISER UNIQUEMENT CHAMPS NORMALISÉS)

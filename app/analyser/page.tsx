@@ -587,8 +587,8 @@ export default function AnalyzePage() {
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2 text-white">
-                  <Sparkles className="size-6 text-blue-400" />
-                  <h2 className="text-3xl font-medium">Résultat de l'analyse</h2>
+                <Sparkles className="size-6 text-blue-400" />
+                <h2 className="text-3xl font-medium">Résultat de l'analyse</h2>
                 </div>
                 <Button
                   onClick={handleDownloadPDF}

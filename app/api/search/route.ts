@@ -1875,10 +1875,10 @@ export async function POST(request: NextRequest) {
             )
           ).catch(err => {
             log.warn('Erreur vérification alertes (non-bloquant)', { error: err })
-          })
-        }).catch(() => {
-          // Ignore si le module ne peut pas être chargé
         })
+      }).catch(() => {
+        // Ignore si le module ne peut pas être chargé
+      })
       }
     }
 
