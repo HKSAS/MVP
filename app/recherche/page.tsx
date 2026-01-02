@@ -489,20 +489,26 @@ export default function SearchPage() {
                   <motion.button
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center justify-between text-blue-500 hover:opacity-80 transition-opacity w-full py-2 px-2 bg-transparent"
-                    whileHover={{ opacity: 0.8 }}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 backdrop-blur-xl border border-blue-500/20 rounded-xl text-blue-300 shadow-lg shadow-blue-500/10 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-300 w-full"
+                    whileHover={{ 
+                      scale: 1.03, 
+                      borderColor: "rgba(59, 130, 246, 0.4)", 
+                      boxShadow: "0 0 20px rgba(59, 130, 246, 0.2)" 
+                    }}
                     whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     aria-expanded={showAdvanced}
                     aria-label="Afficher ou masquer les filtres avancés"
                   >
-                    <div className="flex items-center gap-2">
-                      <Filter className="size-4 text-blue-500" />
-                      <span className="text-sm font-medium text-blue-500">
-                        {showAdvanced ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
-                      </span>
-                    </div>
-                    <ChevronDown className={`size-4 text-blue-500 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
+                    <Filter className="w-4 h-4" />
+                    <span className="font-medium">
+                      {showAdvanced ? "Masquer" : "Afficher"} les filtres avancés
+                    </span>
+                    <ChevronDown 
+                      className={`w-4 h-4 transition-transform duration-300 ${
+                        showAdvanced ? "rotate-180" : "rotate-0"
+                      }`} 
+                    />
                   </motion.button>
 
                   {/* Filtres Avancés */}
