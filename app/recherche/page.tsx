@@ -40,6 +40,7 @@ export default function SearchPage() {
   
   // États filtres avancés
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSites, setShowSites] = useState(false);
   const [yearMin, setYearMin] = useState("");
   const [yearMax, setYearMax] = useState("");
   const [mileageMax, setMileageMax] = useState("");
@@ -300,7 +301,7 @@ export default function SearchPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl">
+            <Card className="bg-white/5 backdrop-blur-xl border border-blue-500/20 shadow-lg shadow-blue-500/10">
               <CardContent className="p-6 sm:p-8">
                 {error && (
                   <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
@@ -313,7 +314,7 @@ export default function SearchPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     {/* Marque */}
                     <div className="space-y-2">
-                      <Label htmlFor="brand" className="text-sm font-medium text-white">
+                      <Label htmlFor="brand" className="text-sm font-medium text-blue-300">
                         Marque
                       </Label>
                       <div className="relative">
@@ -322,7 +323,7 @@ export default function SearchPage() {
                           placeholder="Ex: Audi, Renault..."
                           value={brand}
                           onChange={(e) => setBrand(e.target.value)}
-                          className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                          className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                           disabled={searching}
                           list="brands-list"
                         />
@@ -336,7 +337,7 @@ export default function SearchPage() {
 
                     {/* Modèle */}
                     <div className="space-y-2">
-                      <Label htmlFor="model" className="text-sm font-medium text-white">
+                      <Label htmlFor="model" className="text-sm font-medium text-blue-300">
                         Modèle
                       </Label>
                       <div className="relative">
@@ -345,7 +346,7 @@ export default function SearchPage() {
                           placeholder="Ex: A3, Clio..."
                           value={model}
                           onChange={(e) => setModel(e.target.value)}
-                          className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                          className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                           disabled={searching}
                           list="models-list"
                         />
@@ -359,7 +360,7 @@ export default function SearchPage() {
 
                     {/* Budget maximum */}
                     <div className="space-y-2">
-                      <Label htmlFor="budget" className="text-sm font-medium text-white">
+                      <Label htmlFor="budget" className="text-sm font-medium text-blue-300">
                         Budget maximum (€)
                       </Label>
                       <Input
@@ -375,13 +376,13 @@ export default function SearchPage() {
 
                     {/* Type de carburant */}
                     <div className="space-y-2">
-                      <Label htmlFor="fuel" className="text-sm font-medium text-white">
+                      <Label htmlFor="fuel" className="text-sm font-medium text-blue-300">
                         Type de carburant
                       </Label>
                       <Select value={fuel} onValueChange={setFuel} disabled={searching}>
                         <SelectTrigger 
                           id="fuel"
-                          className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                          className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                         >
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
@@ -399,24 +400,106 @@ export default function SearchPage() {
                     </div>
                   </div>
 
+                  {/* Toggle Sites */}
+                  <motion.button
+                    type="button"
+                    onClick={() => setShowSites(!showSites)}
+                    className="w-full flex items-center justify-between px-6 py-3 bg-white/5 backdrop-blur-xl border border-blue-500/20 rounded-xl text-blue-300 shadow-lg shadow-blue-500/10 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all"
+                    whileHover={{ scale: 1.03, borderColor: "rgba(59, 130, 246, 0.4)", boxShadow: "0 0 20px rgba(59, 130, 246, 0.2)" }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    aria-expanded={showSites}
+                    aria-label="Afficher ou masquer la sélection des sites"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Search className="size-4" />
+                      <span className="text-sm font-medium">
+                        {showSites ? 'Masquer les sites' : 'Afficher les sites de recherche'}
+                      </span>
+                    </div>
+                    <ChevronDown className={`size-4 transition-transform duration-300 ${showSites ? "rotate-180" : ""}`} />
+                  </motion.button>
+
+                  {/* Sélection des Sites */}
+                  <AnimatePresence>
+                    {showSites && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 border-t border-blue-500/20">
+                          <Label className="text-sm font-medium text-blue-300 mb-3 block">
+                            Sites à rechercher
+                          </Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {availableSites.map((site) => (
+                              <motion.button
+                                key={site.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSites(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(site.id)) {
+                                      newSet.delete(site.id);
+                                    } else {
+                                      newSet.add(site.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                className={`flex items-center gap-2 p-3 rounded-xl border backdrop-blur-sm transition-all ${
+                                  selectedSites.has(site.id)
+                                    ? 'bg-blue-500/10 border-blue-500/40 text-blue-300 shadow-lg shadow-blue-500/10'
+                                    : 'bg-white/5 border-blue-500/20 text-gray-300 hover:bg-blue-500/5 hover:border-blue-500/30'
+                                }`}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSites.has(site.id)}
+                                  onChange={() => {}}
+                                  className="w-4 h-4 rounded border-blue-500/30 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                                  disabled={searching}
+                                />
+                                <span className="text-sm flex items-center gap-1.5">
+                                  <span>{site.icon}</span>
+                                  <span>{site.name}</span>
+                                </span>
+                              </motion.button>
+                            ))}
+                          </div>
+                          {selectedSites.size === 0 && (
+                            <p className="text-xs text-red-400 mt-2">Veuillez sélectionner au moins un site</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Toggle Filtres Avancés */}
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all"
+                    className="w-full flex items-center justify-between px-6 py-3 bg-white/5 backdrop-blur-xl border border-blue-500/20 rounded-xl text-blue-300 shadow-lg shadow-blue-500/10 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all"
+                    whileHover={{ scale: 1.03, borderColor: "rgba(59, 130, 246, 0.4)", boxShadow: "0 0 20px rgba(59, 130, 246, 0.2)" }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    aria-expanded={showAdvanced}
+                    aria-label="Afficher ou masquer les filtres avancés"
                   >
-                    <div className="flex items-center gap-2 text-blue-400">
+                    <div className="flex items-center gap-2">
                       <Filter className="size-4" />
-                      <span className="text-sm font-medium text-blue-400">
+                      <span className="text-sm font-medium">
                         {showAdvanced ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
                       </span>
                     </div>
-                    {showAdvanced ? (
-                      <ChevronUp className="size-4 text-blue-400" />
-                    ) : (
-                      <ChevronDown className="size-4 text-blue-400" />
-                    )}
-                  </button>
+                    <ChevronDown className={`size-4 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
+                  </motion.button>
 
                   {/* Filtres Avancés */}
                   <AnimatePresence>
@@ -431,7 +514,7 @@ export default function SearchPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4 border-t border-white/10">
                           {/* Prix minimum */}
                           <div className="space-y-2">
-                            <Label htmlFor="minPrice" className="text-sm font-medium text-white">
+                            <Label htmlFor="minPrice" className="text-sm font-medium text-blue-300">
                               Prix minimum (€)
                             </Label>
                             <Input
@@ -440,14 +523,14 @@ export default function SearchPage() {
                               placeholder="Ex: 5000"
                               value={minPrice ? parseInt(minPrice).toLocaleString('fr-FR') : ''}
                               onChange={handleMinPriceChange}
-                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               disabled={searching}
                             />
                           </div>
 
                           {/* Année min */}
                           <div className="space-y-2">
-                            <Label htmlFor="yearMin" className="text-sm font-medium text-white">
+                            <Label htmlFor="yearMin" className="text-sm font-medium text-blue-300">
                               Année min
                             </Label>
                             <Input
@@ -458,14 +541,14 @@ export default function SearchPage() {
                               onChange={(e) => setYearMin(e.target.value)}
                               min="1900"
                               max={new Date().getFullYear()}
-                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               disabled={searching}
                             />
                           </div>
 
                           {/* Année max */}
                           <div className="space-y-2">
-                            <Label htmlFor="yearMax" className="text-sm font-medium text-white">
+                            <Label htmlFor="yearMax" className="text-sm font-medium text-blue-300">
                               Année max
                             </Label>
                             <Input
@@ -476,14 +559,14 @@ export default function SearchPage() {
                               onChange={(e) => setYearMax(e.target.value)}
                               min="1900"
                               max={new Date().getFullYear() + 1}
-                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               disabled={searching}
                             />
                           </div>
 
                           {/* Kilométrage max */}
                           <div className="space-y-2">
-                            <Label htmlFor="mileageMax" className="text-sm font-medium text-white">
+                            <Label htmlFor="mileageMax" className="text-sm font-medium text-blue-300">
                               Kilométrage max
                             </Label>
                             <Input
@@ -492,14 +575,14 @@ export default function SearchPage() {
                               placeholder="Ex: 100000"
                               value={mileageMax ? parseInt(mileageMax).toLocaleString('fr-FR') : ''}
                               onChange={handleMileageChange}
-                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               disabled={searching}
                             />
                           </div>
 
                           {/* Localisation */}
                           <div className="space-y-2">
-                            <Label htmlFor="location" className="text-sm font-medium text-white">
+                            <Label htmlFor="location" className="text-sm font-medium text-blue-300">
                               Localisation
                             </Label>
                             <Input
@@ -507,20 +590,20 @@ export default function SearchPage() {
                               placeholder="Ville ou région"
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
-                              className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                              className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white placeholder:text-gray-500 focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               disabled={searching}
                             />
                           </div>
 
                           {/* Transmission (Boîte) */}
                           <div className="space-y-2">
-                            <Label htmlFor="transmission" className="text-sm font-medium text-white">
+                            <Label htmlFor="transmission" className="text-sm font-medium text-blue-300">
                               Boîte de vitesses
                             </Label>
                             <Select value={transmission} onValueChange={setTransmission} disabled={searching}>
                               <SelectTrigger 
                                 id="transmission"
-                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               >
                                 <SelectValue placeholder="Tous" />
                               </SelectTrigger>
@@ -535,13 +618,13 @@ export default function SearchPage() {
 
                           {/* Type de carrosserie */}
                           <div className="space-y-2">
-                            <Label htmlFor="bodyType" className="text-sm font-medium text-white">
+                            <Label htmlFor="bodyType" className="text-sm font-medium text-blue-300">
                               Type de carrosserie
                             </Label>
                             <Select value={bodyType} onValueChange={setBodyType} disabled={searching}>
                               <SelectTrigger 
                                 id="bodyType"
-                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               >
                                 <SelectValue placeholder="Tous" />
                               </SelectTrigger>
@@ -561,13 +644,13 @@ export default function SearchPage() {
 
                           {/* Nombre de portes */}
                           <div className="space-y-2">
-                            <Label htmlFor="doors" className="text-sm font-medium text-white">
+                            <Label htmlFor="doors" className="text-sm font-medium text-blue-300">
                               Nombre de portes
                             </Label>
                             <Select value={doors} onValueChange={setDoors} disabled={searching}>
                               <SelectTrigger 
                                 id="doors"
-                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               >
                                 <SelectValue placeholder="Tous" />
                               </SelectTrigger>
@@ -581,13 +664,13 @@ export default function SearchPage() {
 
                           {/* Nombre de places */}
                           <div className="space-y-2">
-                            <Label htmlFor="seats" className="text-sm font-medium text-white">
+                            <Label htmlFor="seats" className="text-sm font-medium text-blue-300">
                               Nombre de places
                             </Label>
                             <Select value={seats} onValueChange={setSeats} disabled={searching}>
                               <SelectTrigger 
                                 id="seats"
-                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               >
                                 <SelectValue placeholder="Tous" />
                               </SelectTrigger>
@@ -603,13 +686,13 @@ export default function SearchPage() {
 
                           {/* Couleur */}
                           <div className="space-y-2">
-                            <Label htmlFor="color" className="text-sm font-medium text-white">
+                            <Label htmlFor="color" className="text-sm font-medium text-blue-300">
                               Couleur
                             </Label>
                             <Select value={color} onValueChange={setColor} disabled={searching}>
                               <SelectTrigger 
                                 id="color"
-                                className="bg-white/5 border-white/20 text-white focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                                className="bg-white/5 backdrop-blur-sm border border-blue-500/20 text-white focus:border-blue-500/40 focus:ring-blue-500/20 h-11 rounded-xl shadow-sm shadow-blue-500/5 transition-all"
                               >
                                 <SelectValue placeholder="Tous" />
                               </SelectTrigger>
@@ -635,24 +718,26 @@ export default function SearchPage() {
                   </AnimatePresence>
 
                   {/* Bouton Recherche */}
-                  <Button
+                  <motion.button
                     type="submit"
-                    size="lg"
-                    className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 transition-all h-12 text-base font-medium"
                     disabled={searching}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-purple-500 hover:from-blue-600 hover:via-blue-700 hover:to-purple-600 text-white shadow-lg shadow-blue-500/25 rounded-xl h-12 text-base font-medium backdrop-blur-sm border border-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={!searching ? { scale: 1.02, boxShadow: "0 0 30px rgba(59, 130, 246, 0.4)" } : {}}
+                    whileTap={!searching ? { scale: 0.98 } : {}}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     {searching ? (
                       <>
-                        <Loader2 className="size-5 mr-2 animate-spin" />
+                        <Loader2 className="size-5 animate-spin" />
                         <span>Analyse en cours...</span>
                       </>
                     ) : (
                       <>
-                        <Search className="size-5 mr-2" />
+                        <Search className="size-5" />
                         <span>Lancer la recherche IA</span>
                       </>
                     )}
-                  </Button>
+                  </motion.button>
                 </form>
 
                 {/* Statistiques */}
