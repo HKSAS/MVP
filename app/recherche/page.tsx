@@ -39,8 +39,6 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   
   // États filtres avancés
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showSites, setShowSites] = useState(false);
   const [yearMin, setYearMin] = useState("");
   const [yearMax, setYearMax] = useState("");
   const [mileageMax, setMileageMax] = useState("");
