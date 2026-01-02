@@ -489,8 +489,8 @@ export default function SearchPage() {
                   <motion.button
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-900 text-[#3B82F6] hover:bg-slate-800 transition-colors duration-200 rounded-lg"
-                    whileHover={{ opacity: 0.9 }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-transparent border-0 text-[#3B82F6] hover:opacity-80 transition-opacity duration-200 rounded-lg focus:outline-none focus:ring-0"
+                    whileHover={{ opacity: 0.8 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
                     aria-expanded={showAdvanced}
