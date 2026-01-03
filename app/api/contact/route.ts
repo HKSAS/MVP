@@ -31,7 +31,7 @@ async function sendTelegramMessage(message: string): Promise<void> {
 
   try {
     // Essayer d'obtenir le chat_id
-    let chatId = TELEGRAM_CHAT_ID
+    let chatId: string | null = TELEGRAM_CHAT_ID || null
     
     // Si le chat_id n'est pas défini dans les variables d'environnement,
     // essayer de le récupérer depuis les mises à jour du bot
