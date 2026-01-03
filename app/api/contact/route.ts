@@ -371,23 +371,30 @@ export async function POST(request: NextRequest) {
       log.warn('Colonnes phone/subject manquantes, réessai sans ces champs', {
         error: error.message,
         code: error.code,
+        isVehicleForm,
       })
       console.warn('[CONTACT] Colonnes manquantes, fallback sans phone/subject:', error.message)
       
-      // Fallback uniquement pour l'ancien formulaire de contact
-      if (isVehicleForm) {
-        // Pour le formulaire véhicule, on ne devrait pas arriver ici car on a déjà construit insertData
-        throw new InternalServerError('Erreur lors de l\'enregistrement de la demande de véhicule', {
-          dbError: error.message,
-        })
-      }
+      // Fallback pour les deux types de formulaires
+      let fallbackData: any
       
-      const contactData = input as ContactInput
-      const fallbackData = {
-        name: contactData.name,
-        email: contactData.email,
-        message: contactData.message,
-        status: 'pending',
+      if (isVehicleForm) {
+        const vehicleData = input as VehicleRequestInput
+        // Pour le formulaire véhicule, on garde seulement les champs essentiels
+        fallbackData = {
+          name: vehicleData.name,
+          email: vehicleData.email,
+          message: JSON.stringify(vehicleData), // Stocker toutes les données en JSON
+          status: 'pending',
+        }
+      } else {
+        const contactData = input as ContactInput
+        fallbackData = {
+          name: contactData.name,
+          email: contactData.email,
+          message: contactData.message,
+          status: 'pending',
+        }
       }
       
       const fallbackResult = await supabase
@@ -428,8 +435,10 @@ export async function POST(request: NextRequest) {
     log.info('Message enregistré', { messageId: data?.id })
 
     // ========================================================================
-    // ENVOI VERS TELEGRAM
+    // ENVOI VERS TELEGRAM (non-bloquant, même si l'enregistrement a échoué)
     // ========================================================================
+    // Envoyer vers Telegram même si l'enregistrement en base a échoué
+    // pour que vous receviez quand même la notification
     try {
       if (isVehicleForm) {
         const telegramMessage = formatVehicleRequestForTelegram(input as VehicleRequestInput)
