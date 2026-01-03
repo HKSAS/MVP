@@ -366,6 +366,40 @@ export async function POST(request: NextRequest) {
     data = insertResult.data
     error = insertResult.error
 
+    // ========================================================================
+    // ENVOI VERS TELEGRAM (TOUJOURS EN PREMIER, même si l'enregistrement échoue)
+    // ========================================================================
+    // Envoyer vers Telegram AVANT de gérer les erreurs d'enregistrement
+    // pour que vous receviez toujours la notification
+    let telegramSent = false
+    try {
+      if (isVehicleForm) {
+        const telegramMessage = formatVehicleRequestForTelegram(input as VehicleRequestInput)
+        await sendTelegramMessage(telegramMessage)
+        telegramSent = true
+        log.info('Message Telegram envoyé avec succès (demande véhicule)')
+      } else {
+        const contactData = input as ContactInput
+        const telegramMessage = `📧 <b>NOUVEAU MESSAGE DE CONTACT</b>\n\n` +
+          `👤 <b>Nom:</b> ${contactData.name}\n` +
+          `📧 <b>Email:</b> ${contactData.email}\n` +
+          (contactData.phone ? `📱 <b>Téléphone:</b> ${contactData.phone}\n` : '') +
+          (contactData.subject ? `📌 <b>Sujet:</b> ${contactData.subject}\n` : '') +
+          `\n💬 <b>Message:</b>\n${contactData.message}\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `📅 Date: ${new Date().toLocaleString('fr-FR')}`
+        await sendTelegramMessage(telegramMessage)
+        telegramSent = true
+        log.info('Message Telegram envoyé avec succès (contact)')
+      }
+    } catch (telegramError: any) {
+      log.error('Erreur envoi Telegram (non-bloquant)', {
+        error: telegramError?.message || String(telegramError),
+      })
+      console.error('[CONTACT] Erreur envoi Telegram:', telegramError)
+      // Ne pas bloquer la réponse si Telegram échoue
+    }
+
     // Si erreur due à des colonnes manquantes, réessayer sans phone et subject
     if (error && (error.message?.includes('phone') || error.message?.includes('subject') || error.code === '42703')) {
       log.warn('Colonnes phone/subject manquantes, réessai sans ces champs', {
@@ -432,37 +466,46 @@ export async function POST(request: NextRequest) {
       console.log('[CONTACT] Message enregistré avec succès, ID:', data?.id)
     }
 
-    log.info('Message enregistré', { messageId: data?.id })
-
-    // ========================================================================
-    // ENVOI VERS TELEGRAM (non-bloquant, même si l'enregistrement a échoué)
-    // ========================================================================
-    // Envoyer vers Telegram même si l'enregistrement en base a échoué
-    // pour que vous receviez quand même la notification
-    try {
-      if (isVehicleForm) {
-        const telegramMessage = formatVehicleRequestForTelegram(input as VehicleRequestInput)
-        await sendTelegramMessage(telegramMessage)
-        log.info('Message Telegram envoyé avec succès (demande véhicule)')
-      } else {
-        const contactData = input as ContactInput
-        const telegramMessage = `📧 <b>NOUVEAU MESSAGE DE CONTACT</b>\n\n` +
-          `👤 <b>Nom:</b> ${contactData.name}\n` +
-          `📧 <b>Email:</b> ${contactData.email}\n` +
-          (contactData.phone ? `📱 <b>Téléphone:</b> ${contactData.phone}\n` : '') +
-          (contactData.subject ? `📌 <b>Sujet:</b> ${contactData.subject}\n` : '') +
-          `\n💬 <b>Message:</b>\n${contactData.message}\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n` +
-          `📅 Date: ${new Date().toLocaleString('fr-FR')}`
-        await sendTelegramMessage(telegramMessage)
-        log.info('Message Telegram envoyé avec succès (contact)')
-      }
-    } catch (telegramError: any) {
-      log.error('Erreur envoi Telegram (non-bloquant)', {
-        error: telegramError?.message || String(telegramError),
+    // Si l'enregistrement a échoué mais Telegram a réussi, on considère que c'est OK
+    // L'important c'est que vous receviez la notification
+    if (error && telegramSent) {
+      log.warn('Enregistrement en base échoué mais Telegram envoyé avec succès', {
+        error: error.message,
+        telegramSent: true,
       })
-      console.error('[CONTACT] Erreur envoi Telegram:', telegramError)
-      // Ne pas bloquer la réponse si Telegram échoue
+      console.warn('[CONTACT] Enregistrement échoué mais notification Telegram envoyée - on considère comme succès')
+      // On continue quand même car Telegram a fonctionné - c'est l'essentiel
+      error = null
+      // On crée un faux data pour que le reste du code fonctionne
+      data = { id: 'telegram-only', saved: false }
+    }
+
+    if (error) {
+      log.error('Erreur Supabase (après fallback)', { 
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        telegramSent,
+      })
+      console.error('[CONTACT] Erreur Supabase finale:', error)
+      
+      // Si Telegram a réussi, on ne lance pas d'erreur car l'essentiel est fait
+      if (telegramSent) {
+        log.warn('Erreur base mais Telegram OK - on retourne succès quand même')
+        error = null
+        data = { id: 'telegram-only', saved: false }
+      } else {
+        throw new InternalServerError('Erreur lors de l\'enregistrement du message', {
+          dbError: error.message,
+        })
+      }
+    }
+
+    if (data?.id) {
+      log.info('Message enregistré', { messageId: data?.id })
+    } else {
+      log.info('Message envoyé via Telegram uniquement (enregistrement base échoué)')
     }
 
     // ========================================================================
