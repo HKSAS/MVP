@@ -67,54 +67,56 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-gray-400">Vue d'ensemble de l'activité</p>
+        <h1 className="text-4xl font-medium text-white mb-2 bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+          Dashboard
+        </h1>
+        <p className="text-gray-400 text-lg">Vue d'ensemble de l'activité</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
+            <CardTitle className="text-sm font-medium text-gray-300">
               Total utilisateurs
             </CardTitle>
-            <Users className="h-4 w-4 text-gray-400" />
+            <Users className="h-4 w-4 text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{userStats.total || 0}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-yellow-500/20 to-orange-600/10 backdrop-blur-sm border border-yellow-500/30 shadow-lg shadow-yellow-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
+            <CardTitle className="text-sm font-medium text-gray-300">
               Admin VIP
             </CardTitle>
-            <Star className="h-4 w-4 text-yellow-500" />
+            <Star className="h-4 w-4 text-yellow-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{userStats.vip || 0}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 backdrop-blur-sm border border-purple-500/30 shadow-lg shadow-purple-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
+            <CardTitle className="text-sm font-medium text-gray-300">
               Utilisateurs standards
             </CardTitle>
-            <Users className="h-4 w-4 text-gray-400" />
+            <Users className="h-4 w-4 text-purple-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{userStats.free || 0}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm border border-green-500/30 shadow-lg shadow-green-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
+            <CardTitle className="text-sm font-medium text-gray-300">
               Nouveaux (7j)
             </CardTitle>
-            <UserPlus className="h-4 w-4 text-blue-500" />
+            <UserPlus className="h-4 w-4 text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{userStats.newThisWeek || 0}</div>
@@ -125,7 +127,7 @@ export default function AdminDashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Évolution utilisateurs */}
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-500/20 to-purple-600/10 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
           <CardHeader>
             <CardTitle className="text-white">Évolution des utilisateurs (30 jours)</CardTitle>
           </CardHeader>
@@ -156,7 +158,7 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Répartition par plan */}
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-500/20 to-blue-600/10 backdrop-blur-sm border border-purple-500/30 shadow-lg shadow-purple-500/10">
           <CardHeader>
             <CardTitle className="text-white">Répartition par plan</CardTitle>
           </CardHeader>
