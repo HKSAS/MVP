@@ -94,7 +94,7 @@ export const analyzeListingSchema = z.object({
   }
 )
 
-// Schema pour le contact
+// Schema pour le contact (ancien format, gardé pour compatibilité)
 export const contactSchema = z.object({
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(100),
   email: z.string().email('Email invalide'),
@@ -103,8 +103,74 @@ export const contactSchema = z.object({
   message: z.string().min(10, 'Le message doit contenir au moins 10 caractères').max(2000),
 })
 
+// Schema pour la demande de véhicule
+export const vehicleRequestSchema = z.object({
+  // 1. Informations de contact
+  name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(100),
+  email: z.string().email('Email invalide'),
+  phone: z.string().optional(),
+  
+  // 2. Type de recherche
+  requestType: z.enum(['achat', 'recherche_personnalisee']),
+  deadline: z.enum(['immediat', 'moins_1_mois', '1_3_mois', 'pas_presse']),
+  
+  // 3. Véhicule recherché
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  yearMin: z.number().int().min(1990).max(new Date().getFullYear()).optional(),
+  yearMax: z.number().int().min(1990).max(new Date().getFullYear()).optional(),
+  fuelType: z.enum(['essence', 'diesel', 'hybride', 'electrique']).optional(),
+  transmission: z.enum(['manuelle', 'automatique', 'indifferent']).optional(),
+  maxMileage: z.number().int().positive().optional(),
+  
+  // 4. Budget
+  maxBudget: z.number().int().positive().optional(),
+  flexibleBudget: z.boolean().optional(),
+  
+  // 5. Critères importants
+  importantCriteria: z.array(z.enum(['faible_kilometrage', 'historique_clair', 'entretien_complet', 'premiere_main', 'vehicule_francais', 'importe_accepte'])).optional(),
+  
+  // 6. Options souhaitées
+  requiredOptions: z.string().max(500).optional(),
+  appreciatedOptions: z.string().max(500).optional(),
+  
+  // 7. Pays de recherche
+  searchCountry: z.enum(['france', 'allemagne', 'belgique', 'autre']).optional(),
+  otherCountry: z.string().max(100).optional(),
+  
+  // 8. Commentaires complémentaires
+  comments: z.string().max(2000).optional(),
+  
+  // 9. Validation
+  confirmInfo: z.boolean().refine(val => val === true, 'Vous devez confirmer que les informations sont exactes'),
+  acceptContact: z.boolean().optional(),
+}).refine(
+  (data) => {
+    if (data.yearMin && data.yearMax) {
+      return data.yearMin <= data.yearMax;
+    }
+    return true;
+  },
+  {
+    message: "L'année minimum doit être inférieure ou égale à l'année maximum",
+    path: ['yearMin'],
+  }
+).refine(
+  (data) => {
+    if (data.searchCountry === 'autre' && !data.otherCountry) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Veuillez préciser le pays si vous avez sélectionné 'Autre'",
+    path: ['otherCountry'],
+  }
+)
+
 // Type helpers
 export type SearchInput = z.infer<typeof searchSchema>
 export type AnalyzeListingInput = z.infer<typeof analyzeListingSchema>
 export type ContactInput = z.infer<typeof contactSchema>
+export type VehicleRequestInput = z.infer<typeof vehicleRequestSchema>
 
