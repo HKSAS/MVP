@@ -30,6 +30,12 @@ import { Search, Star, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient()
@@ -180,14 +186,29 @@ export default function AdminUsersPage() {
                         </TableCell>
                         <TableCell>
                           <div 
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-3"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Switch
-                              checked={user.access_override === true}
-                              onCheckedChange={() => handleToggleVIP(user.id)}
-                              disabled={toggleVIPMutation.isPending}
-                            />
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-2">
+                                    <Switch
+                                      checked={user.access_override === true}
+                                      onCheckedChange={() => handleToggleVIP(user.id)}
+                                      disabled={toggleVIPMutation.isPending}
+                                      className="data-[state=checked]:bg-yellow-500"
+                                    />
+                                    <span className="text-xs text-gray-400">
+                                      {user.access_override ? 'VIP' : 'Free'}
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Activer/Désactiver VIP</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -195,6 +216,7 @@ export default function AdminUsersPage() {
                                 e.stopPropagation()
                                 setSelectedUserId(user.id)
                               }}
+                              className="hover:bg-white/10"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
