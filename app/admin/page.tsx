@@ -9,12 +9,21 @@ import {
   Star,
   UserPlus,
   TrendingUp,
+  DollarSign,
+  Percent,
+  Search,
+  AlertCircle,
 } from 'lucide-react'
 import {
   LineChart,
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -49,6 +58,9 @@ export default function AdminDashboardPage() {
 
   const userStats = stats?.users || {}
   const subStats = stats?.subscriptions || {}
+  const revenueStats = stats?.revenue || {}
+  const searchStats = stats?.searches || {}
+  const alertsStats = stats?.alerts || {}
 
   // Préparer les données pour le graphique d'évolution
   const evolutionData = userStats.evolution?.map((item: any) => ({
@@ -63,6 +75,15 @@ export default function AdminDashboardPage() {
     { name: 'Premium', value: subStats.premium || 0 },
     { name: 'Enterprise', value: subStats.enterprise || 0 },
   ].filter(item => item.value > 0)
+
+  // Préparer les données pour le graphique revenu par jour
+  const revenueByDayData = revenueStats.byDay?.map((item: any) => ({
+    date: new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+    Revenu: item.revenue || 0,
+  })) || []
+
+  // Préparer les données pour le graphique répartition recherches IA
+  const searchDistributionData = searchStats.distribution || []
 
   return (
     <div className="space-y-8">
@@ -124,7 +145,70 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Charts */}
+      {/* KPI Cards Row 2 - Nouveaux */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 backdrop-blur-sm border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">
+              Revenu total
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-emerald-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">
+              {revenueStats.total?.toLocaleString('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }) || '0,00'} €
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 backdrop-blur-sm border border-cyan-500/30 shadow-lg shadow-cyan-500/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">
+              Taux de conversion
+            </CardTitle>
+            <Percent className="h-4 w-4 text-cyan-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">
+              {revenueStats.conversionRate?.toFixed(1) || '0,0'}%
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 backdrop-blur-sm border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">
+              Recherches IA (mois)
+            </CardTitle>
+            <Search className="h-4 w-4 text-indigo-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{searchStats.thisMonth || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-500/20 to-red-600/10 backdrop-blur-sm border border-red-500/30 shadow-lg shadow-red-500/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">
+              Alertes système
+            </CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{alertsStats.count || 0}</div>
+            {alertsStats.failedTransactionsLast24h > 0 && (
+              <p className="text-xs text-red-400 mt-1">
+                {alertsStats.failedTransactionsLast24h} paiements échoués (24h)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Évolution utilisateurs */}
         <Card className="bg-gradient-to-br from-blue-500/20 to-purple-600/10 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
@@ -178,6 +262,83 @@ export default function AdminDashboardPage() {
                 <Legend />
                 <Bar dataKey="value" fill="#10B981" radius={[8, 8, 0, 0]} />
               </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 - Nouveaux graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenu par jour */}
+        <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-600/10 backdrop-blur-sm border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+          <CardHeader>
+            <CardTitle className="text-white">Revenu par jour (30 jours)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={revenueByDayData}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: '1px solid #374151',
+                    color: '#FFFFFF',
+                  }}
+                  formatter={(value: number) => `${value.toFixed(2)} €`}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="Revenu"
+                  stroke="#10B981"
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Répartition recherches IA */}
+        <Card className="bg-gradient-to-br from-indigo-500/20 to-violet-600/10 backdrop-blur-sm border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+          <CardHeader>
+            <CardTitle className="text-white">Répartition recherches IA</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={searchDistributionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {searchDistributionData.map((entry: any, index: number) => {
+                    const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B']
+                    return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  })}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: '1px solid #374151',
+                    color: '#FFFFFF',
+                  }}
+                />
+                <Legend />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

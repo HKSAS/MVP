@@ -67,6 +67,97 @@ export async function GET() {
       planCounts[a] > planCounts[b] ? a : b, 'free'
     ) || 'free'
 
+    // Stats transactions (revenu)
+    const { data: transactionsData, error: txError } = await supabase
+      .from('transactions')
+      .select('amount, status, created_at')
+
+    if (txError) {
+      console.warn('Transactions error:', txError)
+    }
+
+    const thirtyDaysAgoForRevenue = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    
+    const totalRevenue = transactionsData
+      ?.filter(tx => tx.status === 'paid' || tx.status === 'succeeded')
+      .reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0
+
+    const revenueThisMonth = transactionsData
+      ?.filter(tx => 
+        (tx.status === 'paid' || tx.status === 'succeeded') &&
+        tx.created_at && new Date(tx.created_at) >= thirtyDaysAgo
+      )
+      .reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0
+
+    const successfulTransactions = transactionsData?.filter(
+      tx => tx.status === 'paid' || tx.status === 'succeeded'
+    ).length || 0
+    const totalTransactions = transactionsData?.length || 1
+    const conversionRate = (successfulTransactions / totalTransactions) * 100
+
+    // Revenu par jour (30 derniers jours) pour graphique
+    const revenueByDay: Array<{ date: string; revenue: number }> = []
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+      const dateStr = date.toISOString().split('T')[0]
+      const dayRevenue = transactionsData
+        ?.filter(tx =>
+          (tx.status === 'paid' || tx.status === 'succeeded') &&
+          tx.created_at &&
+          new Date(tx.created_at).toISOString().split('T')[0] === dateStr
+        )
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0
+      revenueByDay.push({ date: dateStr, revenue: dayRevenue })
+    }
+
+    // Stats recherches IA
+    const { data: searchesData, error: searchesError } = await supabase
+      .from('ai_searches')
+      .select('query, created_at')
+
+    if (searchesError) {
+      console.warn('Searches error:', searchesError)
+    }
+
+    const searchesThisMonth = searchesData?.filter(s =>
+      s.created_at && new Date(s.created_at) >= thirtyDaysAgoForRevenue
+    ).length || 0
+
+    // Répartition recherches IA par type (pour graphique)
+    const searchDistribution: Record<string, number> = {
+      'Estimation Prix': 0,
+      'Comparaison': 0,
+      'Fiabilité': 0,
+      'Autre': 0,
+    }
+
+    searchesData?.forEach(search => {
+      const query = (search.query || '').toLowerCase()
+      if (query.includes('prix') || query.includes('price')) {
+        searchDistribution['Estimation Prix']++
+      } else if (query.includes('comparaison') || query.includes('compare')) {
+        searchDistribution['Comparaison']++
+      } else if (query.includes('fiabilité') || query.includes('fiabilite') || query.includes('reliable')) {
+        searchDistribution['Fiabilité']++
+      } else {
+        searchDistribution['Autre']++
+      }
+    })
+
+    const searchDistributionData = Object.entries(searchDistribution).map(([name, value]) => ({
+      name,
+      value,
+    })).filter(item => item.value > 0)
+
+    // Alertes système (simplifié)
+    const failedTransactionsLast24h = transactionsData?.filter(tx =>
+      (tx.status === 'failed' || tx.status === 'error') &&
+      tx.created_at &&
+      new Date(tx.created_at) >= new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    ).length || 0
+
+    const systemAlerts = failedTransactionsLast24h > 0 ? 1 : 0
+
     return NextResponse.json({
       users: {
         total: totalUsers,
@@ -88,6 +179,23 @@ export async function GET() {
           premium: premiumCount,
           enterprise: enterpriseCount,
         },
+      },
+      revenue: {
+        total: totalRevenue / 100, // Convertir centimes en euros
+        thisMonth: revenueThisMonth / 100,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+        byDay: revenueByDay.map(item => ({
+          ...item,
+          revenue: item.revenue / 100,
+        })),
+      },
+      searches: {
+        thisMonth: searchesThisMonth,
+        distribution: searchDistributionData,
+      },
+      alerts: {
+        count: systemAlerts,
+        failedTransactionsLast24h,
       },
     })
   } catch (error) {
