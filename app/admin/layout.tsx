@@ -45,6 +45,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const checkAdminAuth = () => {
       if (typeof window === 'undefined') return
 
+      // Si on est sur la page de login, on permet l'affichage
+      if (pathname === '/admin/login') {
+        setIsAuthenticated(false)
+        setLoading(false)
+        return
+      }
+
       const isAuth = sessionStorage.getItem('admin_authenticated') === 'true'
       const authTime = sessionStorage.getItem('admin_auth_time')
       
@@ -55,21 +62,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (timeDiff > hours24) {
           sessionStorage.removeItem('admin_authenticated')
           sessionStorage.removeItem('admin_auth_time')
+          router.push('/admin/login')
           setIsAuthenticated(false)
           setLoading(false)
-          if (pathname !== '/admin/login') {
-            router.push('/admin/login')
-          }
           return
         }
       }
 
-      if (!isAuth && pathname !== '/admin/login') {
+      if (!isAuth) {
         router.push('/admin/login')
+        setIsAuthenticated(false)
+        setLoading(false)
         return
       }
 
-      setIsAuthenticated(isAuth)
+      setIsAuthenticated(true)
       setLoading(false)
     }
 
@@ -98,6 +105,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
+  // Si on est sur la page de login, afficher les enfants directement
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
+
+  // Si pas authentifié, ne pas afficher le layout admin
   if (!isAuthenticated) {
     return null
   }
