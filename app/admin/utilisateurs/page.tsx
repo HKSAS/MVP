@@ -186,26 +186,26 @@ export default function AdminUsersPage() {
                         </TableCell>
                         <TableCell>
                           <div 
-                            className="flex items-center gap-3"
+                            className="flex items-center gap-2"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 px-2 py-1 rounded border border-white/10 hover:bg-white/5">
                                     <Switch
                                       checked={user.access_override === true}
                                       onCheckedChange={() => handleToggleVIP(user.id)}
                                       disabled={toggleVIPMutation.isPending}
                                       className="data-[state=checked]:bg-yellow-500"
                                     />
-                                    <span className="text-xs text-gray-400">
+                                    <span className="text-xs text-white font-medium min-w-[40px]">
                                       {user.access_override ? 'VIP' : 'Free'}
                                     </span>
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Activer/Désactiver VIP</p>
+                                  <p>Cliquez pour activer/désactiver VIP</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -217,6 +217,7 @@ export default function AdminUsersPage() {
                                 setSelectedUserId(user.id)
                               }}
                               className="hover:bg-white/10"
+                              title="Voir détails"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
