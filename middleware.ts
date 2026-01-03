@@ -87,6 +87,7 @@ export const config = {
     '/recherche/:path*',
     '/analyser/:path*',
     '/favoris/:path*',
+    '/admin/:path*',
     '/login',
     '/signup'
   ]
