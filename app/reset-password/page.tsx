@@ -95,7 +95,8 @@ function ResetPasswordForm() {
         throw new Error(errorMessage);
       }
 
-      // Succès
+      // Succès - Log pour diagnostic
+      console.log('✅ Email de réinitialisation envoyé avec succès à:', email.trim());
       setSuccess(true);
     } catch (err: any) {
       console.error('❌ Erreur réinitialisation complète:', {
