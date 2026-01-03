@@ -33,7 +33,7 @@ export async function GET() {
     ).length || 0
 
     // Évolution utilisateurs (30 derniers jours)
-    const evolutionData = []
+    const evolutionData: Array<{ date: string; count: number }> = []
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
