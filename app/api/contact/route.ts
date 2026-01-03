@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
 
     log.info('Insertion message contact', {
       hasPhone: !!input.phone,
-      hasSubject: !!input.subject,
+      hasSubject: isVehicleForm ? !!(insertData.subject) : !!(input as ContactInput).subject,
       insertDataKeys: Object.keys(insertData),
     })
 
@@ -374,10 +374,19 @@ export async function POST(request: NextRequest) {
       })
       console.warn('[CONTACT] Colonnes manquantes, fallback sans phone/subject:', error.message)
       
+      // Fallback uniquement pour l'ancien formulaire de contact
+      if (isVehicleForm) {
+        // Pour le formulaire véhicule, on ne devrait pas arriver ici car on a déjà construit insertData
+        throw new InternalServerError('Erreur lors de l\'enregistrement de la demande de véhicule', {
+          dbError: error.message,
+        })
+      }
+      
+      const contactData = input as ContactInput
       const fallbackData = {
-        name: input.name,
-        email: input.email,
-        message: input.message,
+        name: contactData.name,
+        email: contactData.email,
+        message: contactData.message,
         status: 'pending',
       }
       
