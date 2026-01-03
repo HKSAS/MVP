@@ -110,11 +110,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-to-l from-purple-600/20 via-purple-500/10 to-transparent rounded-full blur-[120px]"></div>
       </div>
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex flex-col flex-grow border-r border-gray-800 bg-[#0a0a0a] overflow-y-auto">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 relative z-20">
+        <div className="flex flex-col flex-grow border-r border-white/10 bg-gradient-to-b from-blue-500/10 to-purple-600/10 backdrop-blur-md overflow-y-auto">
           {/* Logo */}
-          <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-800">
-            <h1 className="text-2xl font-bold text-white">AUTOIA</h1>
+          <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-white/10">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+              AUTOIA
+            </h1>
             <span className="ml-2 text-sm text-gray-400">Admin</span>
           </div>
 
