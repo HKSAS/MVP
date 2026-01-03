@@ -161,12 +161,30 @@ function ResetPasswordForm() {
                       <CheckCircle2 className="w-8 h-8 text-green-400" />
                     </div>
                     <h2 className="text-2xl font-medium text-white">Email envoyé !</h2>
-                    <p className="text-gray-400 text-center">
-                      Nous avons envoyé un lien de réinitialisation à <strong className="text-white">{email}</strong>.
-                      <br />
-                      <br />
-                      Vérifiez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe.
-                    </p>
+                    <div className="space-y-3 text-gray-400 text-center">
+                      <p>
+                        Nous avons envoyé un lien de réinitialisation à <strong className="text-white">{email}</strong>.
+                      </p>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-left space-y-2">
+                        <p className="text-sm font-medium text-blue-400 mb-2">📧 Où chercher l'email :</p>
+                        <ul className="text-xs space-y-1 text-gray-300">
+                          <li>• Vérifiez votre <strong className="text-white">boîte de réception</strong></li>
+                          <li>• Vérifiez votre dossier <strong className="text-white">SPAM / Courrier indésirable</strong></li>
+                          <li>• Vérifiez les <strong className="text-white">filtres automatiques</strong> de votre boîte mail</li>
+                          <li>• L'email peut prendre <strong className="text-white">quelques minutes</strong> à arriver</li>
+                        </ul>
+                      </div>
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-left">
+                        <p className="text-xs text-yellow-400">
+                          <strong>⚠️ Si vous ne recevez pas l'email :</strong>
+                          <br />
+                          Vérifiez vos paramètres SMTP dans Supabase et testez la connexion. Le message peut aussi être bloqué par votre fournisseur d'email.
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-500 pt-2">
+                        Le lien de réinitialisation est valide pendant 1 heure.
+                      </p>
+                    </div>
                     <div className="mt-4 space-y-3 w-full">
                       <Button
                         onClick={() => router.push('/login')}

@@ -170,6 +170,52 @@ Si le problème persiste après avoir vérifié tous les paramètres :
 2. L'envoi devrait prendre moins de 5 secondes (pas de timeout)
 3. Vérifiez votre boîte de réception (et les spams)
 
+## 📧 Email envoyé mais non reçu
+
+**Si le message "Email envoyé !" s'affiche mais vous ne recevez pas l'email :**
+
+### Checklist de vérification
+
+1. ✅ **Vérifiez les SPAMS / Courrier indésirable**
+   - Les emails de réinitialisation sont souvent filtrés
+   - Cherchez dans tous les dossiers de votre boîte mail
+   - Vérifiez les filtres automatiques
+
+2. ✅ **Vérifiez que l'adresse email est correcte**
+   - L'email a été envoyé à l'adresse que vous avez saisie
+   - Vérifiez les fautes de frappe
+
+3. ✅ **Attendez quelques minutes**
+   - Les emails peuvent prendre 1-5 minutes à arriver
+   - Ne renvoyez pas immédiatement (risque de rate limit)
+
+4. ✅ **Vérifiez les logs Supabase**
+   - Allez dans **Logs** > **Auth Logs**
+   - Cherchez les entrées récentes pour votre email
+   - Vérifiez s'il y a des erreurs d'envoi
+
+5. ✅ **Testez la connexion SMTP dans Supabase**
+   - Si le test SMTP échoue, l'email n'est pas vraiment envoyé
+   - Corrigez les paramètres et réessayez
+
+6. ✅ **Vérifiez que votre compte email fonctionne**
+   - Testez l'envoi d'un email depuis un client email (Outlook, Thunderbird)
+   - Si ça ne fonctionne pas, le problème vient d'Ionos
+
+### Problèmes courants
+
+**Email bloqué par le fournisseur**
+- Certains fournisseurs (Gmail, Outlook) bloquent les emails SMTP personnalisés
+- Solution : Utilisez un service d'email professionnel (SendGrid, Mailgun, etc.)
+
+**Compte email suspendu**
+- Vérifiez que votre compte `contact@autovalia.fr` est actif
+- Contactez Ionos si le compte est suspendu
+
+**Rate limit**
+- Trop de tentatives = emails bloqués temporairement
+- Attendez 15-30 minutes avant de réessayer
+
 ## ⚠️ Si le problème persiste après correction
 
 1. **Vérifiez les logs Supabase**
@@ -188,8 +234,8 @@ Si le problème persiste après avoir vérifié tous les paramètres :
 
 4. **Alternative : Utiliser un service d'email tiers**
    - Si Ionos continue de poser problème, considérez :
-     - SendGrid
-     - Mailgun
-     - AWS SES
-     - Resend
+     - **Resend** (recommandé pour Next.js)
+     - **SendGrid**
+     - **Mailgun**
+     - **AWS SES**
 
